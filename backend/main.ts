@@ -58,7 +58,7 @@ router.get("/api/routes", async (ctx: RouterContext<string>) => {
 
   const routes = result.rows.map((row) => ({
     ...row,
-    geojson: JSON.parse(row.geojson)
+    geojson: JSON.parse(row.geojson ?? '[]')
   }));
 
   ctx.response.body = routes;
@@ -161,7 +161,7 @@ app.use(router.allowedMethods());
 app.use(async (ctx, next) => {
   try {
     await ctx.send({
-      root: `${Deno.cwd()}/static`,
+      root: `${Deno.cwd()}/frontend/dist`,
       index: "index.html",
     });
   } catch {
@@ -184,5 +184,5 @@ while (!connected) {
     }
 }
 
-console.log("Server running on http://localhost:8000");
-await app.listen({ port: 8000 });
+console.log("Server running on http://localhost:8070");
+await app.listen({ port: 8070, hostname: "0.0.0.0" });

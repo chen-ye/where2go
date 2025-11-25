@@ -44,8 +44,8 @@ function App() {
     }
   };
 
-  const selectedRoute = useMemo(() => 
-    routes.find(r => r.id === selectedRouteId), 
+  const selectedRoute = useMemo(() =>
+    routes.find(r => r.id === selectedRouteId),
   [routes, selectedRouteId]);
 
   const handleDelete = async (id: number) => {
@@ -54,9 +54,9 @@ function App() {
     setSelectedRouteId(null);
     fetchRoutes();
   };
-  
+
   const handleUpdateTags = async (id: number, newTags: string[]) => {
-      await fetch(`/api/routes/${id}`, { 
+      await fetch(`/api/routes/${id}`, {
           method: 'PUT',
           body: JSON.stringify({ tags: newTags }),
           headers: { 'Content-Type': 'application/json'}
@@ -64,13 +64,20 @@ function App() {
       fetchRoutes();
   };
 
-  const layerStyle = {
-    id: 'route-line',
+  const lineDisplayStyle = {
     type: 'line',
     paint: {
       'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#ff0000', '#0000ff'],
       'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 6, 3],
-      'line-opacity': 0.8
+      'line-opacity': 0.6
+    }
+  };
+  const lineHitBoxStyle = {
+    type: 'line',
+    paint: {
+      'line-color': '#0000ff',
+      'line-width': 20,
+      'line-opacity': 0.01
     }
   };
 
@@ -82,7 +89,7 @@ function App() {
         type: "Feature",
         geometry: r.geojson,
         properties: { id: r.id, title: r.title },
-        id: r.id 
+        id: r.id
       }))
     };
   }, [routes]);
@@ -93,7 +100,7 @@ function App() {
         <Map
           {...viewState}
           onMove={evt => setViewState(evt.viewState)}
-          mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+          mapStyle="https://api.maptiler.com/maps/outdoor-v4-dark/style.json?key=di0gshXc0zUqmVTNctjb"
           onClick={(e) => {
              const feature = e.features?.[0];
              if (feature) {
@@ -102,11 +109,12 @@ function App() {
                  setSelectedRouteId(null);
              }
           }}
-          interactiveLayerIds={['route-line']}
+          interactiveLayerIds={['route-line-hitbox']}
         >
           <NavigationControl position="top-right" />
           <Source id="routes-data" type="geojson" data={routesGeoJson as any}>
-            <Layer {...layerStyle as any} />
+            <Layer id="route-line" {...lineDisplayStyle as any} />
+            <Layer id="route-line-hitbox" {...lineHitBoxStyle as any} />
           </Source>
         </Map>
       </div>
@@ -117,7 +125,7 @@ function App() {
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: 'white',
+          backgroundColor: 'black',
           padding: '20px',
           borderTopLeftRadius: '16px',
           borderTopRightRadius: '16px',
@@ -132,7 +140,7 @@ function App() {
                <X />
             </button>
           </div>
-          
+
           <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
             <a href={selectedRoute.source_url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '5px', textDecoration: 'none', color: '#007bff' }}>
               <ExternalLink size={16} /> Source
@@ -148,9 +156,9 @@ function App() {
           <div>
              <strong>Tags: </strong>
              {selectedRoute.tags?.map(tag => (
-                 <span key={tag} style={{ background: '#eee', padding: '2px 8px', borderRadius: '4px', marginRight: '5px', fontSize: '0.9em' }}>{tag}</span>
+                 <span key={tag} style={{ background: '#333', padding: '2px 8px', borderRadius: '4px', marginRight: '5px', fontSize: '0.9em' }}>{tag}</span>
              ))}
-             <button 
+             <button
                 onClick={() => {
                     const newTag = prompt("Add tag:");
                     if (newTag) handleUpdateTags(selectedRoute.id, [...(selectedRoute.tags || []), newTag]);
