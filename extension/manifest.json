@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "where2go Route Clipper",
+  "version": "1.0",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": [
+    "https://ridewithgps.com/*",
+    "https://www.strava.com/*",
+    "https://connect.garmin.com/*",
+    "http://localhost:8000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://ridewithgps.com/routes/*",
+        "https://www.strava.com/routes/*",
+        "https://connect.garmin.com/modern/course/*"
+      ],
+      "js": ["content.js"]
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
