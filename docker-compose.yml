@@ -20,7 +20,7 @@ services:
       - ./backend:/app
       - ./frontend/dist:/app/static
     ports:
-      - "10080:8000"
+      - "8070:8000"
     environment:
       POSTGRES_HOST: db
       POSTGRES_USER: ${POSTGRES_USER}

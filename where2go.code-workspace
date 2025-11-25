@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "backend"
+		},
+		{
+			"path": "extension"
+		},
+		{
+			"path": "frontend"
+		}
+	],
+	"settings": {
+		"deno.enable": true,
+		"typescript.tsserver.experimental.enableProjectDiagnostics": false
+	}
+}
