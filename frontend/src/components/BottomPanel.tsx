@@ -8,6 +8,8 @@ interface BottomPanelProps {
   onClose: () => void;
   onDelete: (id: number) => void;
   onUpdateTags: (id: number, tags: string[]) => void;
+  hoveredLocation: { lat: number; lon: number } | null;
+  onHover: (location: { lat: number; lon: number } | null) => void;
 }
 
 interface RouteStatProps {
@@ -29,7 +31,7 @@ function RouteStat({ value, units, decimals = 0, className = '' }: RouteStatProp
   );
 }
 
-export function BottomPanel({ route, onClose, onDelete, onUpdateTags }: BottomPanelProps) {
+export function BottomPanel({ route, onClose, onDelete, onUpdateTags, hoveredLocation, onHover }: BottomPanelProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [surfacesOpen, setSurfacesOpen] = useState(false);
 
@@ -92,11 +94,15 @@ export function BottomPanel({ route, onClose, onDelete, onUpdateTags }: BottomPa
         </div>
         {profileOpen && (
             <div className="accordion-content">
-                <ElevationProfile coordinates={
-                    route.geojson?.type === 'LineString' ? route.geojson.coordinates :
-                    route.geojson?.type === 'MultiLineString' ? route.geojson.coordinates[0] :
-                    []
-                } />
+                <ElevationProfile
+                    coordinates={
+                        route.geojson?.type === 'LineString' ? route.geojson.coordinates :
+                        route.geojson?.type === 'MultiLineString' ? route.geojson.coordinates[0] :
+                        []
+                    }
+                    hoveredLocation={hoveredLocation}
+                    onHover={onHover}
+                />
             </div>
         )}
       </div>

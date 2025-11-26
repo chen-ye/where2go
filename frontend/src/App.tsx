@@ -14,6 +14,8 @@ function App() {
     zoom: 11
   });
 
+  const [hoveredLocation, setHoveredLocation] = useState<{ lat: number; lon: number } | null>(null);
+
   useEffect(() => {
     fetchRoutes();
   }, []);
@@ -67,6 +69,8 @@ function App() {
         onSelectRoute={setSelectedRouteId}
         viewState={viewState}
         onMove={setViewState}
+        hoveredLocation={hoveredLocation}
+        onHover={setHoveredLocation}
       />
       {selectedRoute && (
         <BottomPanel
@@ -74,6 +78,8 @@ function App() {
           onClose={() => setSelectedRouteId(null)}
           onDelete={handleDelete}
           onUpdateTags={handleUpdateTags}
+          hoveredLocation={hoveredLocation}
+          onHover={setHoveredLocation}
         />
       )}
     </>

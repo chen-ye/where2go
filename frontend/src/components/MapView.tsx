@@ -5,7 +5,7 @@ import Map, { Source, NavigationControl, GeolocateControl, useControl, type View
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useCallback, useMemo, useState } from 'react';
 import type { Route } from '../types.ts';
-import { GeoJsonLayer } from 'deck.gl';
+import { GeoJsonLayer, ScatterplotLayer } from 'deck.gl';
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
 
 function DeckGLOverlay(props: DeckProps) {
@@ -26,9 +26,11 @@ interface MapViewProps {
     zoom: number;
   };
   onMove: (viewState: ViewState) => void;
+  hoveredLocation: { lat: number; lon: number } | null;
+  onHover: (location: { lat: number; lon: number } | null) => void;
 }
 
-export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onMove }: MapViewProps) {
+export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onMove, hoveredLocation, onHover }: MapViewProps) {
   // const [hoverInfo, setHoverInfo] = useState<PickingInfo<Feature<Geometry, {}>>>();
 
   const routesGeoJson: FeatureCollection = useMemo(() => {
@@ -36,34 +38,67 @@ export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onM
       type: "FeatureCollection",
       features: routes.map(r => ({
         type: "Feature",
-        geometry: r.geojson,
-        properties: { id: r.id, title: r.title },
-        id: r.id
+        properties: {
+          id: r.id,
+          title: r.title,
+          selected: r.id === selectedRouteId
+        },
+        geometry: r.geojson
       }))
     };
-  }, [routes]);
+  }, [routes, selectedRouteId]);
 
 
-  const deckGLLayers: DeckProps['layers'] = useMemo(() => [
-    new GeoJsonLayer({
-      id: 'route-lines',
-      data: routesGeoJson,
-      getLineColor: (object) => object.properties.id === selectedRouteId ? [217, 119, 6, 255] : [167, 119, 199, 80],
-      getLineWidth: (object) => object.properties.id === selectedRouteId ? 60 : 10,
-      lineWidthUnits: 'meters',
-      pickable: true,
-      stroked: true,
-      // onHover: setHoverInfo,
-      lineWidthMinPixels: 1,
-      onClick: (info) => {
-        onSelectRoute(info.object.properties.id);
-      },
-      updateTriggers: {
-        getLineColor: selectedRouteId,
-        getLineWidth: selectedRouteId,
-      }
-    })
-  ], [routesGeoJson, selectedRouteId]);
+  const deckGLLayers: DeckProps['layers'] = useMemo(() => {
+    const layers: any[] = [
+      new GeoJsonLayer({
+        id: 'route-lines',
+        data: routesGeoJson,
+        getLineColor: (object) => object.properties.id === selectedRouteId ? [217, 119, 6, 255] : [167, 119, 199, 80],
+        getLineWidth: (object) => object.properties.id === selectedRouteId ? 60 : 10,
+        lineWidthUnits: 'meters',
+        pickable: true,
+        stroked: true,
+        onHover: (info) => {
+             if (info.object) {
+                 // We need to get the coordinate on the line that is hovered.
+                 // info.coordinate is [lon, lat]
+                 if (info.coordinate) {
+                     onHover({ lat: info.coordinate[1], lon: info.coordinate[0] });
+                 }
+             } else {
+                 onHover(null);
+             }
+        },
+        lineWidthMinPixels: 1,
+        onClick: (info) => {
+          onSelectRoute(info.object.properties.id);
+        },
+        updateTriggers: {
+          getLineColor: selectedRouteId,
+          getLineWidth: selectedRouteId,
+        }
+      })
+    ];
+
+    if (hoveredLocation) {
+        layers.push(
+            new ScatterplotLayer({
+                id: 'hover-marker',
+                data: [{ position: [hoveredLocation.lon, hoveredLocation.lat] }],
+                getPosition: (d: { position: [number, number] }) => d.position,
+                getFillColor: [255, 255, 255],
+                getLineColor: [0, 0, 0],
+                getLineWidth: 2,
+                getRadius: 10,
+                radiusMinPixels: 5,
+                radiusMaxPixels: 10
+            })
+        );
+    }
+
+    return layers;
+  }, [routesGeoJson, selectedRouteId, hoveredLocation, onHover]);
 
   return (
     <div className="map-container">
@@ -106,3 +141,17 @@ export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onM
     </div>
   );
 }
+
+      // <DeckGL layers={deckGLLayers}
+      //   initialViewState={{
+      //     latitude: 38,
+      //     longitude: -100,
+      //     zoom: 4,
+      //     minZoom: 2,
+      //     maxZoom: 18
+      //   }}
+      //   pickingRadius={10}
+      //   getTooltip={({object}: PickingInfo<Feature<Geometry, {id: number, title: string}>>) => (object?.properties.title ?? '')}
+      //   controller={true}>
+      //   <Map reuseMaps mapStyle={'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json'} />
+      // </DeckGL>
