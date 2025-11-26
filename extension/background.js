@@ -1,78 +1,164 @@
-chrome.action.onClicked.addListener((tab) => {
-    chrome.storage.sync.get({ baseUrl: '', headers: {} }, (items) => {
-        if (!items.baseUrl) {
-            chrome.runtime.openOptionsPage();
-            return;
-        }
+// Background Scraper Manager
+let state = {
+    isRunning: false,
+    isCancelled: false,
+    total: 0,
+    current: 0,
+    success: 0,
+    errors: 0,
+    statusMessage: "Idle",
+    currentRouteId: null
+};
 
-
-
-        const endpoint = new URL('/api/routes', items.baseUrl).href;
-        console.log('Constructed endpoint:', endpoint);
-
-        // Request permission for the configured base URL origin
-        const url = new URL(items.baseUrl);
-        const origin = `${url.protocol}//${url.host}/*`;
-
-        chrome.permissions.request({
-            origins: [origin]
-        }, (granted) => {
-            if (!granted) {
-                console.error('Permission denied for', origin);
-                chrome.action.setBadgeText({ text: "PERM", tabId: tab.id });
-                chrome.action.setBadgeBackgroundColor({ color: "#F00", tabId: tab.id });
-                return;
-            }
-
-            // Send message to content script to start scraping
-            chrome.tabs.sendMessage(tab.id, { action: "scrape" }, async (response) => {
-                if (chrome.runtime.lastError) {
-                    console.error(chrome.runtime.lastError);
-                    return;
-                }
-
-                if (response && response.data) {
-                    await saveRoute(endpoint, items.headers, response.data);
-                } else if (response && response.error) {
-                    console.error("Scraping error:", response.error);
-                    chrome.action.setBadgeText({ text: "ERR", tabId: tab.id });
-                    chrome.action.setBadgeBackgroundColor({ color: "#F00", tabId: tab.id });
-                }
-            });
-        });
-    });
+// Listen for messages from Popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    switch (request.action) {
+        case "start_batch":
+            startBatch(request.tabId)
+                .then(() => sendResponse({ success: true }))
+                .catch(e => sendResponse({ success: false, error: e.message }));
+            return true;
+        case "cancel_batch":
+            state.isCancelled = true;
+            state.statusMessage = "Cancelling...";
+            sendResponse({ success: true });
+            return false;
+        case "get_status":
+            sendResponse({ state: state });
+            return false;
+    }
 });
 
-async function saveRoute(endpoint, headers, data) {
+async function startBatch(tabId) {
+    if (state.isRunning) throw new Error("Batch already running");
+
+    resetState();
+    state.isRunning = true;
+    state.statusMessage = "Scanning page for routes...";
+    broadcastUpdate();
+
     try {
-        chrome.action.setBadgeText({ text: "..." });
+        // 1. Get Configuration
+        const config = await chrome.storage.sync.get({ baseUrl: '', headers: {} });
+        if (!config.baseUrl) throw new Error("Base URL not configured");
 
-        const finalHeaders = {
-            "Content-Type": "application/json",
-            ...headers
-        };
+        // 2. Scan for Routes
+        const response = await sendMessageToTab(tabId, { action: "scan_routes" });
+        if (!response.success) throw new Error(response.error);
 
+        const routes = response.routes;
+        state.total = routes.length;
+        state.statusMessage = `Found ${routes.length} routes. Starting...`;
+        broadcastUpdate();
+        updateBadge(`${state.current}/${state.total}`, "#00F");
 
-        console.log('Saving route to:', endpoint);
-        console.log('Headers:', finalHeaders);
-        console.log('Data:', data);
+        // 3. Process Queue
+        for (let i = 0; i < routes.length; i++) {
+            if (state.isCancelled) break;
 
-        const res = await fetch(endpoint, {
-            method: "POST",
-            headers: finalHeaders,
-            body: JSON.stringify(data)
-        });
+            const route = routes[i];
+            state.current = i + 1;
+            state.currentRouteId = route.id;
+            state.statusMessage = `Processing ${route.id}...`;
+            broadcastUpdate();
+            updateBadge(`${state.current}/${state.total}`, "#00F");
 
-        if (res.ok) {
-            chrome.action.setBadgeText({ text: "OK" });
-            chrome.action.setBadgeBackgroundColor({ color: "#0F0" });
-            setTimeout(() => chrome.action.setBadgeText({ text: "" }), 3000);
-        } else {
-            throw new Error("Server returned " + res.status);
+            try {
+                // A. Fetch GPX (via Content Script)
+                const gpxData = await sendMessageToTab(tabId, {
+                    action: "fetch_route_gpx",
+                    gpxUrl: route.gpxUrl,
+                    pageUrl: route.pageUrl
+                });
+
+                if (!gpxData.success) throw new Error(gpxData.error);
+
+                // B. Save to Backend
+                await saveRouteToBackend(config, gpxData.data);
+                state.success++;
+            } catch (e) {
+                console.error("Route error:", e);
+                state.errors++;
+            }
+
+            // Throttle
+            if (i < routes.length - 1) await new Promise(r => setTimeout(r, 1000));
         }
+
     } catch (e) {
-        console.error("Save failed", e);
-        chrome.action.setBadgeText({ text: "ERR" });
-        chrome.action.setBadgeBackgroundColor({ color: "#F00" });
+        console.error("Batch failed", e);
+        state.statusMessage = `Error: ${e.message}`;
+        state.errors++; // Count global failure
+    } finally {
+        finishBatch();
     }
+}
+
+function finishBatch() {
+    state.isRunning = false;
+    state.statusMessage = state.isCancelled ? "Cancelled" : "Finished";
+    broadcastUpdate();
+
+    if (state.errors > 0) {
+        updateBadge("ERR", "#F00");
+    } else {
+        updateBadge("OK", "#0F0");
+    }
+
+    // Clear badge after 5 seconds
+    setTimeout(() => {
+        if (!state.isRunning) chrome.action.setBadgeText({ text: "" });
+    }, 5000);
+}
+
+function resetState() {
+    state = {
+        isRunning: false,
+        isCancelled: false,
+        total: 0,
+        current: 0,
+        success: 0,
+        errors: 0,
+        statusMessage: "Starting...",
+        currentRouteId: null
+    };
+    broadcastUpdate();
+}
+
+async function saveRouteToBackend(config, data) {
+    const endpoint = new URL('/api/routes', config.baseUrl).href;
+    const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...config.headers
+        },
+        body: JSON.stringify(data)
+    });
+
+    if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+}
+
+// Helpers
+function sendMessageToTab(tabId, msg) {
+    return new Promise((resolve) => {
+        chrome.tabs.sendMessage(tabId, msg, (response) => {
+            if (chrome.runtime.lastError) {
+                resolve({ success: false, error: chrome.runtime.lastError.message });
+            } else {
+                resolve(response || { success: false, error: "No response" });
+            }
+        });
+    });
+}
+
+function broadcastUpdate() {
+    chrome.runtime.sendMessage({ action: "state_update", state: state }).catch(() => {
+        // Ignore errors if popup is closed
+    });
+}
+
+function updateBadge(text, color) {
+    chrome.action.setBadgeText({ text: String(text) });
+    chrome.action.setBadgeBackgroundColor({ color: color });
 }

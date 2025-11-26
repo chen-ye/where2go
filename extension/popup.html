@@ -2,14 +2,97 @@
 <html>
 <head>
   <style>
-    body { width: 300px; padding: 10px; font-family: sans-serif; }
-    h1 { font-size: 16px; margin-bottom: 10px; }
-    p { font-size: 12px; }
+    body {
+      width: 320px;
+      padding: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #333;
+    }
+    h1 {
+      font-size: 16px;
+      margin: 0 0 10px 0;
+      color: #2c3e50;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      margin-bottom: 5px;
+    }
+    #scrape-btn {
+      background-color: #3498db;
+      color: white;
+    }
+    #scrape-btn:hover { background-color: #2980b9; }
+
+    #cancel-btn {
+      background-color: #e74c3c;
+      color: white;
+      display: none; /* Hidden by default */
+    }
+    #cancel-btn:hover { background-color: #c0392b; }
+
+    .status-container {
+      margin-top: 15px;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      font-size: 13px;
+      display: none;
+    }
+    .progress-bar {
+      height: 6px;
+      background: #e0e0e0;
+      border-radius: 3px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #27ae60;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .log {
+      margin-top: 5px;
+      color: #666;
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .error {
+      color: #c0392b;
+      margin-top: 10px;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
-  <h1>Where2Go Clipper</h1>
-  <p>Navigate to a route page on Strava, RideWithGPS, or Garmin Connect.</p>
-  <p>A "Save to Where2Go" button will appear on the page.</p>
+  <h1>Where2Go Route Clipper</h1>
+
+  <div id="main-ui">
+    <button id="scrape-btn">Scrape Routes from Page</button>
+    <button id="cancel-btn">Cancel Operation</button>
+  </div>
+
+  <div id="status-area" class="status-container">
+    <div style="display: flex; justify-content: space-between;">
+      <span id="status-text">Ready</span>
+      <span id="counter">0/0</span>
+    </div>
+    <div class="progress-bar">
+      <div id="progress-fill" class="progress-fill"></div>
+    </div>
+    <div id="log-text" class="log">Waiting to start...</div>
+  </div>
+
+  <div id="error-msg" class="error"></div>
+
+  <script src="popup.js"></script>
 </body>
 </html>
