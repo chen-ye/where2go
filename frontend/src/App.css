@@ -105,6 +105,7 @@
   max-height: 50vh;
   overflow-y: auto;
   transition: transform 0.3s ease-in-out;
+  will-change: transform;
 }
 
 .bottom-panel-header {

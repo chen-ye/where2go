@@ -8,53 +8,17 @@ import { ParentSize } from '@visx/responsive';
 import { localPoint } from '@visx/event';
 import { useTooltip, useTooltipInPortal, defaultStyles } from '@visx/tooltip';
 import { bisector } from 'd3-array';
+import { getGradeColor } from '../utils/geo';
+import type { RouteDataPoint } from '../types';
 
 interface ElevationProfileProps {
-  coordinates: number[][]; // [lon, lat, ele]
+  data: RouteDataPoint[];
   height?: number;
   hoveredLocation: { lat: number; lon: number } | null;
   onHover: (location: { lat: number; lon: number } | null) => void;
 }
 
-interface DataPoint {
-  distance: number; // miles
-  elevation: number; // feet
-  lat: number;
-  lon: number;
-  grade: number; // percentage
-}
-
-// Helper to calculate distance between two points in miles
-function getDistanceFromLatLonInMiles(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 3958.8; // Radius of the earth in miles
-  const dLat = deg2rad(lat2 - lat1);
-  const dLon = deg2rad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const d = R * c; // Distance in miles
-  return d;
-}
-
-function deg2rad(deg: number) {
-  return deg * (Math.PI / 180);
-}
-
-const METERS_TO_FEET = 3.28084;
-const MILES_TO_FEET = 5280;
-
-function getGradeColor(grade: number) {
-  if (grade < 0) return '#10B981'; // Green (Descent)
-  if (grade < 3) return '#9ca3af88'; // Gray (Flat)
-  if (grade < 6) return '#FCD34D'; // Yellow
-  if (grade < 9) return '#F59E0B'; // Orange
-  if (grade < 12) return '#EF4444'; // Red
-  return '#7F1D1D'; // Dark Red
-}
-
-export function ElevationProfile({ coordinates, height = 200, hoveredLocation, onHover }: ElevationProfileProps) {
+export function ElevationProfile({ data, height = 200, hoveredLocation, onHover }: ElevationProfileProps) {
   const {
     tooltipData,
     tooltipLeft,
@@ -62,51 +26,16 @@ export function ElevationProfile({ coordinates, height = 200, hoveredLocation, o
     tooltipOpen,
     showTooltip,
     hideTooltip,
-  } = useTooltip<DataPoint>();
+  } = useTooltip<RouteDataPoint>();
 
   const { containerRef, TooltipInPortal } = useTooltipInPortal({
     scroll: true,
   });
 
-  const data = useMemo(() => {
-    if (!coordinates || coordinates.length === 0) return [];
-
-    const points: DataPoint[] = [];
-    let totalDist = 0;
-
-    for (let i = 0; i < coordinates.length; i++) {
-      const [lon, lat, ele] = coordinates[i];
-      let grade = 0;
-
-      if (i > 0) {
-        const [prevLon, prevLat, prevEle] = coordinates[i - 1];
-        const distMiles = getDistanceFromLatLonInMiles(prevLat, prevLon, lat, lon);
-        totalDist += distMiles;
-
-        const distFeet = distMiles * MILES_TO_FEET;
-        const eleDiff = ((ele || 0) - (prevEle || 0)) * METERS_TO_FEET;
-
-        if (distFeet > 0) {
-            grade = (eleDiff / distFeet) * 100;
-        }
-      }
-
-      points.push({
-        distance: totalDist,
-        elevation: (ele || 0) * METERS_TO_FEET,
-        lat,
-        lon,
-        grade
-      });
-    }
-
-    return points;
-  }, [coordinates]);
-
   // Accessors
-  const getX = (d: DataPoint) => d.distance;
-  const getY = (d: DataPoint) => d.elevation;
-  const bisectDistance = bisector<DataPoint, number>((d) => d.distance).left;
+  const getX = (d: RouteDataPoint) => d.distance;
+  const getY = (d: RouteDataPoint) => d.elevation;
+  const bisectDistance = bisector<RouteDataPoint, number>((d) => d.distance).left;
 
   // Scales
   const margin = { top: 20, right: 20, bottom: 30, left: 50 };
@@ -152,7 +81,7 @@ export function ElevationProfile({ coordinates, height = 200, hoveredLocation, o
 
           // Handle external hover
           // If hoveredLocation is provided, find the closest point in data
-          let externalTooltipData: DataPoint | null = null;
+          let externalTooltipData: RouteDataPoint | null = null;
           if (hoveredLocation) {
              // Find closest point by distance (naive approach: iterate all)
              // Optimization: could use a spatial index but for <10k points iteration is fine
@@ -190,10 +119,10 @@ export function ElevationProfile({ coordinates, height = 200, hoveredLocation, o
               </defs>
 
               <Group left={margin.left} top={margin.top}>
-                <AreaClosed<DataPoint>
+                <AreaClosed<RouteDataPoint>
                   data={data}
-                  x={(d: DataPoint) => xScale(getX(d)) ?? 0}
-                  y={(d: DataPoint) => yScale(getY(d)) ?? 0}
+                  x={(d: RouteDataPoint) => xScale(getX(d)) ?? 0}
+                  y={(d: RouteDataPoint) => yScale(getY(d)) ?? 0}
                   yScale={yScale}
                   strokeWidth={2}
                   stroke="transparent"
@@ -202,8 +131,8 @@ export function ElevationProfile({ coordinates, height = 200, hoveredLocation, o
                 />
                 <LinePath
                   data={data}
-                  x={(d: DataPoint) => xScale(getX(d)) ?? 0}
-                  y={(d: DataPoint) => yScale(getY(d)) ?? 0}
+                  x={(d: RouteDataPoint) => xScale(getX(d)) ?? 0}
+                  y={(d: RouteDataPoint) => yScale(getY(d)) ?? 0}
                   yScale={yScale}
                   strokeWidth={2}
                   stroke="#cdcdcdff"

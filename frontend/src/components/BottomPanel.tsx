@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Trash2, ExternalLink, Download, X, Plus } from 'lucide-react';
-import type { Route } from '../types.ts';
+import type { Route, RouteDataPoint } from '../types.ts';
 import { ElevationProfile } from './ElevationProfile.tsx';
 
 interface BottomPanelProps {
@@ -10,6 +10,8 @@ interface BottomPanelProps {
   onUpdateTags: (id: number, tags: string[]) => void;
   hoveredLocation: { lat: number; lon: number } | null;
   onHover: (location: { lat: number; lon: number } | null) => void;
+  colorByGrade: boolean;
+  onToggleColorByGrade: (enabled: boolean) => void;
 }
 
 interface RouteStatProps {
@@ -34,12 +36,27 @@ function RouteStat({ value, units, decimals = 0, className = '' }: RouteStatProp
 import { PromptDialog } from './ui/PromptDialog';
 
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './ui/Accordion';
+import { Switch } from './ui/Switch';
 
-export function BottomPanel({ route, onClose, onDelete, onUpdateTags, hoveredLocation, onHover }: BottomPanelProps) {
+interface BottomPanelProps {
+  route: Route;
+  onClose: () => void;
+  onDelete: (id: number) => void;
+  onUpdateTags: (id: number, tags: string[]) => void;
+  hoveredLocation: { lat: number; lon: number } | null;
+  onHover: (location: { lat: number; lon: number } | null) => void;
+  colorByGrade: boolean;
+  onToggleColorByGrade: (enabled: boolean) => void;
+}
+
+// ... RouteStat component ...
+
+export function BottomPanel({ route, onClose, onDelete, onUpdateTags, hoveredLocation, onHover, colorByGrade, onToggleColorByGrade, routeData }: BottomPanelProps) {
   const [tagPromptOpen, setTagPromptOpen] = useState(false);
 
   return (
     <div className="bottom-panel">
+      {/* ... header and stats ... */}
       <div className="bottom-panel-header">
         <h2 className="route-title">{route.title}</h2>
         <div className="header-actions">
@@ -95,19 +112,24 @@ export function BottomPanel({ route, onClose, onDelete, onUpdateTags, hoveredLoc
 
       <Accordion type="multiple" defaultValue={['profile']} className="accordion-root">
         <AccordionItem value="profile">
-            <AccordionTrigger>Vertical Profile</AccordionTrigger>
+            <AccordionTrigger>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: 10 }}>
+                    <span>Vertical Profile</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} onClick={(e) => e.stopPropagation()}>
+                        <span style={{ fontSize: 12, color: '#888' }}>Display on Map</span>
+                        <Switch checked={colorByGrade} onCheckedChange={onToggleColorByGrade} />
+                    </div>
+                </div>
+            </AccordionTrigger>
             <AccordionContent>
                 <ElevationProfile
-                    coordinates={
-                        route.geojson?.type === 'LineString' ? route.geojson.coordinates :
-                        route.geojson?.type === 'MultiLineString' ? route.geojson.coordinates[0] :
-                        []
-                    }
+                    data={routeData}
                     hoveredLocation={hoveredLocation}
                     onHover={onHover}
                 />
             </AccordionContent>
         </AccordionItem>
+
 
         <AccordionItem value="surfaces">
             <AccordionTrigger>Surfaces</AccordionTrigger>

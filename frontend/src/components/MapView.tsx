@@ -1,12 +1,13 @@
 import {MapboxOverlay} from '@deck.gl/mapbox';
-import {type DeckProps, type PickingInfo} from '@deck.gl/core';
+import {Layer, type DeckProps, type PickingInfo} from '@deck.gl/core';
 
 import Map, { Source, NavigationControl, GeolocateControl, useControl, type ViewState, type MapLayerMouseEvent } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useCallback, useMemo, useState } from 'react';
-import type { Route } from '../types.ts';
-import { GeoJsonLayer, ScatterplotLayer } from 'deck.gl';
+import { useCallback, useMemo } from 'react';
+import type { Route, RouteDataPoint } from '../types.ts';
+import { GeoJsonLayer, ScatterplotLayer, PathLayer } from 'deck.gl';
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
+import { getGradeColor, METERS_TO_FEET } from '../utils/geo';
 
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
@@ -28,9 +29,11 @@ interface MapViewProps {
   onMove: (viewState: ViewState) => void;
   hoveredLocation: { lat: number; lon: number } | null;
   onHover: (location: { lat: number; lon: number } | null) => void;
+  colorByGrade: boolean;
+  routeData?: RouteDataPoint[];
 }
 
-export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onMove, hoveredLocation, onHover }: MapViewProps) {
+export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onMove, hoveredLocation, onHover, colorByGrade, routeData }: MapViewProps) {
   // const [hoverInfo, setHoverInfo] = useState<PickingInfo<Feature<Geometry, {}>>>();
 
   const routesGeoJson: FeatureCollection = useMemo(() => {
@@ -49,37 +52,102 @@ export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onM
   }, [routes, selectedRouteId]);
 
 
-  const deckGLLayers: DeckProps['layers'] = useMemo(() => {
-    const layers: any[] = [
+    const deckGLLayers: DeckProps['layers'] = useMemo(() => {
+    const layers: Layer[] = [];
+
+    // If colorByGrade is enabled and a route is selected, we render the selected route as segments
+    if (colorByGrade && selectedRouteId && routeData && routeData.length > 1) {
+
+        // Actually deck.gl PathLayer expects coordinates.
+        // routeData has lat, lon.
+        const pathCoords = routeData.map(p => [p.lon, p.lat]);
+
+        const colors: [number, number, number, number][] = [];
+
+        // Helper to convert hex to rgb
+        const hexToRgb = (hex: string): [number, number, number, number] => {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return [r, g, b, 255];
+        };
+
+        // Map grades to vertex colors
+        for (let i = 0; i < routeData.length; i++) {
+            // For vertex i, we use its grade.
+            // Note: routeData[i].grade is the grade of the segment ENDING at i (calculated from i-1 to i).
+            // But for coloring, we might want the segment STARTING at i?
+            // In the previous loop:
+            // grades.push(calculateGrade(coords[i], coords[i+1]));
+            // colors.push(hexToRgb(getGradeColor(grades[gradeIndex])));
+
+            // routeData[i].grade is calculated from i-1 to i.
+            // So routeData[i].grade is the grade of the segment arriving at i.
+            // If we want the grade of the segment departing i, we need routeData[i+1].grade.
+
+            // Let's look at previous logic:
+            // grades[i] = grade(i, i+1)
+            // So for vertex i, we want grade(i, i+1).
+            // That corresponds to routeData[i+1].grade.
+
+            let grade = 0;
+            if (i < routeData.length - 1) {
+                grade = routeData[i+1].grade;
+            } else {
+                // Last point, use previous grade
+                grade = routeData[i].grade;
+            }
+
+            colors.push(hexToRgb(getGradeColor(grade)));
+        }
+
+        layers.push(
+            new PathLayer({
+                id: 'selected-route-segments',
+                data: [{ path: pathCoords, colors }],
+                getPath: (d: any) => d.path,
+                getColor: (d: any) => d.colors,
+                getWidth: 60,
+                widthUnits: 'meters',
+                capRounded: true,
+                jointRounded: true,
+                pickable: false,
+                widthMinPixels: 2,
+            })
+        );
+    }
+
+    // Main routes layer
+    layers.push(
       new GeoJsonLayer({
         id: 'route-lines',
         data: routesGeoJson,
-        getLineColor: (object) => object.properties.id === selectedRouteId ? [217, 119, 6, 255] : [167, 119, 199, 80],
+        getLineColor: (object) => {
+          const selectedRoute = object.properties.id === selectedRouteId;
+          return selectedRoute ? (colorByGrade ? [0, 0, 0, 0] : [217, 119, 6, 255]) : [167, 119, 199, 80];
+        },
         getLineWidth: (object) => object.properties.id === selectedRouteId ? 60 : 10,
         lineWidthUnits: 'meters',
         pickable: true,
         stroked: true,
         onHover: (info) => {
-             if (info.object) {
-                 // We need to get the coordinate on the line that is hovered.
-                 // info.coordinate is [lon, lat]
-                 if (info.coordinate) {
-                     onHover({ lat: info.coordinate[1], lon: info.coordinate[0] });
-                 }
-             } else {
-                 onHover(null);
-             }
+          // Only emit hover events when actually hovering over the selected route
+          if (info.object?.properties.id === selectedRouteId && info.coordinate) {
+            onHover({ lat: info.coordinate[1], lon: info.coordinate[0] });
+          } else {
+            onHover(null);
+          }
         },
         lineWidthMinPixels: 1,
         onClick: (info) => {
           onSelectRoute(info.object.properties.id);
         },
         updateTriggers: {
-          getLineColor: selectedRouteId,
+          getLineColor: [selectedRouteId, colorByGrade],
           getLineWidth: selectedRouteId,
         }
       })
-    ];
+    );
 
     if (hoveredLocation) {
         layers.push(
@@ -98,7 +166,7 @@ export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onM
     }
 
     return layers;
-  }, [routesGeoJson, selectedRouteId, hoveredLocation, onHover]);
+  }, [routesGeoJson, selectedRouteId, hoveredLocation, onHover, colorByGrade, routes]);
 
   return (
     <div className="map-container">

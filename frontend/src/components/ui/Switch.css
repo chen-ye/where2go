@@ -1,0 +1,37 @@
+/* Switch.css */
+.SwitchRoot {
+  padding: 0;
+  width: 36px;
+  height: 20px;
+  background-color: #333;
+  border-radius: 9999px;
+  position: relative;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  border: none;
+  cursor: pointer;
+}
+
+.SwitchRoot:focus {
+  box-shadow: 0 0 0 2px #111;
+}
+
+.SwitchRoot[data-state='checked'] {
+  background-color: #D97706; /* Amber-600 */
+}
+
+.SwitchThumb {
+  display: block;
+  width: 16px;
+  height: 16px;
+  background-color: white;
+  border-radius: 9999px;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 100ms;
+  transform: translateX(2px);
+  will-change: transform;
+}
+
+.SwitchRoot[data-state='checked'] .SwitchThumb {
+  transform: translateX(18px);
+}

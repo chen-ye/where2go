@@ -12,3 +12,11 @@ export interface Route {
   total_ascent?: number;
   total_descent?: number;
 }
+
+export interface RouteDataPoint {
+  distance: number; // miles
+  elevation: number; // feet
+  lat: number;
+  lon: number;
+  grade: number; // percentage
+}
