@@ -1,4 +1,4 @@
-import { Client } from "./deps.ts";
+import { Client } from "@db/postgres";
 
 const client = new Client({
   user: Deno.env.get("POSTGRES_USER") || "where2go",
@@ -37,10 +37,22 @@ export async function initDb() {
   // Add geometry column if not exists
   try {
      await client.queryArray(`
-        ALTER TABLE routes ADD COLUMN IF NOT EXISTS geom GEOMETRY(LineString, 4326);
+        ALTER TABLE routes ADD COLUMN IF NOT EXISTS geom GEOMETRY(LineStringZ, 4326);
      `);
   } catch (e) {
       console.log("Column geom likely exists or error adding it", e);
+  }
+
+  // Add elevation stats columns
+  try {
+     await client.queryArray(`
+        ALTER TABLE routes ADD COLUMN IF NOT EXISTS total_ascent REAL;
+     `);
+     await client.queryArray(`
+        ALTER TABLE routes ADD COLUMN IF NOT EXISTS total_descent REAL;
+     `);
+  } catch (e) {
+      console.log("Elevation columns likely exist or error adding them", e);
   }
 }
 

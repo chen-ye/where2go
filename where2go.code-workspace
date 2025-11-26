@@ -14,7 +14,6 @@
 		}
 	],
 	"settings": {
-		"deno.enable": true,
 		"typescript.tsserver.experimental.enableProjectDiagnostics": false
 	}
 }

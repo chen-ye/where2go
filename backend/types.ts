@@ -7,6 +7,9 @@ export interface Route {
   gpx_content?: string;
   geom?: unknown; // PostGIS geometry
   geojson?: GeoJSONLineString | null;
+  distance?: number;
+  total_ascent?: number;
+  total_descent?: number;
 }
 
 export interface RouteRow extends Omit<Route, "geojson"> {
@@ -27,24 +30,4 @@ export interface GeoJSONGeometry {
 export interface GeoJSONLineString extends GeoJSONGeometry {
   type: "LineString";
   coordinates: number[][];
-}
-
-// Partial typing for the parsed GPX XML structure
-export interface GPXParseResult {
-  gpx?: {
-    trk?: Trk | Trk[];
-  };
-}
-
-export interface Trk {
-  trkseg?: TrkSeg | TrkSeg[];
-}
-
-export interface TrkSeg {
-  trkpt?: TrkPt[];
-}
-
-export interface TrkPt {
-  "@lat": string;
-  "@lon": string;
 }

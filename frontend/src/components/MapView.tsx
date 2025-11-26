@@ -53,7 +53,7 @@ export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onM
     ...lineDisplayStyle,
     paint: {
         ...lineDisplayStyle.paint,
-        'line-color': ['case', ['==', ['get', 'id'], selectedRouteId || -1], '#D97706', '#7706db'],
+        'line-color': ['case', ['==', ['get', 'id'], selectedRouteId || -1], '#D97706', '#834E21'],
         'line-width': ['case', ['==', ['get', 'id'], selectedRouteId || -1], 5, 3],
         'line-opacity': ['case', ['==', ['get', 'id'], selectedRouteId || -1], 1, 0.6]
     }

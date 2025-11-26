@@ -9,6 +9,25 @@ interface BottomPanelProps {
   onUpdateTags: (id: number, tags: string[]) => void;
 }
 
+interface RouteStatProps {
+  value: number | null | undefined;
+  units: string;
+  decimals?: number;
+  className?: string;
+}
+
+function RouteStat({ value, units, decimals = 0, className = '' }: RouteStatProps) {
+  const formattedValue = value !== null && value !== undefined
+    ? decimals > 0 ? value.toFixed(decimals) : Math.round(value).toString()
+    : `–– ${units}`;
+
+  return (
+    <div className={`stat-item ${className}`}>
+      {value !== null && value !== undefined ? `${formattedValue} ${units}` : formattedValue}
+    </div>
+  );
+}
+
 export function BottomPanel({ route, onClose, onDelete, onUpdateTags }: BottomPanelProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [surfacesOpen, setSurfacesOpen] = useState(false);
@@ -34,13 +53,12 @@ export function BottomPanel({ route, onClose, onDelete, onUpdateTags }: BottomPa
       </div>
 
       <div className="route-stats">
-        {/* Mock stats for now as they aren't in the interface yet */}
-        <div className="stat-item">80 mi</div>
-        <div className="stat-item">•</div>
-        <div className="stat-item">1700 ft ↑</div>
-        <div className="stat-item">3225 ft ↓</div>
-        <div className="stat-item">•</div>
-        <div className="stat-item">4:10 - 5:28</div>
+        <RouteStat value={route.distance} units="mi" decimals={1} className="distance" />
+        •
+        <RouteStat value={route.total_ascent} units="ft ↑" className="total-ascent" />
+        <RouteStat value={route.total_descent} units="ft ↓" className="total-descent" />
+        •
+        <div className="stat-item estimated-duration">4:10 - 5:28</div>
       </div>
 
       <div className="tags-row">
