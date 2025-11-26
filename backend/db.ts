@@ -19,7 +19,9 @@ export async function initDb() {
       title TEXT,
       gpx_content TEXT,
       tags TEXT[],
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      total_ascent REAL,
+      total_descent REAL
     );
   `);
 
@@ -41,18 +43,6 @@ export async function initDb() {
      `);
   } catch (e) {
       console.log("Column geom likely exists or error adding it", e);
-  }
-
-  // Add elevation stats columns
-  try {
-     await client.queryArray(`
-        ALTER TABLE routes ADD COLUMN IF NOT EXISTS total_ascent REAL;
-     `);
-     await client.queryArray(`
-        ALTER TABLE routes ADD COLUMN IF NOT EXISTS total_descent REAL;
-     `);
-  } catch (e) {
-      console.log("Elevation columns likely exist or error adding them", e);
   }
 }
 
