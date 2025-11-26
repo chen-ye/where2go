@@ -1,4 +1,4 @@
-import Map, { Source, Layer, NavigationControl } from 'react-map-gl/maplibre';
+import Map, { Source, Layer, NavigationControl, GeolocateControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useMemo } from 'react';
 import type { Route } from '../types.ts';
@@ -64,7 +64,8 @@ export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onM
       <Map
         {...viewState}
         onMove={evt => onMove(evt.viewState)}
-        mapStyle="https://api.maptiler.com/maps/outdoor-v4-dark/style.json?key=di0gshXc0zUqmVTNctjb"
+        mapStyle="https://api.maptiler.com/maps/dataviz-v4-dark/style.json?key=di0gshXc0zUqmVTNctjb"
+        // mapStyle="https://api.maptiler.com/maps/outdoor-v4-dark/style.json?key=di0gshXc0zUqmVTNctjb"
         onClick={(e) => {
            const feature = e.features?.[0];
            if (feature) {
@@ -75,7 +76,8 @@ export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onM
         }}
         interactiveLayerIds={['route-line-hitbox']}
       >
-        <NavigationControl position="top-right" showCompass={false} />
+        <GeolocateControl position="top-right" />
+        <NavigationControl position="top-right" showCompass={true} visualizePitch={true} visualizeRoll={true}/>
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <Source id="routes-data" type="geojson" data={routesGeoJson as any}>
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}

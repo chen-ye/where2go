@@ -70,8 +70,8 @@ export function TopBar() {
         )}
       </div>
       <div className="search-container">
-        <Search className="search-icon" size={18} />
         <input type="text" className="search-input" placeholder="search" />
+        <Search className="search-icon" size={18} />
       </div>
     </div>
   );

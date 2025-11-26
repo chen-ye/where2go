@@ -20,12 +20,12 @@
 /* Top Bar */
 .top-bar {
   position: absolute;
-  top: 20px;
-  left: 20px;
-  right: 20px;
+  top: 32px;
+  left: 32px;
+  right: 32px;
   z-index: 10;
   display: flex;
-  gap: 20px;
+  gap: 32px;
   pointer-events: none; /* Allow clicking through to map where empty */
   align-items: stretch;
 }
@@ -262,4 +262,15 @@
   padding: 16px;
   background-color: #121212;
   border-top: 1px solid #333;
+}
+
+.map-container .maplibregl-ctrl-top-right {
+  margin: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;;
+
+  .maplibregl-ctrl {
+    margin: 0;
+  }
 }
