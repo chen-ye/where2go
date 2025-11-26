@@ -1,42 +1,216 @@
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  position: relative;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Map Container */
+.map-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Top Bar */
+.top-bar {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  z-index: 10;
+  display: flex;
+  gap: 20px;
+  pointer-events: none; /* Allow clicking through to map where empty */
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.logo-container {
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 1.1em;
+  pointer-events: auto;
+  backdrop-filter: blur(4px);
+  border-left: 4px solid #D97706; /* Orange accent */
 }
 
-.card {
-  padding: 2em;
+.search-container {
+  flex: 1;
+  max-width: 600px;
+  pointer-events: auto;
+  position: relative;
 }
 
-.read-the-docs {
+.search-input {
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  border: 1px solid #333;
+  color: white;
+  padding: 10px 16px;
+  padding-left: 40px; /* Space for icon */
+  border-radius: 4px;
+  font-size: 1em;
+  backdrop-filter: blur(4px);
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: #555;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+}
+
+/* Bottom Panel */
+.bottom-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #121212;
+  z-index: 20;
+  padding: 20px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+  max-height: 50vh;
+  overflow-y: auto;
+  transition: transform 0.3s ease-in-out;
+}
+
+.bottom-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.route-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5em;
+  font-weight: 600;
+  margin: 0;
+  color: white;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-button {
+  background: transparent;
+  border: 1px solid #333;
+  color: #aaa;
+  padding: 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-button:hover {
+  background: #222;
+  color: white;
+}
+
+.icon-button.danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #EF4444;
+  border-color: #EF4444;
+}
+
+.route-stats {
+  display: flex;
+  gap: 16px;
+  color: #ccc;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1em;
+  margin-bottom: 16px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tag-pill {
+  background-color: #333;
+  color: #ddd;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tag-remove {
+  cursor: pointer;
+  opacity: 0.6;
+}
+.tag-remove:hover {
+  opacity: 1;
+}
+
+.add-tag-btn {
+  background: transparent;
+  border: 1px dashed #555;
   color: #888;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+.add-tag-btn:hover {
+  border-color: #777;
+  color: #aaa;
+}
+
+/* Accordion */
+.accordion-item {
+  border: 1px solid #333;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.accordion-header {
+  background-color: #1a1a1a;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.accordion-header:hover {
+  background-color: #222;
+}
+
+.accordion-content {
+  padding: 16px;
+  background-color: #121212;
+  border-top: 1px solid #333;
 }
