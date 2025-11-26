@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "yarn@4.10.3",
   "scripts": {
-    "dev": "vite --port 5174",
+    "dev": "vite --port 5174 --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
