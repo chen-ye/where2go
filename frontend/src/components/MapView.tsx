@@ -1,7 +1,20 @@
-import Map, { Source, Layer, NavigationControl, GeolocateControl } from 'react-map-gl/maplibre';
+import {MapboxOverlay} from '@deck.gl/mapbox';
+import {type DeckProps, type MapViewState, type PickingInfo} from '@deck.gl/core';
+
+import Map, { Source, Layer, NavigationControl, GeolocateControl, useControl, type ViewState } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { Route } from '../types.ts';
+import DeckGL, { GeoJsonLayer } from 'deck.gl';
+import type { Feature, FeatureCollection, Geometry } from 'geojson';
+
+function DeckGLOverlay(props: DeckProps) {
+  const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
+  overlay.setProps(props);
+  return null;
+}
+
+const MAPTILER_API_KEY = 'di0gshXc0zUqmVTNctjb';
 
 interface MapViewProps {
   routes: Route[];
@@ -12,32 +25,13 @@ interface MapViewProps {
     latitude: number;
     zoom: number;
   };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onMove: (viewState: any) => void;
+  onMove: (viewState: ViewState) => void;
 }
 
 export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onMove }: MapViewProps) {
-  const lineDisplayStyle = {
-    id: 'route-line',
-    type: 'line',
-    paint: {
-      'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#D97706', '#3B82F6'], // Orange selected, Blue default
-      'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 4, 3],
-      'line-opacity': 0.8
-    }
-  };
+  const [hoverInfo, setHoverInfo] = useState<PickingInfo<Feature<Geometry, {}>>>();
 
-  const lineHitBoxStyle = {
-    id: 'route-line-hitbox',
-    type: 'line',
-    paint: {
-      'line-color': 'transparent',
-      'line-width': 20,
-      'line-opacity': 0
-    }
-  };
-
-  const routesGeoJson = useMemo(() => {
+  const routesGeoJson: FeatureCollection = useMemo(() => {
     return {
       type: "FeatureCollection",
       features: routes.map(r => ({
@@ -49,42 +43,65 @@ export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onM
     };
   }, [routes]);
 
-  const dynamicLineStyle = {
-    ...lineDisplayStyle,
-    paint: {
-        ...lineDisplayStyle.paint,
-        'line-color': ['case', ['==', ['get', 'id'], selectedRouteId || -1], '#D97706', '#834E21'],
-        'line-width': ['case', ['==', ['get', 'id'], selectedRouteId || -1], 5, 3],
-        'line-opacity': ['case', ['==', ['get', 'id'], selectedRouteId || -1], 1, 0.6]
-    }
-  };
+
+  const deckGLLayers: DeckProps['layers'] = useMemo(() => [
+    new GeoJsonLayer({
+      id: 'route-lines',
+      data: routesGeoJson,
+      getLineColor: (object) => object.properties.id === selectedRouteId ? [217, 119, 6, 255] : [167, 119, 199, 80],
+      getLineWidth: (object) => object.properties.id === selectedRouteId ? 60 : 10,
+      lineWidthUnits: 'meters',
+      pickable: true,
+      stroked: true,
+      // onHover: setHoverInfo,
+      lineWidthMinPixels: 1,
+      onClick: (info) => {
+        onSelectRoute(info.object.properties.id);
+      },
+      updateTriggers: {
+        getLineColor: selectedRouteId,
+        getLineWidth: selectedRouteId,
+      }
+    })
+  ], [routesGeoJson, selectedRouteId]);
 
   return (
     <div className="map-container">
       <Map
-        {...viewState}
-        onMove={evt => onMove(evt.viewState)}
-        mapStyle="https://api.maptiler.com/maps/dataviz-v4-dark/style.json?key=di0gshXc0zUqmVTNctjb"
-        // mapStyle="https://api.maptiler.com/maps/outdoor-v4-dark/style.json?key=di0gshXc0zUqmVTNctjb"
-        onClick={(e) => {
-           const feature = e.features?.[0];
-           if (feature) {
-               onSelectRoute(feature.properties?.id);
-           } else {
-               onSelectRoute(null);
-           }
-        }}
-        interactiveLayerIds={['route-line-hitbox']}
-      >
-        <GeolocateControl position="top-right" />
-        <NavigationControl position="top-right" showCompass={true} visualizePitch={true} visualizeRoll={true}/>
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <Source id="routes-data" type="geojson" data={routesGeoJson as any}>
+          {...viewState}
+          onMove={evt => onMove(evt.viewState)}
+          mapStyle={`https://api.maptiler.com/maps/dataviz-v4-dark/style.json?key=${MAPTILER_API_KEY}`}
+          // mapStyle={`https://api.maptiler.com/maps/outdoor-v4-dark/style.json?key=${MAPTILER_API_KEY}`}
+          terrain={{
+            source: 'maptiler-terrain',
+            exaggeration: 1
+          }}
+          onClick={useCallback((e) => {
+            const feature = e.features?.[0];
+            if (feature) {
+                onSelectRoute(feature.properties?.id);
+            } else {
+                onSelectRoute(null);
+            }
+          }, [onSelectRoute])}
+          interactiveLayerIds={['route-line-hitbox']}
+        >
+          <GeolocateControl position="top-right" />
+          <NavigationControl position="top-right" showCompass={true} visualizePitch={true} visualizeRoll={true}/>
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <Layer {...dynamicLineStyle as any} />
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <Layer {...lineHitBoxStyle as any} />
-        </Source>
+          <Source
+            id="maptiler-terrain"
+            type="raster-dem"
+            url={`https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key=${MAPTILER_API_KEY}`}
+            tileSize={256}
+            maxzoom={11} // Max zoom level for Terrain RGB
+          />
+          <Source id="routes-data" type="geojson" data={routesGeoJson as any}>
+            <DeckGLOverlay
+              layers={deckGLLayers}
+              pickingRadius={10}
+              getTooltip={useCallback(({object}: PickingInfo<Feature<Geometry, {id: number, title: string}>>) => (object?.properties.title ?? undefined), [])} />
+          </Source>
       </Map>
     </div>
   );

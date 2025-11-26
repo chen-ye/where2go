@@ -268,9 +268,10 @@
   margin: 32px;
   display: flex;
   flex-direction: column;
-  gap: 24px;;
+  gap: 24px;
 
   .maplibregl-ctrl {
     margin: 0;
+    filter: invert(1);
   }
 }
