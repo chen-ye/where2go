@@ -1,11 +1,11 @@
 import {MapboxOverlay} from '@deck.gl/mapbox';
-import {type DeckProps, type MapViewState, type PickingInfo} from '@deck.gl/core';
+import {type DeckProps, type PickingInfo} from '@deck.gl/core';
 
-import Map, { Source, Layer, NavigationControl, GeolocateControl, useControl, type ViewState } from 'react-map-gl/maplibre';
+import Map, { Source, NavigationControl, GeolocateControl, useControl, type ViewState, type MapLayerMouseEvent } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useCallback, useMemo, useState } from 'react';
 import type { Route } from '../types.ts';
-import DeckGL, { GeoJsonLayer } from 'deck.gl';
+import { GeoJsonLayer } from 'deck.gl';
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
 
 function DeckGLOverlay(props: DeckProps) {
@@ -29,7 +29,7 @@ interface MapViewProps {
 }
 
 export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onMove }: MapViewProps) {
-  const [hoverInfo, setHoverInfo] = useState<PickingInfo<Feature<Geometry, {}>>>();
+  // const [hoverInfo, setHoverInfo] = useState<PickingInfo<Feature<Geometry, {}>>>();
 
   const routesGeoJson: FeatureCollection = useMemo(() => {
     return {
@@ -76,7 +76,7 @@ export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onM
             source: 'maptiler-terrain',
             exaggeration: 1
           }}
-          onClick={useCallback((e) => {
+          onClick={useCallback((e: MapLayerMouseEvent) => {
             const feature = e.features?.[0];
             if (feature) {
                 onSelectRoute(feature.properties?.id);
@@ -100,7 +100,7 @@ export function MapView({ routes, selectedRouteId, onSelectRoute, viewState, onM
             <DeckGLOverlay
               layers={deckGLLayers}
               pickingRadius={10}
-              getTooltip={useCallback(({object}: PickingInfo<Feature<Geometry, {id: number, title: string}>>) => (object?.properties.title ?? undefined), [])} />
+              getTooltip={useCallback(({object}: PickingInfo<Feature<Geometry, {id: number, title: string}>>) => (object?.properties.title ?? null), [])} />
           </Source>
       </Map>
     </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Trash2, ExternalLink, Download, X, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import type { Route } from '../types.ts';
+import { ElevationProfile } from './ElevationProfile.tsx';
 
 interface BottomPanelProps {
   route: Route;
@@ -91,9 +92,11 @@ export function BottomPanel({ route, onClose, onDelete, onUpdateTags }: BottomPa
         </div>
         {profileOpen && (
             <div className="accordion-content">
-                <div style={{height: '100px', background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555'}}>
-                    Chart Placeholder
-                </div>
+                <ElevationProfile coordinates={
+                    route.geojson?.type === 'LineString' ? route.geojson.coordinates :
+                    route.geojson?.type === 'MultiLineString' ? route.geojson.coordinates[0] :
+                    []
+                } />
             </div>
         )}
       </div>
