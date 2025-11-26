@@ -87,7 +87,7 @@ export function BottomPanel({ route, onClose, onDelete, onUpdateTags, hoveredLoc
             }}
             trigger={
                 <button type="button" className="add-tag-btn">
-                    <Plus size={12} style={{marginRight: 4}}/> New
+                    <Plus size={12}/> New
                 </button>
             }
          />

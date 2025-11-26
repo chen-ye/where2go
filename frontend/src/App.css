@@ -178,17 +178,23 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  text-box-trim: both;
 }
 
 .tag-remove {
   cursor: pointer;
   opacity: 0.6;
+  display: inline-flex;
+  align-items: center;
 }
 .tag-remove:hover {
   opacity: 1;
 }
 
 .add-tag-btn {
+  display: flex;
+  gap: 4px;
+  align-items: center;
   background: transparent;
   border: 1px dashed #555;
   color: #888;
@@ -196,6 +202,7 @@
   border-radius: 4px;
   font-size: 0.85em;
   cursor: pointer;
+  text-box-trim: both;
 }
 .add-tag-btn:hover {
   border-color: #777;
