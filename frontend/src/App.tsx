@@ -4,7 +4,7 @@ import { TopBar } from './components/TopBar.tsx';
 import { MapView } from './components/MapView.tsx';
 import { BottomPanel } from './components/BottomPanel.tsx';
 import type { Route } from './types.ts';
-
+import { ConfirmDialog } from './components/ui/ConfirmDialog';
 function App() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
@@ -44,11 +44,22 @@ function App() {
     routes.find(r => r.id === selectedRouteId),
   [routes, selectedRouteId]);
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Delete this route?")) return;
-    await fetch(`/api/routes/${id}`, { method: 'DELETE' });
-    setSelectedRouteId(null);
-    fetchRoutes();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [routeToDelete, setRouteToDelete] = useState<number | null>(null);
+
+  const handleDeleteClick = (id: number) => {
+    setRouteToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (routeToDelete !== null) {
+      await fetch(`/api/routes/${routeToDelete}`, { method: 'DELETE' });
+      setSelectedRouteId(null);
+      fetchRoutes();
+      setRouteToDelete(null);
+    }
+    setDeleteConfirmOpen(false);
   };
 
   const handleUpdateTags = async (id: number, newTags: string[]) => {
@@ -76,12 +87,19 @@ function App() {
         <BottomPanel
           route={selectedRoute}
           onClose={() => setSelectedRouteId(null)}
-          onDelete={handleDelete}
+          onDelete={handleDeleteClick}
           onUpdateTags={handleUpdateTags}
           hoveredLocation={hoveredLocation}
           onHover={setHoveredLocation}
         />
       )}
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Delete Route"
+        description="Are you sure you want to delete this route? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+      />
     </>
   );
 }

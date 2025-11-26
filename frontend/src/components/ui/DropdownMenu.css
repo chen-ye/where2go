@@ -1,0 +1,112 @@
+/* DropdownMenu.css */
+.DropdownMenuContent {
+  min-width: 220px;
+  background-color: #1a1a1a;
+  border-radius: 6px;
+  padding: 5px;
+  box-shadow: 0px 10px 38px -10px rgba(0, 0, 0, 0.35), 0px 10px 20px -15px rgba(0, 0, 0, 0.2);
+  animation-duration: 400ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+  border: 1px solid #333;
+  z-index: 1000;
+}
+
+.DropdownMenuContent[data-side='top'] {
+  animation-name: slideDownAndFade;
+}
+.DropdownMenuContent[data-side='right'] {
+  animation-name: slideLeftAndFade;
+}
+.DropdownMenuContent[data-side='bottom'] {
+  animation-name: slideUpAndFade;
+}
+.DropdownMenuContent[data-side='left'] {
+  animation-name: slideRightAndFade;
+}
+
+.DropdownMenuItem {
+  font-size: 13px;
+  line-height: 1;
+  color: #eee;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 10px;
+  position: relative;
+  user-select: none;
+  outline: none;
+  cursor: pointer;
+}
+
+.DropdownMenuItem[data-highlighted] {
+  background-color: #333;
+  color: white;
+}
+
+.DropdownMenuItem[data-disabled] {
+  color: #666;
+  pointer-events: none;
+}
+
+.DropdownMenuSeparator {
+  height: 1px;
+  background-color: #333;
+  margin: 5px;
+}
+
+.DropdownMenuLabel {
+  padding-left: 10px;
+  font-size: 12px;
+  line-height: 25px;
+  color: #888;
+}
+
+.DropdownMenuArrow {
+  fill: #1a1a1a;
+}
+
+@keyframes slideUpAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideRightAndFade {
+  from {
+    opacity: 0;
+    transform: translateX(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideDownAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideLeftAndFade {
+  from {
+    opacity: 0;
+    transform: translateX(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

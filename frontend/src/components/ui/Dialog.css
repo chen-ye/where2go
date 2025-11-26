@@ -1,0 +1,133 @@
+/* Dialog.css */
+.DialogOverlay {
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  inset: 0;
+  animation: overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 2000;
+}
+
+.DialogContent {
+  background-color: #1a1a1a;
+  border-radius: 6px;
+  box-shadow: hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vw;
+  max-width: 450px;
+  max-height: 85vh;
+  padding: 25px;
+  animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 2001;
+  border: 1px solid #333;
+  color: white;
+}
+
+.DialogContent:focus {
+  outline: none;
+}
+
+.DialogTitle {
+  margin: 0;
+  font-weight: 500;
+  color: white;
+  font-size: 17px;
+}
+
+.DialogDescription {
+  margin: 10px 0 20px;
+  color: #aaa;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.Button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 0 15px;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 500;
+  height: 35px;
+  cursor: pointer;
+  border: none;
+}
+
+.Button.violet {
+  background-color: white;
+  color: black;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+.Button.violet:hover {
+  background-color: #eee;
+}
+
+.Button.green {
+  background-color: #333;
+  color: white;
+}
+.Button.green:hover {
+  background-color: #444;
+}
+
+.Button.red {
+  background-color: #ef4444;
+  color: white;
+}
+.Button.red:hover {
+  background-color: #dc2626;
+}
+
+.Fieldset {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 15px;
+  border: none;
+  padding: 0;
+}
+
+.Input {
+  width: 100%;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 0 10px;
+  font-size: 15px;
+  line-height: 1;
+  color: white;
+  background-color: #333;
+  box-shadow: 0 0 0 1px #444;
+  height: 35px;
+  border: none;
+}
+.Input:focus {
+  box-shadow: 0 0 0 2px #666;
+  outline: none;
+}
+
+@keyframes overlayShow {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes contentShow {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}

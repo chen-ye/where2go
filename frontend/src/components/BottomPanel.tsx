@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, ExternalLink, Download, X, ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import { Trash2, ExternalLink, Download, X, Plus } from 'lucide-react';
 import type { Route } from '../types.ts';
 import { ElevationProfile } from './ElevationProfile.tsx';
 
@@ -31,9 +31,12 @@ function RouteStat({ value, units, decimals = 0, className = '' }: RouteStatProp
   );
 }
 
+import { PromptDialog } from './ui/PromptDialog';
+
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './ui/Accordion';
+
 export function BottomPanel({ route, onClose, onDelete, onUpdateTags, hoveredLocation, onHover }: BottomPanelProps) {
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [surfacesOpen, setSurfacesOpen] = useState(false);
+  const [tagPromptOpen, setTagPromptOpen] = useState(false);
 
   return (
     <div className="bottom-panel">
@@ -74,26 +77,26 @@ export function BottomPanel({ route, onClose, onDelete, onUpdateTags, hoveredLoc
                 }}><X size={12}/></span>
              </div>
          ))}
-         <button
-            type="button"
-            className="add-tag-btn"
-            onClick={() => {
-                const newTag = prompt("Add tag:");
+         <PromptDialog
+            open={tagPromptOpen}
+            onOpenChange={setTagPromptOpen}
+            title="Add Tag"
+            description="Enter a new tag for this route."
+            onSubmit={(newTag) => {
                 if (newTag) onUpdateTags(route.id, [...(route.tags || []), newTag]);
             }}
-         >
-             <Plus size={12} style={{marginRight: 4}}/> New
-         </button>
+            trigger={
+                <button type="button" className="add-tag-btn">
+                    <Plus size={12} style={{marginRight: 4}}/> New
+                </button>
+            }
+         />
       </div>
 
-      {/* Accordions */}
-      <div className="accordion-item">
-        <div className="accordion-header" onClick={() => setProfileOpen(!profileOpen)}>
-           <span>Vertical Profile</span>
-           {profileOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </div>
-        {profileOpen && (
-            <div className="accordion-content">
+      <Accordion type="multiple" defaultValue={['profile']} className="accordion-root">
+        <AccordionItem value="profile">
+            <AccordionTrigger>Vertical Profile</AccordionTrigger>
+            <AccordionContent>
                 <ElevationProfile
                     coordinates={
                         route.geojson?.type === 'LineString' ? route.geojson.coordinates :
@@ -103,24 +106,18 @@ export function BottomPanel({ route, onClose, onDelete, onUpdateTags, hoveredLoc
                     hoveredLocation={hoveredLocation}
                     onHover={onHover}
                 />
-            </div>
-        )}
-      </div>
+            </AccordionContent>
+        </AccordionItem>
 
-      <div className="accordion-item">
-        <div className="accordion-header" onClick={() => setSurfacesOpen(!surfacesOpen)}>
-           <span>Surfaces</span>
-           {surfacesOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </div>
-        {surfacesOpen && (
-            <div className="accordion-content">
+        <AccordionItem value="surfaces">
+            <AccordionTrigger>Surfaces</AccordionTrigger>
+            <AccordionContent>
                 <div style={{height: '50px', background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555'}}>
                     Surface Data Placeholder
                 </div>
-            </div>
-        )}
-      </div>
-
+            </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }

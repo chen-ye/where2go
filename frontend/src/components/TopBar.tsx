@@ -1,28 +1,17 @@
 import { Search, RefreshCw } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from './ui/DropdownMenu';
 
 export function TopBar() {
-  const [menuOpen, setMenuOpen] = useState(false);
   const [recomputing, setRecomputing] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Close menu when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-
-    if (menuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [menuOpen]);
 
   const handleRecomputeAll = async () => {
     setRecomputing(true);
-    setMenuOpen(false);
 
     try {
       const response = await fetch('/api/routes/recompute', {
@@ -47,27 +36,23 @@ export function TopBar() {
 
   return (
     <div className="top-bar">
-      <div className="logo-container-wrapper" ref={menuRef}>
-        <div
-          className="logo-container"
-          onClick={() => setMenuOpen(!menuOpen)}
-          style={{ cursor: 'pointer' }}
-        >
-          where2go
-        </div>
-        {menuOpen && (
-          <div className="app-menu">
-            <button
-              type="button"
-              className="menu-item"
-              onClick={handleRecomputeAll}
-              disabled={recomputing}
-            >
-              <RefreshCw size={16} />
-              {recomputing ? 'Recomputing...' : 'Recompute All Routes'}
-            </button>
-          </div>
-        )}
+      <div className="logo-container-wrapper">
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <div
+                  className="logo-container"
+                  style={{ cursor: 'pointer' }}
+                >
+                  where2go
+                </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+                <DropdownMenuItem onSelect={handleRecomputeAll} disabled={recomputing}>
+                    <RefreshCw size={16} style={{ marginRight: 8 }} />
+                    {recomputing ? 'Recomputing...' : 'Recompute All Routes'}
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <div className="search-container">
         <input type="text" className="search-input" placeholder="search" />
