@@ -64,7 +64,7 @@ export function BottomPanel({ route, onClose, onDelete, onUpdateTags, hoveredLoc
         <RouteStat value={route.total_ascent} units="ft ↑" className="total-ascent" />
         <RouteStat value={route.total_descent} units="ft ↓" className="total-descent" />
         •
-        <div className="stat-item estimated-duration">4:10 - 5:28</div>
+        <div className="stat-item estimated-duration">--:-- - --:--</div>
       </div>
 
       <div className="tags-row">
