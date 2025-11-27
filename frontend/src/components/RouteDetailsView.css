@@ -89,10 +89,19 @@
   opacity: 0.6;
   display: inline-flex;
   align-items: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
 }
 
 .tag-remove:hover {
   opacity: 1;
+}
+
+.tag-remove:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
 }
 
 .add-tag-btn {
