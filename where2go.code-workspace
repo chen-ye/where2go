@@ -14,6 +14,10 @@
     }
   ],
   "settings": {
-    "typescript.tsserver.experimental.enableProjectDiagnostics": false
+    "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+    "editor.codeActionsOnSave": {
+      "source.addMissingImports.ts": "always",
+      "source.fixAll.biome": "always"
+    }
   }
 }

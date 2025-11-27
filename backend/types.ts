@@ -12,22 +12,6 @@ export interface Route {
   total_descent?: number;
 }
 
-export interface RouteRow extends Omit<Route, "geojson"> {
+export interface RouteRow extends Omit<Route, 'geojson'> {
   geojson: string | null;
-}
-
-export interface GeoJSONFeature<G extends GeoJSONGeometry | null = GeoJSONGeometry> {
-  type: "Feature";
-  geometry: G;
-  properties: { [name: string]: unknown } | null;
-}
-
-export interface GeoJSONGeometry {
-  type: string;
-  coordinates: unknown[];
-}
-
-export interface GeoJSONLineString extends GeoJSONGeometry {
-  type: "LineString";
-  coordinates: number[][];
 }

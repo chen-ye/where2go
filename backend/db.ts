@@ -1,18 +1,25 @@
-import { Client } from "@db/postgres";
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import * as schema from './schema.ts';
 
-const client = new Client({
-  user: Deno.env.get("POSTGRES_USER") || "where2go",
-  database: Deno.env.get("POSTGRES_DB") || "where2go",
-  hostname: Deno.env.get("POSTGRES_HOST") || "localhost",
-  password: Deno.env.get("POSTGRES_PASSWORD") || "password",
-  port: parseInt(Deno.env.get("POSTGRES_PORT") || "5432"),
+const connectionString = 'postgres://username:password@host:1234/database';
+
+// Create postgres connection
+const queryClient = postgres(connectionString, {
+  host: Deno.env.get('POSTGRES_HOST') || 'localhost',
+  port: parseInt(Deno.env.get('POSTGRES_PORT') || '5432'),
+  username: Deno.env.get('POSTGRES_USER') || 'where2go',
+  password: Deno.env.get('POSTGRES_PASSWORD') || 'password',
+  database: Deno.env.get('POSTGRES_DB') || 'where2go',
 });
 
-export async function initDb() {
-  await client.connect();
+// Create drizzle instance
+export const db = drizzle(queryClient, { schema });
 
-  // Create table if not exists
-  await client.queryArray(`
+export async function initDb() {
+  // Create table if not exists - using  raw SQL since Drizzle migrations
+  // are more complex for simple cases
+  await queryClient`
     CREATE TABLE IF NOT EXISTS routes (
       id SERIAL PRIMARY KEY,
       source_url TEXT UNIQUE NOT NULL,
@@ -23,27 +30,21 @@ export async function initDb() {
       total_ascent REAL,
       total_descent REAL
     );
-  `);
+  `;
 
-  // Check if geom column exists, if not add it
-  // This is a bit of a hack to ensure postgis extension is enabled and column exists
-  // but for a startup script it's okay.
-  // Ideally we enable postgis first.
-
+  // Check if PostGIS extension exists, if not add it
   try {
-    await client.queryArray(`CREATE EXTENSION IF NOT EXISTS postgis;`);
+    await queryClient`CREATE EXTENSION IF NOT EXISTS postgis;`;
   } catch (e) {
-    console.error("Error creating postgis extension:", e);
+    console.error('Error creating postgis extension:', e);
   }
 
   // Add geometry column if not exists
   try {
-     await client.queryArray(`
-        ALTER TABLE routes ADD COLUMN IF NOT EXISTS geom GEOMETRY(LineStringZ, 4326);
-     `);
+    await queryClient`
+      ALTER TABLE routes ADD COLUMN IF NOT EXISTS geom GEOMETRY(LineStringZ, 4326);
+    `;
   } catch (e) {
-      console.log("Column geom likely exists or error adding it", e);
+    console.log('Column geom likely exists or error adding it', e);
   }
 }
-
-export { client };

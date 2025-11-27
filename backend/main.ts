@@ -1,23 +1,25 @@
-import { Application, Router, RouterContext } from "@oak/oak";
-import { oakCors } from "@tajpouria/cors";
-import { initDb, client } from "./db.ts";
-import { DOMParser } from "@b-fuze/deno-dom";
-import { Route, RouteRow, GeoJSONLineString } from "./types.ts";
-import toGeoJSON from "@mapbox/togeojson";
+import { Application, Router, RouterContext } from '@oak/oak';
+import { oakCors } from '@tajpouria/cors';
+import { db, initDb } from './db.ts';
+import { Document, DOMParser } from '@b-fuze/deno-dom';
+import toGeoJSON from '@mapbox/togeojson';
+import type { LineString, MultiLineString } from 'geojson';
+import { routes } from './schema.ts';
+import { desc, eq, sql } from 'drizzle-orm';
 
 const app = new Application();
-app.use(oakCors({ origin: "*" })); // Enable CORS for all routes
+app.use(oakCors({ origin: '*' })); // Enable CORS for all routes
 
 const router = new Router();
 
 // Helper to parse GPX to GeoJSON LineString
-function gpxToGeoJSON(gpxContent: string): GeoJSONLineString | null {
+function gpxToGeoJSON(gpxContent: string): LineString | null {
   try {
     const parser = new DOMParser();
-    const doc = parser.parseFromString(gpxContent, "text/html");
+    const doc = parser.parseFromString(gpxContent, 'text/html');
 
     if (!doc) {
-      console.error("Failed to parse XML");
+      console.error('Failed to parse XML');
       return null;
     }
 
@@ -26,33 +28,34 @@ function gpxToGeoJSON(gpxContent: string): GeoJSONLineString | null {
 
     // Extract the first LineString from the GeoJSON
     // toGeoJSON returns a FeatureCollection
-    if (geoJSON.type === "FeatureCollection" && geoJSON.features.length > 0) {
+    if (geoJSON.type === 'FeatureCollection' && geoJSON.features.length > 0) {
       for (const feature of geoJSON.features) {
-        if (feature.geometry.type === "LineString") {
-          return feature.geometry as GeoJSONLineString;
+        if (feature.geometry.type === 'LineString') {
+          return feature.geometry as LineString;
         }
         // Handle MultiLineString by taking the first line
-        if (feature.geometry.type === "MultiLineString") {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const coords = (feature.geometry as any).coordinates[0];
+        if (feature.geometry.type === 'MultiLineString') {
+          const coords = (feature.geometry as MultiLineString).coordinates[0];
           return {
-            type: "LineString",
-            coordinates: coords
+            type: 'LineString',
+            coordinates: coords,
           };
         }
       }
     }
 
-    console.error("No LineString found in GPX");
+    console.error('No LineString found in GPX');
     return null;
   } catch (e) {
-    console.error("Error parsing GPX", e);
+    console.error('Error parsing GPX', e);
     return null;
   }
 }
 
 // Helper to calculate elevation gain/loss from coordinates
-function calculateElevationStats(coordinates: number[][]): { totalAscent: number; totalDescent: number } {
+function calculateElevationStats(
+  coordinates: number[][],
+): { totalAscent: number; totalDescent: number } {
   let totalAscent = 0;
   let totalDescent = 0;
 
@@ -72,12 +75,14 @@ function calculateElevationStats(coordinates: number[][]): { totalAscent: number
 
   return {
     totalAscent: totalAscent,
-    totalDescent: totalDescent
+    totalDescent: totalDescent,
   };
 }
 
 // Helper to process GPX content and return computed values
-function processRouteGPX(gpxContent: string): { geojson: GeoJSONLineString; totalAscent: number; totalDescent: number } | null {
+function processRouteGPX(
+  gpxContent: string,
+): { geojson: GeoJSONLineString; totalAscent: number; totalDescent: number } | null {
   const geojson = gpxToGeoJSON(gpxContent);
   if (!geojson) {
     return null;
@@ -88,41 +93,41 @@ function processRouteGPX(gpxContent: string): { geojson: GeoJSONLineString; tota
   return {
     geojson,
     totalAscent: elevationStats.totalAscent,
-    totalDescent: elevationStats.totalDescent
+    totalDescent: elevationStats.totalDescent,
   };
 }
 
 // Routes
-router.get("/api/routes", async (ctx: RouterContext<string>) => {
-  const result = await client.queryObject<RouteRow>(`
-    SELECT
-      id,
-      source_url,
-      title,
-      tags,
-      created_at,
-      ST_AsGeoJSON(geom) as geojson,
-      ST_Length(geom::geography)::double precision as distance,
-      (total_ascent)::double precision,
-      (total_descent)::double precision
-    FROM routes
-    ORDER BY created_at DESC
-  `);
+router.get('/api/routes', async (ctx: RouterContext<string>) => {
+  const result = await db
+    .select({
+      id: routes.id,
+      source_url: routes.sourceUrl,
+      title: routes.title,
+      tags: routes.tags,
+      created_at: routes.createdAt,
+      geojson: sql<string>`ST_AsGeoJSON(${routes.geom})`,
+      distance: sql<number>`ST_Length(${routes.geom}::geography)`,
+      total_ascent: routes.totalAscent,
+      total_descent: routes.totalDescent,
+    })
+    .from(routes)
+    .orderBy(desc(routes.createdAt));
 
-  const routes = result.rows.map((row) => ({
+  const mappedRoutes = result.map((row) => ({
     ...row,
     geojson: JSON.parse(row.geojson ?? '[]'),
     distance: Number(row.distance),
     total_ascent: Number(row.total_ascent),
-    total_descent: Number(row.total_descent)
+    total_descent: Number(row.total_descent),
   }));
 
-  ctx.response.body = routes;
+  ctx.response.body = mappedRoutes;
 });
 
-router.post("/api/routes", async (ctx: RouterContext<string>) => {
+router.post('/api/routes', async (ctx: RouterContext<string>) => {
   const body = ctx.request.body;
-  if (body.type() !== "json") {
+  if (body.type() !== 'json') {
     ctx.response.status = 400;
     return;
   }
@@ -130,33 +135,43 @@ router.post("/api/routes", async (ctx: RouterContext<string>) => {
 
   if (!source_url || !gpx_content) {
     ctx.response.status = 400;
-    ctx.response.body = { error: "Missing source_url or gpx_content" };
+    ctx.response.body = { error: 'Missing source_url or gpx_content' };
     return;
   }
 
   const processed = processRouteGPX(gpx_content);
   if (!processed) {
     ctx.response.status = 400;
-    ctx.response.body = { error: "Invalid GPX content" };
+    ctx.response.body = { error: 'Invalid GPX content' };
     return;
   }
 
   const geojsonStr = JSON.stringify(processed.geojson);
 
   try {
-    await client.queryArray(`
-      INSERT INTO routes (source_url, title, gpx_content, tags, geom, total_ascent, total_descent)
-      VALUES ($1, $2, $3, $4, ST_SetSRID(ST_GeomFromGeoJSON($5), 4326), $6, $7)
-      ON CONFLICT (source_url)
-      DO UPDATE SET
-        title = EXCLUDED.title,
-        gpx_content = EXCLUDED.gpx_content,
-        tags = EXCLUDED.tags,
-        geom = EXCLUDED.geom,
-        total_ascent = EXCLUDED.total_ascent,
-        total_descent = EXCLUDED.total_descent,
-        created_at = CURRENT_TIMESTAMP
-    `, [source_url, title || "Untitled Route", gpx_content, tags || [], geojsonStr, processed.totalAscent, processed.totalDescent]);
+    await db
+      .insert(routes)
+      .values({
+        sourceUrl: source_url,
+        title: title || 'Untitled Route',
+        gpxContent: gpx_content,
+        tags: tags || [],
+        geom: sql`ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)`,
+        totalAscent: processed.totalAscent,
+        totalDescent: processed.totalDescent,
+      })
+      .onConflictDoUpdate({
+        target: routes.sourceUrl,
+        set: {
+          title: sql`EXCLUDED.title`,
+          gpxContent: sql`EXCLUDED.gpx_content`,
+          tags: sql`EXCLUDED.tags`,
+          geom: sql`EXCLUDED.geom`,
+          totalAscent: sql`EXCLUDED.total_ascent`,
+          totalDescent: sql`EXCLUDED.total_descent`,
+          createdAt: sql`CURRENT_TIMESTAMP`,
+        },
+      });
 
     ctx.response.status = 200;
     ctx.response.body = { success: true };
@@ -167,76 +182,95 @@ router.post("/api/routes", async (ctx: RouterContext<string>) => {
   }
 });
 
-router.delete("/api/routes/:id", async (ctx: RouterContext<string>) => {
-    const id = ctx.params.id;
-    await client.queryArray("DELETE FROM routes WHERE id = $1", [id]);
-    ctx.response.status = 200;
-    ctx.response.body = { success: true };
+router.delete('/api/routes/:id', async (ctx: RouterContext<string>) => {
+  const id = ctx.params.id;
+  await db.delete(routes).where(eq(routes.id, parseInt(id)));
+  ctx.response.status = 200;
+  ctx.response.body = { success: true };
 });
 
-router.get("/api/routes/:id/download", async (ctx: RouterContext<string>) => {
+router.get('/api/routes/:id/download', async (ctx: RouterContext<string>) => {
   const id = ctx.params.id;
-  const result = await client.queryObject("SELECT title, gpx_content FROM routes WHERE id = $1", [id]);
+  const result = await db
+    .select({
+      title: routes.title,
+      gpx_content: routes.gpxContent,
+    })
+    .from(routes)
+    .where(eq(routes.id, parseInt(id)))
+    .limit(1);
 
-  if (result.rows.length === 0) {
-      ctx.response.status = 404;
-      return;
+  if (result.length === 0) {
+    ctx.response.status = 404;
+    return;
   }
 
-  const route = result.rows[0] as Route;
-  const filename = (route.title || "route").replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".gpx";
+  const route = result[0];
+  const filename = (route.title || 'route').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.gpx';
 
-  ctx.response.headers.set("Content-Disposition", `attachment; filename="${filename}"`);
-  ctx.response.headers.set("Content-Type", "application/gpx+xml");
+  ctx.response.headers.set('Content-Disposition', `attachment; filename="${filename}"`);
+  ctx.response.headers.set('Content-Type', 'application/gpx+xml');
   ctx.response.body = route.gpx_content;
 });
 
-router.put("/api/routes/:id", async (ctx: RouterContext<string>) => {
-    const id = ctx.params.id;
-    const body = ctx.request.body;
-    const { tags } = await body.json();
+router.put('/api/routes/:id', async (ctx: RouterContext<string>) => {
+  const id = ctx.params.id;
+  const body = ctx.request.body;
+  const { tags } = await body.json();
 
-    await client.queryArray("UPDATE routes SET tags = $1 WHERE id = $2", [tags, id]);
-    ctx.response.status = 200;
-    ctx.response.body = { success: true };
+  await db
+    .update(routes)
+    .set({ tags })
+    .where(eq(routes.id, parseInt(id)));
+
+  ctx.response.status = 200;
+  ctx.response.body = { success: true };
 });
 
 // Recompute stats for a single route
-router.post("/api/routes/:id/recompute", async (ctx: RouterContext<string>) => {
+router.post('/api/routes/:id/recompute', async (ctx: RouterContext<string>) => {
   const id = ctx.params.id;
 
   try {
     // Fetch the route's GPX content
-    const result = await client.queryObject<{ gpx_content: string }>(
-      "SELECT gpx_content FROM routes WHERE id = $1",
-      [id]
-    );
+    const result = await db
+      .select({ gpx_content: routes.gpxContent })
+      .from(routes)
+      .where(eq(routes.id, parseInt(id)))
+      .limit(1);
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       ctx.response.status = 404;
-      ctx.response.body = { error: "Route not found" };
+      ctx.response.body = { error: 'Route not found' };
       return;
     }
 
-    const gpx_content = result.rows[0].gpx_content;
+    const gpx_content = result[0].gpx_content;
+    if (!gpx_content) {
+      ctx.response.status = 400;
+      ctx.response.body = { error: 'No GPX content found' };
+      return;
+    }
+
     const processed = processRouteGPX(gpx_content);
 
     if (!processed) {
       ctx.response.status = 400;
-      ctx.response.body = { error: "Failed to process GPX content" };
+      ctx.response.body = { error: 'Failed to process GPX content' };
       return;
     }
 
     const geojsonStr = JSON.stringify(processed.geojson);
 
     // Update the route with recomputed values
-    await client.queryArray(`
-      UPDATE routes
-      SET geom = ST_SetSRID(ST_GeomFromGeoJSON($1), 4326),
-          total_ascent = $2,
-          total_descent = $3
-      WHERE id = $4
-    `, [geojsonStr, processed.totalAscent, processed.totalDescent, id]);
+    await db
+      .update(routes)
+      .set({
+        geom: sql`ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)`,
+        totalAscent: processed.totalAscent,
+        totalDescent: processed.totalDescent,
+      })
+      .where(eq(routes.id, parseInt(id)));
 
     ctx.response.status = 200;
     ctx.response.body = { success: true };
@@ -248,18 +282,23 @@ router.post("/api/routes/:id/recompute", async (ctx: RouterContext<string>) => {
 });
 
 // Recompute stats for all routes
-router.post("/api/routes/recompute", async (ctx: RouterContext<string>) => {
+router.post('/api/routes/recompute', async (ctx: RouterContext<string>) => {
   try {
     // Fetch all routes with their GPX content
-    const result = await client.queryObject<{ id: number; gpx_content: string }>(
-      "SELECT id, gpx_content FROM routes"
-    );
+    const allRoutes = await db
+      .select({ id: routes.id, gpx_content: routes.gpxContent })
+      .from(routes);
 
     let successCount = 0;
     let errorCount = 0;
 
-    for (const row of result.rows) {
+    for (const row of allRoutes) {
       try {
+        if (!row.gpx_content) {
+          errorCount++;
+          continue;
+        }
+
         const processed = processRouteGPX(row.gpx_content);
 
         if (!processed) {
@@ -270,13 +309,14 @@ router.post("/api/routes/recompute", async (ctx: RouterContext<string>) => {
 
         const geojsonStr = JSON.stringify(processed.geojson);
 
-        await client.queryArray(`
-          UPDATE routes
-          SET geom = ST_SetSRID(ST_GeomFromGeoJSON($1), 4326),
-              total_ascent = $2,
-              total_descent = $3
-          WHERE id = $4
-        `, [geojsonStr, processed.totalAscent, processed.totalDescent, row.id]);
+        await db
+          .update(routes)
+          .set({
+            geom: sql`ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)`,
+            totalAscent: processed.totalAscent,
+            totalDescent: processed.totalDescent,
+          })
+          .where(eq(routes.id, row.id));
 
         successCount++;
       } catch (e) {
@@ -290,7 +330,7 @@ router.post("/api/routes/recompute", async (ctx: RouterContext<string>) => {
       success: true,
       successCount,
       errorCount,
-      total: result.rows.length
+      total: allRoutes.length,
     };
   } catch (e) {
     console.error(e);
@@ -300,13 +340,13 @@ router.post("/api/routes/recompute", async (ctx: RouterContext<string>) => {
 });
 
 app.use(async (ctx, next) => {
-    try {
-        await next();
-    } catch (err) {
-        console.error(err);
-        ctx.response.status = 500;
-        ctx.response.body = { msg: (err as Error).message };
-    }
+  try {
+    await next();
+  } catch (err) {
+    console.error(err);
+    ctx.response.status = 500;
+    ctx.response.body = { msg: (err as Error).message };
+  }
 });
 
 app.use(router.routes());
@@ -317,27 +357,26 @@ app.use(async (ctx, next) => {
   try {
     await ctx.send({
       root: `${Deno.cwd()}/frontend/dist`,
-      index: "index.html",
+      index: 'index.html',
     });
   } catch {
     await next();
   }
 });
 
-
-console.log("Connecting to DB...");
+console.log('Connecting to DB...');
 // Retry logic for DB connection
 let connected = false;
 while (!connected) {
-    try {
-        await initDb();
-        connected = true;
-        console.log("Connected to DB");
-    } catch (e) {
-        console.log("Failed to connect to DB, retrying in 5s...", (e as Error).message);
-        await new Promise(r => setTimeout(r, 5000));
-    }
+  try {
+    await initDb();
+    connected = true;
+    console.log('Connected to DB');
+  } catch (e) {
+    console.log('Failed to connect to DB, retrying in 5s...', (e as Error).message);
+    await new Promise((r) => setTimeout(r, 5000));
+  }
 }
 
-console.log("Server running on http://localhost:8070");
-await app.listen({ port: 8070, hostname: "0.0.0.0" });
+console.log('Server running on http://localhost:8070');
+await app.listen({ port: 8070, hostname: '0.0.0.0' });
