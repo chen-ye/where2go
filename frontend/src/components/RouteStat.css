@@ -1,0 +1,12 @@
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: var(--size-1);
+  color: var(--text-2);
+  font-family: var(--font-monospace-code);
+  font-size: var(--font-size-2);
+}
+
+.stat-units {
+  color: var(--text-3);
+}

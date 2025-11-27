@@ -13,35 +13,8 @@ import {
 } from "./ui/Accordion";
 import { Switch } from "./ui/Switch";
 import { Toggle } from "./ui/Toggle";
+import { RouteStat } from "./RouteStat";
 import "./RouteDetailsView.css";
-
-interface RouteStatProps {
-  value: number | null | undefined;
-  units: string;
-  decimals?: number;
-  className?: string;
-}
-
-function RouteStat({
-  value,
-  units,
-  decimals = 0,
-  className = "",
-}: RouteStatProps) {
-  const formattedValue =
-    value !== null && value !== undefined
-      ? decimals > 0
-        ? value.toFixed(decimals)
-        : Math.round(value).toString()
-      : `–– ${units}`;
-
-  return (
-    <div className={`stat-item ${className}`}>
-      {formattedValue}
-      <span className="stat-units">{units}</span>
-    </div>
-  );
-}
 
 interface RouteDetailsViewProps {
   route: Route;
@@ -74,7 +47,7 @@ export function RouteDetailsView({
   const isUpdating = updatingRouteId === route.id;
 
   return (
-    <>
+    <div className="route-details-view">
       <div className="bottom-panel-header">
         <h2 className="route-title">{route.title}</h2>
         <div className="header-actions">
@@ -252,6 +225,6 @@ export function RouteDetailsView({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-    </>
+    </div>
   );
 }

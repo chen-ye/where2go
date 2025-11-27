@@ -2,6 +2,7 @@ import type { Route } from "../types";
 import { METERS_TO_MILES, METERS_TO_FEET } from "../utils/geo";
 import "./SearchResultsView.css";
 import { X } from "lucide-react";
+import { RouteStat } from "./RouteStat";
 
 interface SearchResultsViewProps {
   results: Route[];
@@ -17,7 +18,7 @@ export function SearchResultsView({
   return (
     <div className="search-results-view">
       <div className="search-results-header">
-        <h3>Search Results · <span className="search-results-count">{results.length} Routes</span></h3>
+        <h3>{results.length} Routes Found</h3>
         <button type="button" className="icon-button" onClick={onClose}>
           <X size={18} />
         </button>
@@ -32,18 +33,25 @@ export function SearchResultsView({
             <div className="col-title" title={route.title}>
               {route.title}
             </div>
-            <div className="col-stat">
-              {route.distance
-                ? (route.distance * METERS_TO_MILES).toFixed(1)
-                : "--"}{" "}
-              mi
-            </div>
-            <div className="col-stat">
-              {route.total_ascent
-                ? Math.round(route.total_ascent * METERS_TO_FEET)
-                : "--"}{" "}
-              ft
-            </div>
+            <RouteStat
+              value={
+                route.distance
+                  ? route.distance * METERS_TO_MILES
+                  : route.distance
+              }
+              units="mi"
+              decimals={1}
+              className="col-stat"
+            />
+            <RouteStat
+              value={
+                route.total_ascent
+                  ? route.total_ascent * METERS_TO_FEET
+                  : route.total_ascent
+              }
+              units="ft"
+              className="col-stat"
+            />
           </div>
         ))}
       </div>

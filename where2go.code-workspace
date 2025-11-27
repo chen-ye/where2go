@@ -16,6 +16,8 @@
   "settings": {
     "typescript.tsserver.experimental.enableProjectDiagnostics": false,
     "editor.codeActionsOnSave": {
+      "source.biome": "always",
+      "source.action.useSortedProperties.biome": "explicit",
       "source.addMissingImports.ts": "always",
       "source.fixAll.biome": "always"
     }
