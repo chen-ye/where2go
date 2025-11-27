@@ -1,0 +1,23 @@
+/* Toggle.css */
+.ToggleRoot {
+  background-color: transparent;
+  color: var(--text-2);
+  padding: var(--size-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border-size-1) solid var(--surface-3);
+  border-radius: var(--radius-2);
+  cursor: pointer;
+  transition: all var(--duration-quick-1) var(--ease-out-3);
+}
+
+.ToggleRoot:hover {
+  background-color: var(--surface-3);
+}
+
+.ToggleRoot[data-state='on'] {
+  background-color: var(--brand);
+  color: white;
+  border-color: var(--brand);
+}
