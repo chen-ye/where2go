@@ -80,14 +80,14 @@ export function RouteDetailsView({
             onPressedChange={(pressed) => onUpdateCompleted(route.id, pressed)}
             title="Mark Complete"
           >
-            {route.is_completed ? <Check size={16} /> : null} Mark Complete
+            <Check size={18} />
           </Toggle>
           <a
             href={route.source_url}
             target="_blank"
             rel="noreferrer"
             className="icon-button"
-            title="Open in Strava/Source"
+            title="Open Source"
           >
             <ExternalLink size={18} />
           </a>
