@@ -18,7 +18,7 @@ export function SearchResultsView({
   return (
     <div className="search-results-view">
       <div className="search-results-header">
-        <h3>{results.length} Routes Found</h3>
+        <h3>Search Results · {results.length} Routes</h3>
         <button type="button" className="icon-button" onClick={onClose}>
           <X size={18} />
         </button>

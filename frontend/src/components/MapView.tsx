@@ -1,9 +1,10 @@
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { GeoJsonLayer, ScatterplotLayer, PathLayer } from "@deck.gl/layers";
-import { Layer, type DeckProps, type PickingInfo } from "@deck.gl/core";
+import { Layer as DeckLayer, type DeckProps, type PickingInfo } from "@deck.gl/core";
 
 import Map, {
   Source,
+  Layer,
   NavigationControl,
   GeolocateControl,
   useControl,
@@ -12,7 +13,9 @@ import Map, {
 } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./MapView.css";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { LayerSelector } from "./LayerSelector";
+import { BASEMAPS, OVERLAYS } from "../utils/layerConfig";
 import type { Route, RouteDataPoint } from "../types.ts";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import { getGradeColor } from "../utils/geo";
@@ -23,7 +26,7 @@ function DeckGLOverlay(props: DeckProps) {
   return null;
 }
 
-const MAPTILER_API_KEY = "di0gshXc0zUqmVTNctjb";
+
 
 interface MapViewProps {
   routes: Route[];
@@ -70,7 +73,7 @@ export function MapView({
   }, [routes, selectedRouteId]);
 
   const deckGLLayers: DeckProps["layers"] = useMemo(() => {
-    const layers: Layer[] = [];
+    const layers: DeckLayer[] = [];
 
     // If displayGradeOnMap is enabled and a route is selected, we render the selected route as segments
     if (
@@ -213,15 +216,35 @@ export function MapView({
     routes,
   ]);
 
+  const [baseStyle, setBaseStyle] = useState<string>("carto-dark");
+  const [customStyleUrl, setCustomStyleUrl] = useState("");
+  const [activeOverlays, setActiveOverlays] = useState<Set<string>>(new Set());
+
+  const mapStyle = useMemo(() => {
+    if (baseStyle === "custom") {
+      return customStyleUrl;
+    }
+    const config = BASEMAPS.find((b) => b.id === baseStyle);
+    if (config) {
+      // Append API key from config if present
+      if (config.apiKey && !config.url.includes("key=")) {
+        const separator = config.url.includes("?") ? "&" : "?";
+        return `${config.url}${separator}key=${config.apiKey}`;
+      }
+      return config.url;
+    }
+    // Fallback to first available basemap
+    return BASEMAPS[0]?.url ?? "";
+  }, [baseStyle, customStyleUrl]);
+
   return (
     <div className="map-container">
       <Map
         {...viewState}
         onMove={(evt) => onMove(evt.viewState)}
-        mapStyle={`https://api.maptiler.com/maps/dataviz-v4-dark/style.json?key=${MAPTILER_API_KEY}`}
-        // mapStyle={`https://api.maptiler.com/maps/outdoor-v4-dark/style.json?key=${MAPTILER_API_KEY}`}
+        mapStyle={mapStyle}
         terrain={{
-          source: "maptiler-terrain",
+          source: "terrain",
           exaggeration: 1,
         }}
         onClick={useCallback(
@@ -244,12 +267,63 @@ export function MapView({
           visualizePitch={true}
           visualizeRoll={true}
         />
+        <LayerSelector
+          currentStyle={baseStyle}
+          onStyleChange={setBaseStyle}
+          customStyleUrl={customStyleUrl}
+          onCustomStyleUrlChange={setCustomStyleUrl}
+          activeOverlays={activeOverlays}
+          onToggleOverlay={(id, active) => {
+            setActiveOverlays((prev) => {
+              const next = new Set(prev);
+              if (active) {
+                next.add(id);
+              } else {
+                next.delete(id);
+              }
+              return next;
+            });
+          }}
+        />
+
+        {(() => {
+          // Sort active overlays by order (Low -> High)
+          const activeConfigs = OVERLAYS.filter((o) => activeOverlays.has(o.id));
+          // Render in reverse order (High -> Low) so that the "top" layer exists
+          // when the "bottom" layer tries to insert itself before it.
+          const reversedConfigs = activeConfigs.toReversed();
+
+          return reversedConfigs.map((overlay, index) => {
+            // The layer "above" this one is the previous one in the reversed list
+            const aboveOverlay = index > 0 ? reversedConfigs[index - 1] : undefined;
+            const beforeId = aboveOverlay ? `${aboveOverlay.id}-layer` : undefined;
+
+            return (
+              <Source
+                key={overlay.id}
+                id={overlay.id}
+                type="raster"
+                tiles={[overlay.url]}
+                tileSize={256}
+              >
+                <Layer
+                  id={`${overlay.id}-layer`}
+                  type="raster"
+                  paint={{ "raster-opacity": overlay.opacity }}
+                  beforeId={beforeId}
+                />
+              </Source>
+            );
+          });
+        })()}
+
         <Source
-          id="maptiler-terrain"
+          id="terrain"
           type="raster-dem"
-          url={`https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key=${MAPTILER_API_KEY}`}
+          tiles={["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"]}
           tileSize={256}
-          maxzoom={11} // Max zoom level for Terrain RGB
+          encoding="terrarium"
+          maxzoom={15}
         />
         <Source id="routes-data" type="geojson" data={routesGeoJson}>
           <DeckGLOverlay

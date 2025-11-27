@@ -38,6 +38,14 @@ Navigate to `http://localhost:5174` to view the app.
 > Modify the `.env` file and docker compose to connect to an existing Postgresql
 > instance with PostGIS extension.
 
+> [!TIP]
+> **Optional: MapTiler API Key** - The app comes with a free CartoDB Dark Matter
+> basemap by default. To use MapTiler's premium basemaps (Dataviz, Outdoor),
+> obtain a free API key from [MapTiler Cloud](https://cloud.maptiler.com) and
+> add it to the basemap config files in
+> `frontend/config/layers/basemaps/*.json`. Update the `"apiKey"` field in
+> `dataviz-v4-dark.json` and `outdoors-v4-dark.json`.
+
 You'll also want to install the Chrome extension:
 
 1. Open `chrome://extensions/`
@@ -51,6 +59,59 @@ You'll also want to install the Chrome extension:
    https://ridewithgps.com/collections/2915253
 7. Click the extension icon, and hit import. Routes will be imported and added
    to your where2go instance.
+
+## Customizing Map Layers
+
+The map supports configurable basemaps and overlay layers through JSON
+configuration files in `frontend/config/layers/`.
+
+### Basemaps
+
+Basemap configurations are stored in `frontend/config/layers/basemaps/`. Each
+basemap is defined by a JSON file with the following schema:
+
+```json
+{
+  "id": "unique-basemap-id",
+  "name": "Display Name",
+  "url": "https://example.com/style.json",
+  "apiKey": "optional-api-key"
+}
+```
+
+- `id`: Unique identifier for the basemap
+- `name`: Human-readable name shown in the layer selector
+- `url`: MapLibre style URL
+- `apiKey`: Optional API key appended to the URL as `?key=` query parameter
+
+The app includes CartoDB Dark Matter as a free default basemap. To add a new
+basemap, create a new JSON file in the basemaps directory. The basemap will
+automatically appear in the layer selector.
+
+### Overlay Layers
+
+Overlay configurations are stored in `frontend/config/layers/overlay/`. Each
+overlay is defined by a JSON file with the following schema:
+
+```json
+{
+  "order": 1,
+  "id": "unique-overlay-id",
+  "name": "Display Name",
+  "url": "https://example.com/tiles/{z}/{x}/{y}.png",
+  "opacity": 0.7
+}
+```
+
+- `order`: Stacking order (lower numbers appear below higher numbers)
+- `id`: Unique identifier for the overlay
+- `name`: Human-readable name shown in the layer selector
+- `url`: Tile URL in slippy map format (`{z}/{x}/{y}`)
+- `opacity`: Layer opacity (0.0 to 1.0)
+
+The `url` can be either a raster tile URL (as shown above) or a MapLibre style
+URL. To add a new overlay, create a new JSON file in the overlay directory. The
+overlay will automatically appear in the layer selector.
 
 ## Dev Stuff
 
