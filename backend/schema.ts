@@ -1,4 +1,4 @@
-import { geometry, real, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, geometry, real, serial, text, timestamp } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 
 export const routes = pgTable('routes', {
@@ -7,6 +7,7 @@ export const routes = pgTable('routes', {
   title: text('title'),
   gpxContent: text('gpx_content'),
   tags: text('tags').array(),
+  isCompleted: boolean('is_completed').default(false),
   createdAt: timestamp('created_at').defaultNow(),
   totalAscent: real('total_ascent'),
   totalDescent: real('total_descent'),

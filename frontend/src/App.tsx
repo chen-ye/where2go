@@ -76,6 +76,25 @@ function App() {
     }
   };
 
+  const handleUpdateCompleted = async (id: number, isCompleted: boolean) => {
+    try {
+      const response = await fetch(`/api/routes/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ is_completed: isCompleted }),
+      });
+      if (response.ok) {
+        await fetchRoutes();
+      } else {
+        console.error("Failed to update completed status");
+      }
+    } catch (error) {
+      console.error("Error updating completed status:", error);
+    }
+  };
+
   const selectedRoute = routes.find((r) => r.id === selectedRouteId);
 
   const routeData = useMemo(() => {
@@ -171,6 +190,7 @@ function App() {
                 setDeleteConfirmOpen(true);
               }}
               onUpdateTags={handleUpdateTags}
+              onUpdateCompleted={handleUpdateCompleted}
               hoveredLocation={hoveredLocation}
               onHover={setHoveredLocation}
               displayGradeOnMap={displayGradeOnMap}

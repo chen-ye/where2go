@@ -26,11 +26,21 @@ export async function initDb() {
       title TEXT,
       gpx_content TEXT,
       tags TEXT[],
+      is_completed BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       total_ascent REAL,
       total_descent REAL
     );
   `;
+
+  // Add is_completed column if not exists (for migration)
+  try {
+    await queryClient`
+      ALTER TABLE routes ADD COLUMN IF NOT EXISTS is_completed BOOLEAN DEFAULT FALSE;
+    `;
+  } catch (e) {
+    console.log('Column is_completed likely exists or error adding it', e);
+  }
 
   // Check if PostGIS extension exists, if not add it
   try {

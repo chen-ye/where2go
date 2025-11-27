@@ -873,8 +873,8 @@ __metadata:
   linkType: hard
 
 "@maplibre/vt-pbf@npm:^4.0.3":
-  version: 4.0.3
-  resolution: "@maplibre/vt-pbf@npm:4.0.3"
+  version: 4.1.0
+  resolution: "@maplibre/vt-pbf@npm:4.1.0"
   dependencies:
     "@mapbox/point-geometry": "npm:^1.1.0"
     "@mapbox/vector-tile": "npm:^2.0.4"
@@ -883,7 +883,7 @@ __metadata:
     geojson-vt: "npm:^4.0.2"
     pbf: "npm:^4.0.1"
     supercluster: "npm:^8.0.1"
-  checksum: 10c0/d3c84adabb9dc93ff72ea6ab8c17900479f09e4d473f34ccae1f8e22d29f814d288f529f0d85959545bc4d7021675e056f7f558e758f705a4cb060b1f75f0aff
+  checksum: 10c0/f699ac318f14cc2c3fe4bebee1d6f3589e6897d8cced339f491942e91fa43046c68e3aaaedc2b31589652c0be7ece5589aba2b337500add1ffd502b1700ed0ae
   languageName: node
   linkType: hard
 
@@ -1447,6 +1447,27 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@radix-ui/react-toggle@npm:^1.1.10":
+  version: 1.1.10
+  resolution: "@radix-ui/react-toggle@npm:1.1.10"
+  dependencies:
+    "@radix-ui/primitive": "npm:1.1.3"
+    "@radix-ui/react-primitive": "npm:2.1.3"
+    "@radix-ui/react-use-controllable-state": "npm:1.2.2"
+  peerDependencies:
+    "@types/react": "*"
+    "@types/react-dom": "*"
+    react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+    react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+    "@types/react-dom":
+      optional: true
+  checksum: 10c0/5406cdf5dd7299ae6cfdb4865dc5fd43ca3c475ebcd4e86830bd296d734255b61f749c9bde452ebfaad126033f92dd1112ee9d95982344ffad34491238dcc9b1
+  languageName: node
+  linkType: hard
+
 "@radix-ui/react-use-callback-ref@npm:1.1.1":
   version: 1.1.1
   resolution: "@radix-ui/react-use-callback-ref@npm:1.1.1"
@@ -1778,14 +1799,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/d3-color@npm:*":
-  version: 3.1.3
-  resolution: "@types/d3-color@npm:3.1.3"
-  checksum: 10c0/65eb0487de606eb5ad81735a9a5b3142d30bc5ea801ed9b14b77cb14c9b909f718c059f13af341264ee189acf171508053342142bdf99338667cea26a2d8d6ae
-  languageName: node
-  linkType: hard
-
-"@types/d3-color@npm:3.1.0":
+"@types/d3-color@npm:*, @types/d3-color@npm:3.1.0":
   version: 3.1.0
   resolution: "@types/d3-color@npm:3.1.0"
   checksum: 10c0/5b4be21b4b025da9ffd0cef876fb7d82f99116fa26e7ee3449771faf0a953d160246b1ceb2a9bbc7d131e32ab60d7d19013131d098616369a56f9880f25f20ef
@@ -1856,14 +1870,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/d3-time@npm:*":
-  version: 3.0.4
-  resolution: "@types/d3-time@npm:3.0.4"
-  checksum: 10c0/6d9e2255d63f7a313a543113920c612e957d70da4fb0890931da6c2459010291b8b1f95e149a538500c1c99e7e6c89ffcce5554dd29a31ff134a38ea94b6d174
-  languageName: node
-  linkType: hard
-
-"@types/d3-time@npm:3.0.0":
+"@types/d3-time@npm:*, @types/d3-time@npm:3.0.0":
   version: 3.0.0
   resolution: "@types/d3-time@npm:3.0.0"
   checksum: 10c0/4f900608d5c557b09b38e4b096723af5eb4508a1b32f9afae253fe77a4bcbbe821a14225bab1c2ea36ddbc5c4154ab3563452c6b6eba7a9f48cefad94276e6b5
@@ -2334,16 +2341,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"d3-array@npm:2 - 3, d3-array@npm:2.10.0 - 3, d3-array@npm:2.5.0 - 3":
-  version: 3.2.4
-  resolution: "d3-array@npm:3.2.4"
-  dependencies:
-    internmap: "npm:1 - 2"
-  checksum: 10c0/08b95e91130f98c1375db0e0af718f4371ccacef7d5d257727fe74f79a24383e79aba280b9ffae655483ffbbad4fd1dec4ade0119d88c4749f388641c8bf8c50
-  languageName: node
-  linkType: hard
-
-"d3-array@npm:3.2.1":
+"d3-array@npm:2 - 3, d3-array@npm:2.10.0 - 3, d3-array@npm:2.5.0 - 3, d3-array@npm:3.2.1":
   version: 3.2.1
   resolution: "d3-array@npm:3.2.1"
   dependencies:
@@ -2663,6 +2661,7 @@ __metadata:
     "@radix-ui/react-dropdown-menu": "npm:^2.1.16"
     "@radix-ui/react-slot": "npm:^1.2.4"
     "@radix-ui/react-switch": "npm:^1.2.6"
+    "@radix-ui/react-toggle": "npm:^1.1.10"
     "@types/maplibre-gl": "npm:^1.14.0"
     "@types/node": "npm:^24.10.1"
     "@types/react": "npm:^19.2.7"

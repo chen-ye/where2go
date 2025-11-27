@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2, ExternalLink, Download, X, Plus } from "lucide-react";
+import { Trash2, ExternalLink, Download, X, Plus, Check } from "lucide-react";
 import type { Route, RouteDataPoint } from "../types.ts";
 import { ElevationProfile } from "./ElevationProfile.tsx";
 import { METERS_TO_MILES, METERS_TO_FEET } from "../utils/geo";
@@ -12,6 +12,7 @@ import {
   AccordionHeader,
 } from "./ui/Accordion";
 import { Switch } from "./ui/Switch";
+import { Toggle } from "./ui/Toggle";
 import "./RouteDetailsView.css";
 
 interface RouteStatProps {
@@ -47,6 +48,7 @@ interface RouteDetailsViewProps {
   onClose: () => void;
   onDelete: (id: number) => void;
   onUpdateTags: (id: number, tags: string[]) => void;
+  onUpdateCompleted: (id: number, isCompleted: boolean) => void;
   hoveredLocation: { lat: number; lon: number } | null;
   onHover: (location: { lat: number; lon: number } | null) => void;
   displayGradeOnMap: boolean;
@@ -59,6 +61,7 @@ export function RouteDetailsView({
   onClose,
   onDelete,
   onUpdateTags,
+  onUpdateCompleted,
   hoveredLocation,
   onHover,
   displayGradeOnMap,
@@ -72,6 +75,13 @@ export function RouteDetailsView({
       <div className="bottom-panel-header">
         <h2 className="route-title">{route.title}</h2>
         <div className="header-actions">
+          <Toggle
+            pressed={route.is_completed}
+            onPressedChange={(pressed) => onUpdateCompleted(route.id, pressed)}
+            title="Mark Complete"
+          >
+            {route.is_completed ? <Check size={16} /> : null} Mark Complete
+          </Toggle>
           <a
             href={route.source_url}
             target="_blank"

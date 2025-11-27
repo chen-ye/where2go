@@ -148,11 +148,17 @@ export function MapView({
         data: routesGeoJson,
         getLineColor: (object) => {
           const selectedRoute = object.properties.id === selectedRouteId;
-          return selectedRoute
-            ? displayGradeOnMap
-              ? [0, 0, 0, 0]
-              : [217, 119, 6, 255]
-            : [167, 119, 199, 80];
+          // find the route object to check completion status
+          const route = routes.find((r) => r.id === object.properties.id);
+          const isCompleted = route?.is_completed;
+
+          if (selectedRoute) {
+            return displayGradeOnMap ? [0, 0, 0, 0] : [217, 119, 6, 255];
+          }
+          if (isCompleted) {
+            return [17, 70, 120, 60];
+          }
+          return [167, 119, 199, 80];
         },
         getLineWidth: (object) =>
           object.properties.id === selectedRouteId ? 60 : 10,

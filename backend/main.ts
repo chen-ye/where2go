@@ -107,6 +107,7 @@ router.get('/api/routes', async (ctx: RouterContext<string>) => {
       source_url: routes.sourceUrl,
       title: routes.title,
       tags: routes.tags,
+      is_completed: routes.isCompleted,
       created_at: routes.createdAt,
       geojson: sql<string>`ST_AsGeoJSON(${routes.geom})`,
       distance: sql<number>`ST_Length(${routes.geom}::geography)`,
@@ -224,11 +225,15 @@ router.get('/api/routes/:id/download', async (ctx: RouterContext<string>) => {
 router.put('/api/routes/:id', async (ctx: RouterContext<string>) => {
   const id = ctx.params.id;
   const body = ctx.request.body;
-  const { tags } = await body.json();
+  const { tags, is_completed } = await body.json();
+
+  const updateData: Partial<typeof routes.$inferInsert> = {};
+  if (tags !== undefined) updateData.tags = tags;
+  if (is_completed !== undefined) updateData.isCompleted = is_completed;
 
   await db
     .update(routes)
-    .set({ tags })
+    .set(updateData)
     .where(eq(routes.id, parseInt(id)));
 
   ctx.response.status = 200;

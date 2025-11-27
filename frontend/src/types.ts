@@ -5,6 +5,7 @@ export interface Route {
   source_url: string;
   title: string;
   tags: string[];
+  is_completed: boolean;
   geojson: LineString | MultiLineString;
   // Mock data for stats if not present in backend yet
   distance?: number;
