@@ -1,11 +1,62 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
+@import "open-props/style";
+@import "open-props/normalize";
+@import "open-props/switch/dark";
+@import "open-props/durations";
+
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  /* Dark Scheme */
+
+  --brand-dark: var(--orange-3);
+
+  --text-1-dark: var(--gray-3);
+  --text-2-dark: var(--gray-5);
+  --text-3-dark: var(--gray-7);
+
+  /* Translucent equivalents to gray */
+  --surface-1-dark: var(--gray-12);
+  --surface-2-dark: var(--gray-10);
+  --surface-3-dark: var(--gray-9);
+  --surface-4-dark: var(--gray-8);
+
+  --surface-1-translucent-dark: rgb(from black r g b / 0.7);
+  --surface-2-translucent-dark: rgb(from black r g b / 0.6);
+  --surface-3-translucent-dark: rgb(from black r g b / 0.5);
+  --surface-4-translucent-dark: rgb(from black r g b / 0.4);
+
+  --surface-shadow-dark: var(--gray-12-hsl);
+  --shadow-strength-dark: 80%;
+
+  /* Current */
+
+  --brand: var(--brand-dark);
+
+  --text-1: var(--text-1-dark);
+  --text-2: var(--text-2-dark);
+  --text-3: var(--text-3-dark);
+
+  --surface-1: var(--surface-1-dark);
+  --surface-2: var(--surface-2-dark);
+  --surface-3: var(--surface-3-dark);
+  --surface-4: var(--surface-4-dark);
+
+  --surface-1-translucent: var(--surface-1-translucent-dark);
+  --surface-2-translucent: var(--surface-2-translucent-dark);
+  --surface-3-translucent: var(--surface-3-translucent-dark);
+  --surface-4-translucent: var(--surface-4-translucent-dark);
+
+  --surface-shadow: var(--surface-shadow-dark);
+  --shadow-strength: var(--shadow-strength-dark);
+
+  --font-monospace-code: 'JetBrains Mono', monospace;
 
   color-scheme: dark;
+
+  font-family: var(--font-neo-grotesque);
+  line-height: var(--font-line-height-1);
+  font-weight: var(--font-weight-4);
+
   color: rgba(255, 255, 255, 0.87);
   background-color: #121212;
 
@@ -13,27 +64,20 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  --bg-color: #121212;
-  --surface-color: #1E1E1E;
-  --surface-hover: #2C2C2C;
-  --border-color: #333333;
-  --text-primary: #FFFFFF;
-  --text-secondary: #AAAAAA;
-  --accent-color: #3B82F6; /* Example blue */
-  --danger-color: #EF4444;
 }
 
 body {
   margin: 0;
   padding: 0;
   display: flex;
-  place-items: flex-start; /* Changed from center to allow full layout */
+  place-items: flex-start;
+  /* Changed from center to allow full layout */
   min-width: 320px;
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background-color: var(--surface-1);
   color: var(--text-primary);
-  overflow: hidden; /* Prevent body scroll */
+  overflow: hidden;
+  /* Prevent body scroll */
 }
 
 a {
@@ -41,22 +85,26 @@ a {
   color: var(--accent-color);
   text-decoration: inherit;
 }
+
 a:hover {
-  color: #60A5FA;
+  color: var(--accent-color);
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: var(--size-2);
+  height: var(--size-2);
 }
+
 ::-webkit-scrollbar-track {
-  background: var(--bg-color);
+  background: var(--surface-1);
 }
+
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 4px;
+  background: var(--surface-2);
+  border-radius: var(--radius-2);
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--surface-2);
 }

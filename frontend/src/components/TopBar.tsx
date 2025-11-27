@@ -1,4 +1,5 @@
 import { Search, RefreshCw } from 'lucide-react';
+import './TopBar.css';
 import { useState } from 'react';
 import {
   DropdownMenu,

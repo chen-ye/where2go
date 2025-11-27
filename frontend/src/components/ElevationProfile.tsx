@@ -1,15 +1,15 @@
-import { useMemo } from 'react';
-import { Group } from '@visx/group';
-import { AreaClosed, Line, LinePath } from '@visx/shape';
-import { scaleLinear } from '@visx/scale';
-import { AxisBottom, AxisLeft } from '@visx/axis';
-import { curveMonotoneX } from '@visx/curve';
-import { ParentSize } from '@visx/responsive';
-import { localPoint } from '@visx/event';
-import { useTooltip, useTooltipInPortal, defaultStyles } from '@visx/tooltip';
-import { bisector } from 'd3-array';
-import { getGradeColor } from '../utils/geo';
-import type { RouteDataPoint } from '../types';
+import { useMemo } from "react";
+import { Group } from "@visx/group";
+import { AreaClosed, Line, LinePath } from "@visx/shape";
+import { scaleLinear } from "@visx/scale";
+import { AxisBottom, AxisLeft } from "@visx/axis";
+import { curveMonotoneX } from "@visx/curve";
+import { ParentSize } from "@visx/responsive";
+import { localPoint } from "@visx/event";
+import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
+import { bisector } from "d3-array";
+import { getGradeColor } from "../utils/geo";
+import type { RouteDataPoint } from "../types";
 
 interface ElevationProfileProps {
   data: RouteDataPoint[];
@@ -18,7 +18,12 @@ interface ElevationProfileProps {
   onHover: (location: { lat: number; lon: number } | null) => void;
 }
 
-export function ElevationProfile({ data, height = 200, hoveredLocation, onHover }: ElevationProfileProps) {
+export function ElevationProfile({
+  data,
+  height = 200,
+  hoveredLocation,
+  onHover,
+}: ElevationProfileProps) {
   const {
     tooltipData,
     tooltipLeft,
@@ -35,7 +40,9 @@ export function ElevationProfile({ data, height = 200, hoveredLocation, onHover 
   // Accessors
   const getX = (d: RouteDataPoint) => d.distance;
   const getY = (d: RouteDataPoint) => d.elevation;
-  const bisectDistance = bisector<RouteDataPoint, number>((d) => d.distance).left;
+  const bisectDistance = bisector<RouteDataPoint, number>(
+    (d) => d.distance
+  ).left;
 
   // Scales
   const margin = { top: 20, right: 20, bottom: 30, left: 50 };
@@ -50,14 +57,31 @@ export function ElevationProfile({ data, height = 200, hoveredLocation, onHover 
   // So we will handle it inside the render function of ParentSize.
 
   if (data.length === 0) {
-    return <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>No elevation data available</div>;
+    return (
+      <div
+        style={{
+          height,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#666",
+        }}
+      >
+        No elevation data available
+      </div>
+    );
   }
 
   const maxDist = data[data.length - 1].distance;
-  const gradientId = `grade-gradient-${Math.random().toString(36).substr(2, 9)}`;
+  const gradientId = `grade-gradient-${Math.random()
+    .toString(36)
+    .substr(2, 9)}`;
 
   return (
-    <div style={{ height, width: '100%', position: 'relative' }} ref={containerRef}>
+    <div
+      style={{ height, width: "100%", position: "relative" }}
+      ref={containerRef}
+    >
       <ParentSize>
         {({ width, height }: { width: number; height: number }) => {
           if (width < 10) return null;
@@ -75,7 +99,7 @@ export function ElevationProfile({ data, height = 200, hoveredLocation, onHover 
             range: [yMax, 0],
             domain: [
               Math.min(...data.map(getY)) * 0.9, // Add some padding at bottom
-              Math.max(...data.map(getY)) * 1.1  // Add some padding at top
+              Math.max(...data.map(getY)) * 1.1, // Add some padding at top
             ],
           });
 
@@ -83,38 +107,49 @@ export function ElevationProfile({ data, height = 200, hoveredLocation, onHover 
           // If hoveredLocation is provided, find the closest point in data
           let externalTooltipData: RouteDataPoint | null = null;
           if (hoveredLocation) {
-             // Find closest point by distance (naive approach: iterate all)
-             // Optimization: could use a spatial index but for <10k points iteration is fine
-             let minDist = Infinity;
-             let closestPoint = null;
+            // Find closest point by distance (naive approach: iterate all)
+            // Optimization: could use a spatial index but for <10k points iteration is fine
+            let minDist = Infinity;
+            let closestPoint = null;
 
-             for (const p of data) {
-                 const d = Math.sqrt(Math.pow(p.lat - hoveredLocation.lat, 2) + Math.pow(p.lon - hoveredLocation.lon, 2));
-                 if (d < minDist) {
-                     minDist = d;
-                     closestPoint = p;
-                 }
-             }
+            for (const p of data) {
+              const d = Math.sqrt(
+                Math.pow(p.lat - hoveredLocation.lat, 2) +
+                  Math.pow(p.lon - hoveredLocation.lon, 2)
+              );
+              if (d < minDist) {
+                minDist = d;
+                closestPoint = p;
+              }
+            }
 
-             if (closestPoint) {
-                 externalTooltipData = closestPoint;
-             }
+            if (closestPoint) {
+              externalTooltipData = closestPoint;
+            }
           }
 
-          const activeTooltipData = tooltipOpen ? tooltipData : externalTooltipData;
+          const activeTooltipData = tooltipOpen
+            ? tooltipData
+            : externalTooltipData;
           const showActiveTooltip = tooltipOpen || !!externalTooltipData;
 
           return (
             <svg width={width} height={height}>
               <defs>
-                <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-                    {data.map((d, i) => (
-                        <stop
-                            key={i}
-                            offset={`${(d.distance / maxDist) * 100}%`}
-                            stopColor={getGradeColor(d.grade)}
-                        />
-                    ))}
+                <linearGradient
+                  id={gradientId}
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="0%"
+                >
+                  {data.map((d, i) => (
+                    <stop
+                      key={i}
+                      offset={`${(d.distance / maxDist) * 100}%`}
+                      stopColor={getGradeColor(d.grade)}
+                    />
+                  ))}
                 </linearGradient>
               </defs>
 
@@ -133,7 +168,6 @@ export function ElevationProfile({ data, height = 200, hoveredLocation, onHover 
                   data={data}
                   x={(d: RouteDataPoint) => xScale(getX(d)) ?? 0}
                   y={(d: RouteDataPoint) => yScale(getY(d)) ?? 0}
-                  yScale={yScale}
                   strokeWidth={2}
                   stroke="#cdcdcdff"
                   curve={curveMonotoneX}
@@ -153,9 +187,9 @@ export function ElevationProfile({ data, height = 200, hoveredLocation, onHover 
                   stroke="#444"
                   tickStroke="#444"
                   tickLabelProps={() => ({
-                    fill: '#888',
+                    fill: "#888",
                     fontSize: 10,
-                    textAnchor: 'middle',
+                    textAnchor: "middle",
                   })}
                 />
 
@@ -164,9 +198,9 @@ export function ElevationProfile({ data, height = 200, hoveredLocation, onHover 
                   stroke="#444"
                   tickStroke="#444"
                   tickLabelProps={() => ({
-                    fill: '#888',
+                    fill: "#888",
                     fontSize: 10,
-                    textAnchor: 'end',
+                    textAnchor: "end",
                     dx: -5,
                     dy: 2.5,
                   })}
@@ -199,31 +233,31 @@ export function ElevationProfile({ data, height = 200, hoveredLocation, onHover 
                     }
                   }}
                   onMouseLeave={() => {
-                      hideTooltip();
-                      onHover(null);
+                    hideTooltip();
+                    onHover(null);
                   }}
                 />
 
                 {showActiveTooltip && activeTooltipData && (
-                   <g>
-                     <Line
-                       from={{ x: xScale(getX(activeTooltipData)), y: 0 }}
-                       to={{ x: xScale(getX(activeTooltipData)), y: yMax }}
-                       stroke="#666"
-                       strokeWidth={1}
-                       pointerEvents="none"
-                       strokeDasharray="5,5"
-                     />
-                     <circle
-                       cx={xScale(getX(activeTooltipData))}
-                       cy={yScale(getY(activeTooltipData))}
-                       r={4}
-                       fill={getGradeColor(activeTooltipData.grade)}
-                       stroke="#fff"
-                       strokeWidth={2}
-                       pointerEvents="none"
-                     />
-                   </g>
+                  <g>
+                    <Line
+                      from={{ x: xScale(getX(activeTooltipData)), y: 0 }}
+                      to={{ x: xScale(getX(activeTooltipData)), y: yMax }}
+                      stroke="#666"
+                      strokeWidth={1}
+                      pointerEvents="none"
+                      strokeDasharray="5,5"
+                    />
+                    <circle
+                      cx={xScale(getX(activeTooltipData))}
+                      cy={yScale(getY(activeTooltipData))}
+                      r={4}
+                      fill={getGradeColor(activeTooltipData.grade)}
+                      stroke="#fff"
+                      strokeWidth={2}
+                      pointerEvents="none"
+                    />
+                  </g>
                 )}
               </Group>
             </svg>
@@ -247,26 +281,39 @@ export function ElevationProfile({ data, height = 200, hoveredLocation, onHover 
           left={tooltipLeft}
           style={{
             ...defaultStyles,
-            background: 'rgba(0, 0, 0, 0.9)',
-            color: '#fff',
-            border: '1px solid #444',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
-            fontSize: '12px',
-            padding: '8px 12px',
-            borderRadius: '4px',
-            lineHeight: '1.4',
+            background: "rgba(0, 0, 0, 0.9)",
+            color: "#fff",
+            border: "1px solid #444",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.5)",
+            fontSize: "12px",
+            padding: "8px 12px",
+            borderRadius: "4px",
+            lineHeight: "1.4",
             zIndex: 1000,
-            fontFamily: 'JetBrains Mono, monospace',
-            willChange: 'transform',
+            fontFamily: "JetBrains Mono, monospace",
+            willChange: "transform",
           }}
         >
-          <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff' }}>
+          <div style={{ fontSize: "14px", fontWeight: "bold", color: "#fff" }}>
             {tooltipData.elevation.toFixed(0)} ft
           </div>
-          <div style={{ color: getGradeColor(tooltipData.grade), fontSize: '11px', fontVariantNumeric: 'tabular-nums' }}>
-            <strong>{tooltipData.grade.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: 'always' })}%</strong>
+          <div
+            style={{
+              color: getGradeColor(tooltipData.grade),
+              fontSize: "11px",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            <strong>
+              {tooltipData.grade.toLocaleString("en-US", {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+                signDisplay: "always",
+              })}
+              %
+            </strong>
           </div>
-          <div style={{ color: '#aaa', fontSize: '11px', marginBottom: '2px' }}>
+          <div style={{ color: "#aaa", fontSize: "11px", marginBottom: "2px" }}>
             <strong>{tooltipData.distance.toFixed(2)} mi</strong>
           </div>
         </TooltipInPortal>

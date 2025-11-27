@@ -209,6 +209,97 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@biomejs/biome@npm:^2.3.7":
+  version: 2.3.7
+  resolution: "@biomejs/biome@npm:2.3.7"
+  dependencies:
+    "@biomejs/cli-darwin-arm64": "npm:2.3.7"
+    "@biomejs/cli-darwin-x64": "npm:2.3.7"
+    "@biomejs/cli-linux-arm64": "npm:2.3.7"
+    "@biomejs/cli-linux-arm64-musl": "npm:2.3.7"
+    "@biomejs/cli-linux-x64": "npm:2.3.7"
+    "@biomejs/cli-linux-x64-musl": "npm:2.3.7"
+    "@biomejs/cli-win32-arm64": "npm:2.3.7"
+    "@biomejs/cli-win32-x64": "npm:2.3.7"
+  dependenciesMeta:
+    "@biomejs/cli-darwin-arm64":
+      optional: true
+    "@biomejs/cli-darwin-x64":
+      optional: true
+    "@biomejs/cli-linux-arm64":
+      optional: true
+    "@biomejs/cli-linux-arm64-musl":
+      optional: true
+    "@biomejs/cli-linux-x64":
+      optional: true
+    "@biomejs/cli-linux-x64-musl":
+      optional: true
+    "@biomejs/cli-win32-arm64":
+      optional: true
+    "@biomejs/cli-win32-x64":
+      optional: true
+  bin:
+    biome: bin/biome
+  checksum: 10c0/8ea96fee3955d03ad79951357288b7bf8d14971f6b98ea4f10602056bb8df08de4fdd5f3e1db114cca3e50b67598dd319f183f1d2a2baff266f58d4f5d988b49
+  languageName: node
+  linkType: hard
+
+"@biomejs/cli-darwin-arm64@npm:2.3.7":
+  version: 2.3.7
+  resolution: "@biomejs/cli-darwin-arm64@npm:2.3.7"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@biomejs/cli-darwin-x64@npm:2.3.7":
+  version: 2.3.7
+  resolution: "@biomejs/cli-darwin-x64@npm:2.3.7"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@biomejs/cli-linux-arm64-musl@npm:2.3.7":
+  version: 2.3.7
+  resolution: "@biomejs/cli-linux-arm64-musl@npm:2.3.7"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@biomejs/cli-linux-arm64@npm:2.3.7":
+  version: 2.3.7
+  resolution: "@biomejs/cli-linux-arm64@npm:2.3.7"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@biomejs/cli-linux-x64-musl@npm:2.3.7":
+  version: 2.3.7
+  resolution: "@biomejs/cli-linux-x64-musl@npm:2.3.7"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@biomejs/cli-linux-x64@npm:2.3.7":
+  version: 2.3.7
+  resolution: "@biomejs/cli-linux-x64@npm:2.3.7"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@biomejs/cli-win32-arm64@npm:2.3.7":
+  version: 2.3.7
+  resolution: "@biomejs/cli-win32-arm64@npm:2.3.7"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@biomejs/cli-win32-x64@npm:2.3.7":
+  version: 2.3.7
+  resolution: "@biomejs/cli-win32-x64@npm:2.3.7"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
 "@carto/api-client@npm:^0.5.19":
   version: 0.5.22
   resolution: "@carto/api-client@npm:0.5.22"
@@ -2543,12 +2634,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/maplibre-gl@npm:^1.13.2":
-  version: 1.13.2
-  resolution: "@types/maplibre-gl@npm:1.13.2"
+"@types/maplibre-gl@npm:^1.14.0":
+  version: 1.14.0
+  resolution: "@types/maplibre-gl@npm:1.14.0"
   dependencies:
-    "@types/geojson": "npm:*"
-  checksum: 10c0/fcf4ec1c80f8516ceae4a9dbe8f2f8b87feb5e342c8e4d49099fcacb1c014760da32f44a24fc106bef83e98c2dfc64d3a7fca333525047f5b27764b4965d2a63
+    maplibre-gl: "npm:*"
+  checksum: 10c0/7609f30814408516399c7a11a143dfe487530ed160dca5216766a4e979f8297e45ecc6a4920f6189c23c93d2402381938c39bb2feda4d44c7c4bb0ede8e6ae2d
   languageName: node
   linkType: hard
 
@@ -2584,7 +2675,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:*, @types/react@npm:^19.2.5":
+"@types/react@npm:*, @types/react@npm:^19.2.7":
   version: 19.2.7
   resolution: "@types/react@npm:19.2.7"
   dependencies:
@@ -3934,15 +4025,16 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "frontend@workspace:."
   dependencies:
+    "@biomejs/biome": "npm:^2.3.7"
     "@eslint/js": "npm:^9.39.1"
     "@radix-ui/react-accordion": "npm:^1.2.12"
     "@radix-ui/react-dialog": "npm:^1.1.15"
     "@radix-ui/react-dropdown-menu": "npm:^2.1.16"
     "@radix-ui/react-slot": "npm:^1.2.4"
     "@radix-ui/react-switch": "npm:^1.2.6"
-    "@types/maplibre-gl": "npm:^1.13.2"
+    "@types/maplibre-gl": "npm:^1.14.0"
     "@types/node": "npm:^24.10.1"
-    "@types/react": "npm:^19.2.5"
+    "@types/react": "npm:^19.2.7"
     "@types/react-dom": "npm:^19.2.3"
     "@visx/axis": "npm:^3.12.0"
     "@visx/curve": "npm:^3.12.0"
@@ -3960,13 +4052,14 @@ __metadata:
     eslint-plugin-react-refresh: "npm:^0.4.24"
     geojson: "npm:^0.5.0"
     globals: "npm:^16.5.0"
-    lucide-react: "npm:^0.554.0"
+    lucide-react: "npm:^0.555.0"
     maplibre-gl: "npm:^5.13.0"
+    open-props: "npm:^1.7.16"
     react: "npm:^19.2.0"
     react-dom: "npm:^19.2.0"
     react-map-gl: "npm:^8.1.0"
     typescript: "npm:~5.9.3"
-    typescript-eslint: "npm:^8.46.4"
+    typescript-eslint: "npm:^8.48.0"
     vite: "npm:^7.2.4"
   languageName: unknown
   linkType: soft
@@ -4523,12 +4616,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lucide-react@npm:^0.554.0":
-  version: 0.554.0
-  resolution: "lucide-react@npm:0.554.0"
+"lucide-react@npm:^0.555.0":
+  version: 0.555.0
+  resolution: "lucide-react@npm:0.555.0"
   peerDependencies:
     react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10c0/35b11d6f11e4b00047175fcc52f531156be66e5ae7c1f689d0d18bc7bbf06d9e0bf33c767f449e25d99f105acf420399346787491aafe0b55dc68b8d45937e87
+  checksum: 10c0/18f0870307fe2a37cf62473de88845a78107295de1efcf599a8662be3af4239c0b661a57f8e29815e424773e4aad04d199ad4d94d7ae977b7ce7a61be7f64e04
   languageName: node
   linkType: hard
 
@@ -4565,7 +4658,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"maplibre-gl@npm:^5.13.0":
+"maplibre-gl@npm:*, maplibre-gl@npm:^5.13.0":
   version: 5.13.0
   resolution: "maplibre-gl@npm:5.13.0"
   dependencies:
@@ -4826,6 +4919,13 @@ __metadata:
   version: 4.1.1
   resolution: "object-assign@npm:4.1.1"
   checksum: 10c0/1f4df9945120325d041ccf7b86f31e8bcc14e73d29171e37a7903050e96b81323784ec59f93f102ec635bcf6fa8034ba3ea0a8c7e69fa202b87ae3b6cec5a414
+  languageName: node
+  linkType: hard
+
+"open-props@npm:^1.7.16":
+  version: 1.7.16
+  resolution: "open-props@npm:1.7.16"
+  checksum: 10c0/e790a3ed36fa9d17db318ec9442baa1cb615f754e43d6e5f3814a6dcbabd47fe91302de6a3049711c40ecde2adad9d548430198d1aa85580c92d01b5975c3bf9
   languageName: node
   linkType: hard
 
@@ -5588,7 +5688,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript-eslint@npm:^8.46.4":
+"typescript-eslint@npm:^8.48.0":
   version: 8.48.0
   resolution: "typescript-eslint@npm:8.48.0"
   dependencies:

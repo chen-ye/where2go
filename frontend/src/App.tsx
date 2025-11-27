@@ -1,21 +1,28 @@
-import { useEffect, useState, useMemo } from 'react';
-import './App.css';
-import { TopBar } from './components/TopBar.tsx';
-import { MapView } from './components/MapView.tsx';
-import { BottomPanel } from './components/BottomPanel.tsx';
-import type { Route, RouteDataPoint } from './types.ts';
-import { ConfirmDialog } from './components/ui/ConfirmDialog';
-import { getDistanceFromLatLonInMiles, calculateGrade, METERS_TO_FEET } from './utils/geo';
+import { useEffect, useState, useMemo } from "react";
+import "./App.css";
+import { TopBar } from "./components/TopBar.tsx";
+import { MapView } from "./components/MapView.tsx";
+import { BottomPanel } from "./components/BottomPanel.tsx";
+import type { Route, RouteDataPoint } from "./types.ts";
+import { ConfirmDialog } from "./components/ui/ConfirmDialog";
+import {
+  getDistanceFromLatLonInMiles,
+  calculateGrade,
+  METERS_TO_FEET,
+} from "./utils/geo";
 function App() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
   const [viewState, setViewState] = useState({
-    longitude: -122.20, // Default to Bellevue area based on image
+    longitude: -122.2, // Default to Bellevue area based on image
     latitude: 47.61,
-    zoom: 11
+    zoom: 11,
   });
 
-  const [hoveredLocation, setHoveredLocation] = useState<{ lat: number; lon: number } | null>(null);
+  const [hoveredLocation, setHoveredLocation] = useState<{
+    lat: number;
+    lon: number;
+  } | null>(null);
 
   useEffect(() => {
     fetchRoutes();
@@ -23,7 +30,7 @@ function App() {
 
   const fetchRoutes = async () => {
     try {
-      const res = await fetch('/api/routes');
+      const res = await fetch("/api/routes");
       const data = await res.json();
       setRoutes(data);
     } catch (e) {
@@ -31,12 +38,13 @@ function App() {
     }
   };
 
-  const selectedRoute = routes.find(r => r.id === selectedRouteId);
+  const selectedRoute = routes.find((r) => r.id === selectedRouteId);
 
   const routeData = useMemo(() => {
     if (!selectedRoute || !selectedRoute.geojson) return [];
 
-    const coords = selectedRoute.geojson.type === 'LineString'
+    const coords =
+      selectedRoute.geojson.type === "LineString"
         ? selectedRoute.geojson.coordinates
         : selectedRoute.geojson.coordinates[0];
 
@@ -46,34 +54,39 @@ function App() {
     let totalDist = 0;
 
     for (let i = 0; i < coords.length; i++) {
-        const [lon, lat, ele] = coords[i];
-        let grade = 0;
+      const [lon, lat, ele] = coords[i];
+      let grade = 0;
 
-        if (i > 0) {
-            const [prevLon, prevLat] = coords[i - 1];
-            const distMiles = getDistanceFromLatLonInMiles(prevLat, prevLon, lat, lon);
-            totalDist += distMiles;
-            grade = calculateGrade(coords[i - 1], coords[i]);
-        }
+      if (i > 0) {
+        const [prevLon, prevLat] = coords[i - 1];
+        const distMiles = getDistanceFromLatLonInMiles(
+          prevLat,
+          prevLon,
+          lat,
+          lon
+        );
+        totalDist += distMiles;
+        grade = calculateGrade(coords[i - 1], coords[i]);
+      }
 
-        points.push({
-            distance: totalDist,
-            elevation: (ele || 0) * METERS_TO_FEET,
-            lat,
-            lon,
-            grade
-        });
+      points.push({
+        distance: totalDist,
+        elevation: (ele || 0) * METERS_TO_FEET,
+        lat,
+        lon,
+        grade,
+      });
     }
     return points;
   }, [selectedRoute]);
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [routeToDelete, setRouteToDelete] = useState<number | null>(null);
-  const [colorByGrade, setColorByGrade] = useState(false);
+  const [displayGradeOnMap, setDisplayGradeOnMap] = useState(false);
 
   const handleConfirmDelete = async () => {
     if (routeToDelete !== null) {
-      await fetch(`/api/routes/${routeToDelete}`, { method: 'DELETE' });
+      await fetch(`/api/routes/${routeToDelete}`, { method: "DELETE" });
       setSelectedRouteId(null);
       fetchRoutes();
       setRouteToDelete(null);
@@ -82,17 +95,17 @@ function App() {
   };
 
   const handleUpdateTags = async (id: number, newTags: string[]) => {
-      await fetch(`/api/routes/${id}`, {
-          method: 'PUT',
-          body: JSON.stringify({ tags: newTags }),
-          headers: { 'Content-Type': 'application/json'}
-      });
-      fetchRoutes();
+    await fetch(`/api/routes/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ tags: newTags }),
+      headers: { "Content-Type": "application/json" },
+    });
+    fetchRoutes();
   };
 
   const handleSelectRoute = (id: number | null) => {
     setSelectedRouteId(id);
-    setColorByGrade(false); // Reset color by grade when a new route is selected
+    setDisplayGradeOnMap(false); // Reset color by grade when a new route is selected
   };
 
   return (
@@ -106,7 +119,7 @@ function App() {
         onMove={setViewState}
         hoveredLocation={hoveredLocation}
         onHover={setHoveredLocation}
-        colorByGrade={colorByGrade}
+        displayGradeOnMap={displayGradeOnMap}
         routeData={routeData}
       />
       {selectedRoute && (
@@ -115,14 +128,14 @@ function App() {
           routeData={routeData}
           onClose={() => setSelectedRouteId(null)}
           onDelete={(id) => {
-              setRouteToDelete(id);
-              setDeleteConfirmOpen(true);
+            setRouteToDelete(id);
+            setDeleteConfirmOpen(true);
           }}
           onUpdateTags={handleUpdateTags}
           hoveredLocation={hoveredLocation}
           onHover={setHoveredLocation}
-          colorByGrade={colorByGrade}
-          onToggleColorByGrade={setColorByGrade}
+          displayGradeOnMap={displayGradeOnMap}
+          onToggleDisplayGradeOnMap={setDisplayGradeOnMap}
         />
       )}
       <ConfirmDialog

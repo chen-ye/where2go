@@ -1,40 +1,43 @@
 /* DropdownMenu.css */
 .DropdownMenuContent {
   min-width: 220px;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: var(--surface-1-translucent);
   backdrop-filter: blur(8px);
-  border-radius: 6px;
-  padding: 5px;
-  box-shadow: 0px 10px 38px -10px rgba(0, 0, 0, 0.35), 0px 10px 20px -15px rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-2);
+  padding: var(--size-1);
+  box-shadow: var(--shadow-4);
   animation-duration: 400ms;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-timing-function: var(--ease-out-3);
   will-change: transform, opacity;
-  border: 1px solid #333;
+  border: var(--border-size-1) solid var(--surface-3);
   z-index: 1000;
 }
 
 .DropdownMenuContent[data-side='top'] {
   animation-name: slideDownAndFade;
 }
+
 .DropdownMenuContent[data-side='right'] {
   animation-name: slideLeftAndFade;
 }
+
 .DropdownMenuContent[data-side='bottom'] {
   animation-name: slideUpAndFade;
 }
+
 .DropdownMenuContent[data-side='left'] {
   animation-name: slideRightAndFade;
 }
 
 .DropdownMenuItem {
-  font-size: 13px;
+  font-size: var(--font-size-1);
   line-height: 1;
-  color: #eee;
-  border-radius: 3px;
+  color: var(--text-1);
+  border-radius: var(--radius-1);
   display: flex;
   align-items: center;
   height: 32px;
-  padding: 0 10px;
+  padding: 0 var(--size-2);
   position: relative;
   user-select: none;
   outline: none;
@@ -42,30 +45,30 @@
 }
 
 .DropdownMenuItem[data-highlighted] {
-  background-color: #333;
-  color: white;
+  background-color: var(--surface-3);
+  color: var(--text-1);
 }
 
 .DropdownMenuItem[data-disabled] {
-  color: #666;
+  color: var(--text-3);
   pointer-events: none;
 }
 
 .DropdownMenuSeparator {
   height: 1px;
-  background-color: #333;
-  margin: 5px;
+  background-color: var(--surface-3);
+  margin: var(--size-1);
 }
 
 .DropdownMenuLabel {
-  padding-left: 10px;
-  font-size: 12px;
+  padding-left: var(--size-2);
+  font-size: var(--font-size-0);
   line-height: 25px;
-  color: #888;
+  color: var(--text-3);
 }
 
 .DropdownMenuArrow {
-  fill: #1a1a1a;
+  fill: var(--surface-1);
 }
 
 @keyframes slideUpAndFade {
@@ -73,6 +76,7 @@
     opacity: 0;
     transform: translateY(2px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -84,6 +88,7 @@
     opacity: 0;
     transform: translateX(-2px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -95,6 +100,7 @@
     opacity: 0;
     transform: translateY(-2px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -106,6 +112,7 @@
     opacity: 0;
     transform: translateX(2px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
