@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.0.5/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.3.7/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -34,10 +34,15 @@
     "rules": {
       "recommended": true,
       "correctness": {
-        "useExhaustiveDependencies": "warn"
+        "useExhaustiveDependencies": "warn",
+        "useHookAtTopLevel": "error"
       },
       "style": {
-        "noNonNullAssertion": "off"
+        "useComponentExportOnlyModules": {
+          "level": "warn",
+          "options": { "allowConstantExport": true }
+        },
+        "noNonNullAssertion": "warn"
       }
     }
   },

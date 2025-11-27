@@ -123,11 +123,14 @@ export function MapView({
       }
 
       layers.push(
-        new PathLayer({
+        new PathLayer<{
+          path: [number, number][];
+          colors: [number, number, number, number][];
+        }>({
           id: "selected-route-segments",
           data: [{ path: pathCoords, colors }],
-          getPath: (d: any) => d.path,
-          getColor: (d: any) => d.colors,
+          getPath: (d) => d.path,
+          getColor: (d) => d.colors,
           getWidth: 60,
           widthUnits: "meters",
           capRounded: true,
@@ -235,7 +238,6 @@ export function MapView({
           visualizePitch={true}
           visualizeRoll={true}
         />
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <Source
           id="maptiler-terrain"
           type="raster-dem"
@@ -243,7 +245,7 @@ export function MapView({
           tileSize={256}
           maxzoom={11} // Max zoom level for Terrain RGB
         />
-        <Source id="routes-data" type="geojson" data={routesGeoJson as any}>
+        <Source id="routes-data" type="geojson" data={routesGeoJson}>
           <DeckGLOverlay
             layers={deckGLLayers}
             pickingRadius={10}

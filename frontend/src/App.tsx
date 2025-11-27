@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import type { LineString, MultiLineString } from "geojson";
 import "./App.css";
 import { TopBar } from "./components/TopBar.tsx";
 import { MapView } from "./components/MapView.tsx";
@@ -43,10 +44,11 @@ function App() {
   const routeData = useMemo(() => {
     if (!selectedRoute || !selectedRoute.geojson) return [];
 
+    const geojson = selectedRoute.geojson;
     const coords =
-      selectedRoute.geojson.type === "LineString"
-        ? selectedRoute.geojson.coordinates
-        : selectedRoute.geojson.coordinates[0];
+      geojson.type === "LineString"
+        ? geojson.coordinates
+        : geojson.coordinates[0];
 
     if (!coords || coords.length === 0) return [];
 

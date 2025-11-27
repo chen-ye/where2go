@@ -7,8 +7,7 @@
   "scripts": {
     "dev": "vite --port 5174 --host 0.0.0.0",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "lint:biome": "biome lint .",
+    "lint": "biome lint .",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "check": "biome check --write .",
@@ -39,19 +38,14 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.7",
-    "@eslint/js": "^9.39.1",
     "@types/maplibre-gl": "^1.14.0",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
-    "eslint": "^9.39.1",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.4.24",
     "geojson": "^0.5.0",
     "globals": "^16.5.0",
     "typescript": "~5.9.3",
-    "typescript-eslint": "^8.48.0",
     "vite": "^7.2.4"
   }
 }
