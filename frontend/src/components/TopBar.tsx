@@ -8,7 +8,12 @@ import {
   DropdownMenuItem,
 } from './ui/DropdownMenu';
 
-export function TopBar() {
+interface TopBarProps {
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+}
+
+export function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
   const [recomputing, setRecomputing] = useState(false);
 
   const handleRecomputeAll = async () => {
@@ -56,7 +61,13 @@ export function TopBar() {
         </DropdownMenu>
       </div>
       <div className="search-container">
-        <input type="text" className="search-input" placeholder="search" />
+        <input
+          type="text"
+          className="search-input"
+          placeholder="search"
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+        />
         <Search className="search-icon" size={18} />
       </div>
     </div>

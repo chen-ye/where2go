@@ -9,9 +9,13 @@ import {
   getDistanceFromLatLonInMeters,
   calculateGrade,
 } from "./utils/geo";
+import { SearchResultsView } from "./components/SearchResultsView.tsx";
+import { RouteDetailsView } from "./components/RouteDetailsView.tsx";
+
 function App() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState(new URLSearchParams(window.location.search).get("q") || "");
   const [viewState, setViewState] = useState({
     longitude: -122.2, // Default to Bellevue area based on image
     latitude: 47.61,
@@ -23,13 +27,32 @@ function App() {
     lon: number;
   } | null>(null);
 
+  // Update URL when search changes
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (searchQuery) {
+      params.set("q", searchQuery);
+    } else {
+      params.delete("q");
+    }
+    const newUrl =
+      window.location.pathname +
+      (params.toString() ? "?" + params.toString() : "");
+    window.history.replaceState({}, "", newUrl);
+  }, [searchQuery]);
+
   useEffect(() => {
     fetchRoutes();
-  }, []);
+  }, [searchQuery]); // Refetch when query changes
 
+  // TODO: this should be debounced, and use an abort signal to cancel previous requests
   const fetchRoutes = async () => {
     try {
-      const res = await fetch("/api/routes");
+      const url = new URL("/api/routes", window.location.origin);
+      if (searchQuery) {
+        url.searchParams.set("search-regex", searchQuery);
+      }
+      const res = await fetch(url);
       const data = await res.json();
       setRoutes(data);
     } catch (e) {
@@ -109,7 +132,7 @@ function App() {
 
   return (
     <>
-      <TopBar />
+      <TopBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       <MapView
         routes={routes}
         selectedRouteId={selectedRouteId}
@@ -121,21 +144,31 @@ function App() {
         displayGradeOnMap={displayGradeOnMap}
         routeData={routeData}
       />
-      {selectedRoute && (
-        <BottomPanel
-          route={selectedRoute}
-          routeData={routeData}
-          onClose={() => setSelectedRouteId(null)}
-          onDelete={(id) => {
-            setRouteToDelete(id);
-            setDeleteConfirmOpen(true);
-          }}
-          onUpdateTags={handleUpdateTags}
-          hoveredLocation={hoveredLocation}
-          onHover={setHoveredLocation}
-          displayGradeOnMap={displayGradeOnMap}
-          onToggleDisplayGradeOnMap={setDisplayGradeOnMap}
-        />
+      {(selectedRoute || searchQuery) && (
+        <BottomPanel>
+          {selectedRoute ? (
+            <RouteDetailsView
+              route={selectedRoute}
+              routeData={routeData}
+              onClose={() => setSelectedRouteId(null)}
+              onDelete={(id) => {
+                setRouteToDelete(id);
+                setDeleteConfirmOpen(true);
+              }}
+              onUpdateTags={handleUpdateTags}
+              hoveredLocation={hoveredLocation}
+              onHover={setHoveredLocation}
+              displayGradeOnMap={displayGradeOnMap}
+              onToggleDisplayGradeOnMap={setDisplayGradeOnMap}
+            />
+          ) : (
+            <SearchResultsView
+              results={routes}
+              onSelectRoute={handleSelectRoute}
+              onClose={() => setSearchQuery("")}
+            />
+          )}
+        </BottomPanel>
       )}
       <ConfirmDialog
         open={deleteConfirmOpen}

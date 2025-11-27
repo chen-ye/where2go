@@ -99,7 +99,9 @@ function processRouteGPX(
 
 // Routes
 router.get('/api/routes', async (ctx: RouterContext<string>) => {
-  const result = await db
+  const searchRegex = ctx.request.url.searchParams.get('search-regex');
+
+  let query = db
     .select({
       id: routes.id,
       source_url: routes.sourceUrl,
@@ -112,7 +114,13 @@ router.get('/api/routes', async (ctx: RouterContext<string>) => {
       total_descent: routes.totalDescent,
     })
     .from(routes)
-    .orderBy(desc(routes.createdAt));
+    .$dynamic();
+
+  if (searchRegex) {
+    query = query.where(sql`${routes.title} ~* ${searchRegex}`);
+  }
+
+  const result = await query.orderBy(desc(routes.title));
 
   const mappedRoutes = result.map((row) => ({
     ...row,

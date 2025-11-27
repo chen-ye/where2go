@@ -26,7 +26,6 @@
   font-size: var(--font-size-1);
   line-height: 1;
   color: var(--text-1);
-  box-shadow: 0 var(--border-size-1) 0 var(--surface-3);
 }
 
 .AccordionTrigger {
