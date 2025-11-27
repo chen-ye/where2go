@@ -17,7 +17,9 @@ Comprised of:
   friendly, and WebGL-based.
 - A backend which stores routes in a PostGIS database
 
-## Usage
+Routes can be selected to see more details and be managed. You can also dow
+
+## Quickstart
 
 For now, where2go is self-hosted only.
 
@@ -29,6 +31,8 @@ cd where2go
 ./scripts/generate-env.sh
 docker compose up
 ```
+
+Navigate to `http://localhost:5174` to view the app.
 
 > [!NOTE]
 > Modify the `.env` file and docker compose to connect to an existing Postgresql
