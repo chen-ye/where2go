@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Trash2, ExternalLink, Download, X, Plus } from "lucide-react";
 import type { Route, RouteDataPoint } from "../types.ts";
 import { ElevationProfile } from "./ElevationProfile.tsx";
+import { METERS_TO_MILES, METERS_TO_FEET } from "../utils/geo";
 import "./BottomPanel.css";
 
 interface RouteStatProps {
@@ -114,19 +115,29 @@ export function BottomPanel({
 
       <div className="route-stats">
         <RouteStat
-          value={route.distance}
+          value={
+            route.distance ? route.distance * METERS_TO_MILES : route.distance
+          }
           units="mi"
           decimals={1}
           className="distance"
         />
         •
         <RouteStat
-          value={route.total_ascent}
+          value={
+            route.total_ascent
+              ? route.total_ascent * METERS_TO_FEET
+              : route.total_ascent
+          }
           units="ft ↑"
           className="total-ascent"
         />
         <RouteStat
-          value={route.total_descent}
+          value={
+            route.total_descent
+              ? route.total_descent * METERS_TO_FEET
+              : route.total_descent
+          }
           units="ft ↓"
           className="total-descent"
         />

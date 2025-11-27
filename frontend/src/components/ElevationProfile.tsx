@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { Group } from "@visx/group";
 import { AreaClosed, Line, LinePath } from "@visx/shape";
 import { scaleLinear } from "@visx/scale";
@@ -8,7 +7,7 @@ import { ParentSize } from "@visx/responsive";
 import { localPoint } from "@visx/event";
 import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { bisector } from "d3-array";
-import { getGradeColor } from "../utils/geo";
+import { getGradeColor, METERS_TO_MILES, METERS_TO_FEET } from "../utils/geo";
 import type { RouteDataPoint } from "../types";
 
 interface ElevationProfileProps {
@@ -38,10 +37,10 @@ export function ElevationProfile({
   });
 
   // Accessors
-  const getX = (d: RouteDataPoint) => d.distance;
-  const getY = (d: RouteDataPoint) => d.elevation;
+  const getX = (d: RouteDataPoint) => d.distance * METERS_TO_MILES;
+  const getY = (d: RouteDataPoint) => d.elevation * METERS_TO_FEET;
   const bisectDistance = bisector<RouteDataPoint, number>(
-    (d) => d.distance
+    (d) => d.distance * METERS_TO_MILES
   ).left;
 
   // Scales
@@ -146,7 +145,11 @@ export function ElevationProfile({
                   {data.map((d, i) => (
                     <stop
                       key={i}
-                      offset={`${(d.distance / maxDist) * 100}%`}
+                      offset={`${
+                        ((d.distance * METERS_TO_MILES) /
+                          (maxDist * METERS_TO_MILES)) *
+                        100
+                      }%`}
                       stopColor={getGradeColor(d.grade)}
                     />
                   ))}
@@ -295,7 +298,7 @@ export function ElevationProfile({
           }}
         >
           <div style={{ fontSize: "14px", fontWeight: "bold", color: "#fff" }}>
-            {tooltipData.elevation.toFixed(0)} ft
+            {(tooltipData.elevation * METERS_TO_FEET).toFixed(0)} ft
           </div>
           <div
             style={{
@@ -314,7 +317,9 @@ export function ElevationProfile({
             </strong>
           </div>
           <div style={{ color: "#aaa", fontSize: "11px", marginBottom: "2px" }}>
-            <strong>{tooltipData.distance.toFixed(2)} mi</strong>
+            <strong>
+              {(tooltipData.distance * METERS_TO_MILES).toFixed(2)} mi
+            </strong>
           </div>
         </TooltipInPortal>
       )}

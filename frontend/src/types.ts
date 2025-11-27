@@ -15,8 +15,8 @@ export interface Route {
 }
 
 export interface RouteDataPoint {
-  distance: number; // miles
-  elevation: number; // feet
+  distance: number; // meters
+  elevation: number; // meters
   lat: number;
   lon: number;
   grade: number; // percentage

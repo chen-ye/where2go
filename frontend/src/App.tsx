@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo } from "react";
-import type { LineString, MultiLineString } from "geojson";
 import "./App.css";
 import { TopBar } from "./components/TopBar.tsx";
 import { MapView } from "./components/MapView.tsx";
@@ -7,9 +6,8 @@ import { BottomPanel } from "./components/BottomPanel.tsx";
 import type { Route, RouteDataPoint } from "./types.ts";
 import { ConfirmDialog } from "./components/ui/ConfirmDialog";
 import {
-  getDistanceFromLatLonInMiles,
+  getDistanceFromLatLonInMeters,
   calculateGrade,
-  METERS_TO_FEET,
 } from "./utils/geo";
 function App() {
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -61,19 +59,19 @@ function App() {
 
       if (i > 0) {
         const [prevLon, prevLat] = coords[i - 1];
-        const distMiles = getDistanceFromLatLonInMiles(
+        const distMeters = getDistanceFromLatLonInMeters(
           prevLat,
           prevLon,
           lat,
           lon
         );
-        totalDist += distMiles;
+        totalDist += distMeters;
         grade = calculateGrade(coords[i - 1], coords[i]);
       }
 
       points.push({
         distance: totalDist,
-        elevation: (ele || 0) * METERS_TO_FEET,
+        elevation: ele || 0,
         lat,
         lon,
         grade,

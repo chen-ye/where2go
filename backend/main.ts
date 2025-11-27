@@ -70,11 +70,9 @@ function calculateElevationStats(coordinates: number[][]): { totalAscent: number
     }
   }
 
-  // Convert meters to feet
-  const metersToFeet = 3.28084;
   return {
-    totalAscent: totalAscent * metersToFeet,
-    totalDescent: totalDescent * metersToFeet
+    totalAscent: totalAscent,
+    totalDescent: totalDescent
   };
 }
 
@@ -104,7 +102,7 @@ router.get("/api/routes", async (ctx: RouterContext<string>) => {
       tags,
       created_at,
       ST_AsGeoJSON(geom) as geojson,
-      (ST_Length(geom::geography) * 0.000621371)::double precision as distance,
+      ST_Length(geom::geography)::double precision as distance,
       (total_ascent)::double precision,
       (total_descent)::double precision
     FROM routes
