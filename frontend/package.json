@@ -41,7 +41,8 @@
     "open-props": "^1.7.16",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-map-gl": "^8.1.0"
+    "react-map-gl": "^8.1.0",
+    "use-debounce": "^10.0.6"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.7",
