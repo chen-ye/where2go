@@ -12,10 +12,16 @@ import {
 import { SearchResultsView } from "./components/SearchResultsView.tsx";
 import { RouteDetailsView } from "./components/RouteDetailsView.tsx";
 
+const SEARCH_PARAM_ROUTE = "route";
+const SEARCH_PARAM_QUERY = "q";
+const SEARCH_PARAM_SHOW_GRADE = "show-grade";
+
 function App() {
   const [routes, setRoutes] = useState<Route[]>([]);
-  const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState(new URLSearchParams(window.location.search).get("q") || "");
+  const [initialSearchParams] = useState(() => new URLSearchParams(window.location.search));
+  const [selectedRouteId, setSelectedRouteId] = useState<number | null>(initialSearchParams.get(SEARCH_PARAM_ROUTE) ? parseInt(initialSearchParams.get(SEARCH_PARAM_ROUTE) || "") : null);
+  const [searchQuery, setSearchQuery] = useState(initialSearchParams.get(SEARCH_PARAM_QUERY) || "");
+  const [displayGradeOnMap, setDisplayGradeOnMap] = useState(initialSearchParams.get(SEARCH_PARAM_SHOW_GRADE) === "true");
   const [viewState, setViewState] = useState({
     longitude: -122.2, // Default to Bellevue area based on image
     latitude: 47.61,
@@ -27,19 +33,29 @@ function App() {
     lon: number;
   } | null>(null);
 
-  // Update URL when search changes
+  // Update URL query parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (searchQuery) {
-      params.set("q", searchQuery);
+      params.set(SEARCH_PARAM_QUERY, searchQuery);
     } else {
-      params.delete("q");
+      params.delete(SEARCH_PARAM_QUERY);
+    }
+    if (selectedRouteId) {
+      params.set(SEARCH_PARAM_ROUTE, selectedRouteId.toString());
+    } else {
+      params.delete(SEARCH_PARAM_ROUTE);
+    }
+    if (displayGradeOnMap) {
+      params.set(SEARCH_PARAM_SHOW_GRADE, "true");
+    } else {
+      params.delete(SEARCH_PARAM_SHOW_GRADE);
     }
     const newUrl =
       window.location.pathname +
       (params.toString() ? "?" + params.toString() : "");
     window.history.replaceState({}, "", newUrl);
-  }, [searchQuery]);
+  }, [searchQuery, selectedRouteId, displayGradeOnMap]);
 
   useEffect(() => {
     fetchRoutes();
@@ -105,7 +121,6 @@ function App() {
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [routeToDelete, setRouteToDelete] = useState<number | null>(null);
-  const [displayGradeOnMap, setDisplayGradeOnMap] = useState(false);
 
   const handleConfirmDelete = async () => {
     if (routeToDelete !== null) {

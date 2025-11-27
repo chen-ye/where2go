@@ -11,7 +11,7 @@
   border-top-left-radius: var(--radius-3);
   border-top-right-radius: var(--radius-3);
   box-shadow: var(--shadow-4);
-  max-height: 50vh;
+  max-height: 30vh;
   overflow-y: auto;
   transition: transform 0.3s ease-in-out;
   will-change: transform;
