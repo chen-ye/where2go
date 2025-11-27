@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function renderState(state) {
-        document.body.dataset.state = state.isRunning ? "running" : "idle";
+        document.body.dataset.state = state.isRunning ? "running" : (state.total > 0 ? "completed" : "idle");
         if (state.isRunning) {
 
             // Progress Bar

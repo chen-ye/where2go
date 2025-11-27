@@ -1,149 +1,165 @@
 (function() {
     console.log("Where2Go Content Script Ready");
 
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        if (request.action === "scan_routes") {
-            try {
-                const routes = scanRoutes();
-                sendResponse({ success: true, routes: routes });
-            } catch (e) {
-                sendResponse({ success: false, error: e.message });
+    /**
+     * Provider Configuration
+     * Encapsulates site-specific logic for identifying and fetching routes.
+     */
+    const PROVIDERS = [
+        {
+            key: 'ridewithgps',
+            hostname: 'ridewithgps.com',
+            // Matches /routes/12345
+            regex: /\/routes\/(\d+)/,
+            getGpxUrl: (id, pageUrl) => {
+                const u = new URL(`/routes/${id}.gpx`, 'https://ridewithgps.com');
+                u.searchParams.set('sub_format', 'track');
+
+                // Check for privacy_code in the source URL (e.g. ?privacy_code=...)
+                try {
+                    const sourceUrlObj = new URL(pageUrl);
+                    const privacyCode = sourceUrlObj.searchParams.get('privacy_code');
+                    if (privacyCode) {
+                        u.searchParams.set('privacy_code', privacyCode);
+                    }
+                } catch (e) {
+                    // Fallback if pageUrl is somehow invalid
+                }
+
+                return u;
             }
-        } else if (request.action === "fetch_route_gpx") {
-            processGpxUrl(request.gpxUrl, request.pageUrl)
-                .then(data => sendResponse({ success: true, data: data }))
-                .catch(e => sendResponse({ success: false, error: e.message }));
-            return true; // Async
+        },
+        {
+            key: 'strava',
+            hostname: 'strava.com',
+            // Matches /routes/12345
+            regex: /\/routes\/(\d+)/,
+            getGpxUrl: (id) => new URL(`/routes/${id}/export_gpx`, 'https://www.strava.com')
+        }
+    ];
+
+    /**
+     * Message Event Listener
+     * Handles coordination between the popup/background script and this content script.
+     */
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        const handlers = {
+            scan_routes: () => {
+                try {
+                    const routes = scanRoutes();
+                    sendResponse({ success: true, routes });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            },
+            fetch_route_gpx: () => {
+                processGpxUrl(request.gpxUrl, request.pageUrl)
+                    .then(data => sendResponse({ success: true, data }))
+                    .catch(e => sendResponse({ success: false, error: e.message }));
+                return true; // Keep channel open for async response
+            }
+        };
+
+        if (handlers[request.action]) {
+            return handlers[request.action]();
         }
     });
 
+    /**
+     * Scans the current page context (URL and Anchors) for route patterns.
+     * Uses a Map to deduplicate routes by ID.
+     */
     function scanRoutes() {
-        const url = window.location.href;
+        // Determine the current provider based on hostname
+        const provider = PROVIDERS.find(p => window.location.hostname.includes(p.hostname));
+        if (!provider) throw new Error("Current site is not supported.");
 
-        // Strategy: specific extractors for different sites, or generic fallback
-        const uniqueRoutes = new Map(); // id -> {id, gpxUrl, pageUrl}
+        const uniqueRoutes = new Map();
 
-        const anchors = document.querySelectorAll('a[href]');
-        const isRwgps = window.location.hostname.includes("ridewithgps.com");
-        const isStrava = window.location.hostname.includes("strava.com");
+        // 1. Check current page URL (Handles "Single Page" scenario)
+        // 2. Check all anchor tags (Handles "List/Search" scenario)
+        // Note: Checking window.location.href FIRST ensures that if we are on a private route page,
+        // we capture the privacy_code from the main URL before any generic links on the page.
+        const candidates = [
+            window.location.href,
+            ...Array.from(document.querySelectorAll('a[href]'), a => a.getAttribute('href'))
+        ];
 
-        anchors.forEach(a => {
-            const href = a.getAttribute('href');
-            if (!href) return;
+        candidates.forEach((urlStr) => {
+            if (!urlStr) return;
 
-            if (isRwgps) {
-                const match = href.match(/\/routes\/(\d+)/);
-                if (match) {
-                    const id = match[1];
-                    if (!uniqueRoutes.has(id)) {
-                        const u = new URL(`/routes/${id}.gpx`, 'https://ridewithgps.com');
-                        u.searchParams.set('sub_format', 'track');
-                        uniqueRoutes.set(id, {
-                            id: id,
-                            gpxUrl: u.href,
-                            pageUrl: new URL(href, window.location.href).href
-                        });
-                    }
-                }
-            } else if (isStrava) {
-                const match = href.match(/\/routes\/(\d+)/);
-                if (match) {
-                    const id = match[1];
-                    if (!uniqueRoutes.has(id)) {
-                        uniqueRoutes.set(id, {
-                            id: id,
-                            gpxUrl: new URL(`/routes/${id}/export_gpx`, 'https://www.strava.com').href,
-                            pageUrl: new URL(href, window.location.href).href
-                        });
-                    }
+            // Normalize URL to handle relative paths
+            const fullUrl = new URL(urlStr, window.location.href);
+            const match = fullUrl.href.match(provider.regex);
+
+            if (match) {
+                const id = match[1];
+                if (!uniqueRoutes.has(id)) {
+                    uniqueRoutes.set(id, {
+                        id: id,
+                        gpxUrl: provider.getGpxUrl(id, fullUrl),
+                        pageUrl: fullUrl
+                    });
                 }
             }
         });
 
         const results = Array.from(uniqueRoutes.values());
-        if (results.length === 0) {
-            // Fallback: If no list found, maybe we are ON a single route page?
-            // This allows the "Single Page" functionality to work with the same flow
-            const singleResult = detectSinglePage(url);
-            if (singleResult) return [singleResult];
-
-            throw new Error("No routes found on this page.");
-        }
+        if (results.length === 0) throw new Error("No routes found on this page.");
 
         return results;
     }
 
-    function detectSinglePage(url) {
-        let id, gpxUrl;
-        if (url.includes("ridewithgps.com") && (id = url.match(/routes\/(\d+)/)?.[1])) {
-             const u = new URL(`/routes/${id}.gpx`, 'https://ridewithgps.com');
-             u.searchParams.set('sub_format', 'track');
-             gpxUrl = u.href;
-        } else if (url.includes("strava.com") && (id = url.match(/routes\/(\d+)/)?.[1])) {
-             gpxUrl = new URL(`/routes/${id}/export_gpx`, 'https://www.strava.com').href;
-        }
-
-        if (id && gpxUrl) {
-            return { id, gpxUrl, pageUrl: url };
-        }
-        return null;
-    }
-
-    // --- Fetch Logic with Backoff ---
-
+    /**
+     * Fetches URL with 429 Rate Limit handling and Exponential Backoff.
+     */
     async function fetchWithBackoff(url, retries = 3) {
         let delay = 30000;
 
         for (let i = 0; i <= retries; i++) {
             const res = await fetch(url);
+            if (res.ok) return res;
 
             if (res.status === 429) {
                 const retryAfter = res.headers.get('Retry-After');
                 let waitTime = delay;
 
                 if (retryAfter) {
-                    if (/^\d+$/.test(retryAfter)) {
-                        waitTime = parseInt(retryAfter, 10) * 1000;
-                    } else {
-                        const d = Date.parse(retryAfter);
-                        if (!isNaN(d)) waitTime = d - Date.now();
-                    }
+                    // Header can be seconds or a specific date string
+                    waitTime = /^\d+$/.test(retryAfter)
+                        ? parseInt(retryAfter, 10) * 1000
+                        : (Date.parse(retryAfter) - Date.now()) || delay;
                 }
 
-                waitTime += 1000; // Buffer
+                waitTime += 1000; // Safety buffer
+                console.warn(`Rate limit hit (429). Waiting ${waitTime}ms...`);
 
-                // Inform background we are waiting?
-                // Currently just waiting silently in content script, causing "Processing" to hang in background
-                console.warn(`Hit 429. Waiting ${waitTime}ms`);
-                await new Promise(r => setTimeout(r, waitTime));
-                delay *= 2;
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                delay *= 2; // Increase default delay for next attempt
                 continue;
             }
 
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return res;
+            throw new Error(`HTTP ${res.status}`);
         }
         throw new Error("Max retries exceeded for rate limit.");
     }
 
+    /**
+     * Fetches the GPX file and extracts metadata (title).
+     */
     async function processGpxUrl(gpxUrl, sourceUrl) {
         console.log("Fetching GPX from:", gpxUrl);
 
-        const gpxRes = await fetchWithBackoff(gpxUrl);
-        const gpxContent = await gpxRes.text();
+        const res = await fetchWithBackoff(gpxUrl);
+        const gpxContent = await res.text();
 
         let title = document.title;
-
         try {
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(gpxContent, "text/xml");
-            const metadataName = xmlDoc.querySelector("metadata > name");
-            const trkName = xmlDoc.querySelector("trk > name");
-
-            if (metadataName && metadataName.textContent.trim()) {
-                title = metadataName.textContent.trim();
-            } else if (trkName && trkName.textContent.trim()) {
-                title = trkName.textContent.trim();
+            const xmlDoc = new DOMParser().parseFromString(gpxContent, "text/xml");
+            // Try metadata name first, fall back to track name
+            const nameNode = xmlDoc.querySelector("metadata > name") || xmlDoc.querySelector("trk > name");
+            if (nameNode && nameNode.textContent.trim()) {
+                title = nameNode.textContent.trim();
             }
         } catch (e) {
             console.warn("Failed to parse GPX title", e);
