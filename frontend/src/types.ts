@@ -1,7 +1,7 @@
 import type { LineString, MultiLineString } from "geojson";
 
 export interface Route {
-  id: string;
+  id: number;
   source_url: string;
   title: string;
   tags: string[];
