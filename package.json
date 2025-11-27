@@ -1,0 +1,19 @@
+{
+  "name": "where2go",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "yarn@4.10.3",
+  "scripts": {
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "check": "biome check --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.7"
+  },
+  "workspaces": [
+    "frontend"
+  ]
+}
