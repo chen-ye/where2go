@@ -27,9 +27,8 @@ function RouteStat({
 
   return (
     <div className={`stat-item ${className}`}>
-      {value !== null && value !== undefined
-        ? `${formattedValue} ${units}`
-        : formattedValue}
+      {formattedValue}
+      <span className="stat-units">{units}</span>
     </div>
   );
 }
@@ -73,7 +72,6 @@ export function BottomPanel({
 
   return (
     <div className="bottom-panel">
-      {/* ... header and stats ... */}
       <div className="bottom-panel-header">
         <h2 className="route-title">{route.title}</h2>
         <div className="header-actions">
@@ -141,7 +139,7 @@ export function BottomPanel({
           units="ft ↓"
           className="total-descent"
         />
-        •<div className="stat-item estimated-duration">--:-- - --:--</div>
+        •<div className="stat-item estimated-duration">--:-- <span className="stat-units">-</span> --:--</div>
       </div>
 
       <div className="tags-row">

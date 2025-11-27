@@ -27,6 +27,7 @@
     font-family: var(--font-monospace-code);
     font-size: var(--font-size-4);
     font-weight: var(--font-weight-6);
+    max-inline-size: none;
     margin: 0;
     color: var(--text-1);
   }
@@ -62,7 +63,7 @@
   .route-stats {
     display: flex;
     gap: var(--size-3);
-    color: var(--text-3);
+    color: var(--text-4);
     font-family: var(--font-monospace-code);
     font-size: var(--font-size-2);
     margin-bottom: var(--size-3);
@@ -73,6 +74,10 @@
     align-items: center;
     gap: var(--size-1);
     color: var(--text-2);
+  }
+
+  .stat-units {
+    color: var(--text-3);
   }
 
   .tags-row {

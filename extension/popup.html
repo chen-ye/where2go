@@ -1,83 +1,64 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <link rel="stylesheet" href="styles.css">
   <style>
     body {
-      width: 320px;
-      padding: 15px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      color: #333;
+      display: flex;
+      flex-direction: column;
+      gap: var(--size-3);
+      border-left: var(--size-1) solid var(--brand);
     }
-    h1 {
-      font-size: 16px;
-      margin: 0 0 10px 0;
-      color: #2c3e50;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      border: none;
-      margin-bottom: 5px;
-    }
-    #scrape-btn {
-      background-color: #3498db;
-      color: white;
-    }
-    #scrape-btn:hover { background-color: #2980b9; }
 
-    #cancel-btn {
-      background-color: #e74c3c;
-      color: white;
-      display: none; /* Hidden by default */
-    }
-    #cancel-btn:hover { background-color: #c0392b; }
-
-    .status-container {
-      margin-top: 15px;
-      padding: 10px;
-      background: #f8f9fa;
-      border-radius: 4px;
-      font-size: 13px;
+    #error-msg:empty {
       display: none;
     }
-    .progress-bar {
-      height: 6px;
-      background: #e0e0e0;
-      border-radius: 3px;
-      margin-top: 8px;
-      overflow: hidden;
+
+    body[data-state="running"] {
+      #idle-buttons {
+        display: none;
+      }
+      #cancel-btn {
+        display: block;
+      }
+
+      #status-area {
+        display: flex;
+      }
     }
-    .progress-fill {
-      height: 100%;
-      background: #27ae60;
-      width: 0%;
-      transition: width 0.3s ease;
+
+    body[data-state="idle"] {
+      #idle-buttons {
+        display: flex;
+      }
+
+      #cancel-btn {
+        display: none;
+      }
+
+      #status-area {
+        display: none;
+      }
     }
-    .log {
-      margin-top: 5px;
-      color: #666;
-      font-size: 12px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .error {
-      color: #c0392b;
-      margin-top: 10px;
-      font-size: 12px;
-    }
+
   </style>
 </head>
 <body>
-  <h1>Where2Go Route Clipper</h1>
+  <hgroup class="title">
+    <h1>where2go</h1>
+    <h2>route clipper</h2>
+  </hgroup>
+
+  <p class="info"><em>Currently supports Strava + RideWithGPS</em></p>
 
   <div id="main-ui">
-    <button id="scrape-btn">Scrape Routes from Page</button>
-    <button id="cancel-btn">Cancel Operation</button>
+    <div id="idle-buttons" class="button-row">
+      <button id="scrape-btn" class="btn-primary">Import Routes</button>
+      <button id="settings-btn" class="btn-secondary btn-icon" aria-label="Settings">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+    <button id="cancel-btn" class="btn-danger btn-full-width" hidden>Cancel</button>
   </div>
 
   <div id="status-area" class="status-container">

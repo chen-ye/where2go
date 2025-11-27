@@ -1,0 +1,335 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@import "./vendor/open-props/style.css";
+@import "./vendor/open-props/normalize.css";
+@import "./vendor/open-props/dark.css";
+@import "./vendor/open-props/durations.css";
+
+:root {
+  /* Dark Scheme */
+
+  --brand-dark: var(--orange-6);
+
+  --text-1-dark: var(--gray-3);
+  --text-2-dark: var(--gray-5);
+  --text-3-dark: var(--gray-6);
+  --text-4-dark: var(--gray-7);
+
+  /* Translucent equivalents to gray */
+  --surface-1-dark: var(--gray-12);
+  --surface-2-dark: var(--gray-10);
+  --surface-3-dark: var(--gray-9);
+  --surface-4-dark: var(--gray-8);
+
+  --surface-1-translucent-dark: rgb(from black r g b / 0.7);
+  --surface-2-translucent-dark: rgb(from black r g b / 0.6);
+  --surface-3-translucent-dark: rgb(from black r g b / 0.5);
+  --surface-4-translucent-dark: rgb(from black r g b / 0.4);
+
+  --surface-shadow-dark: var(--gray-12-hsl);
+  --shadow-strength-dark: 80%;
+
+  /* Current */
+
+  --brand: var(--brand-dark);
+
+  --text-1: var(--text-1-dark); /* primary content: headers, body text, dynamic info  */
+  --text-2: var(--text-2-dark); /* secondary content: subheaders, secondary info */
+  --text-3: var(--text-3-dark); /* tertiary content: units */
+  --text-4: var(--text-4-dark); /* supporting typography: separators, some quotes */
+
+  --surface-1: var(--surface-1-dark);
+  --surface-2: var(--surface-2-dark);
+  --surface-3: var(--surface-3-dark);
+  --surface-4: var(--surface-4-dark);
+
+  --surface-1-translucent: var(--surface-1-translucent-dark);
+  --surface-2-translucent: var(--surface-2-translucent-dark);
+  --surface-3-translucent: var(--surface-3-translucent-dark);
+  --surface-4-translucent: var(--surface-4-translucent-dark);
+
+  --surface-shadow: var(--surface-shadow-dark);
+  --shadow-strength: var(--shadow-strength-dark);
+
+  --font-monospace-code: 'JetBrains Mono', monospace;
+
+  color-scheme: dark;
+
+  font-family: var(--font-neo-grotesque);
+  line-height: var(--font-line-height-1);
+  font-weight: var(--font-weight-4);
+
+  color: var(--text-1);
+  background-color: var(--surface-1);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: var(--size-4);
+  background-color: var(--surface-1);
+  color: var(--text-1);
+  min-width: 320px;
+}
+
+/* Typography */
+h1 {
+  font-size: var(--font-size-3);
+  font-weight: var(--font-weight-6);
+  margin: 0 0 var(--size-3) 0;
+  color: var(--text-1);
+}
+
+h2 {
+  font-size: var(--font-size-2);
+  font-weight: var(--font-weight-5);
+  margin: 0 0 var(--size-2) 0;
+  color: var(--text-2);
+}
+
+/* Links */
+a {
+  font-weight: 500;
+  color: var(--brand);
+  text-decoration: inherit;
+}
+
+a:hover {
+  color: var(--brand);
+}
+
+/* Form Elements */
+label {
+  display: block;
+  margin-bottom: var(--size-2);
+  font-weight: var(--font-weight-6);
+  font-size: var(--font-size-1);
+  color: var(--text-2);
+}
+
+input[type="text"],
+textarea {
+  width: 100%;
+  padding: var(--size-2);
+  box-sizing: border-box;
+  background-color: var(--surface-3);
+  border: 1px solid var(--surface-4);
+  border-radius: var(--radius-2);
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: var(--font-size-1);
+}
+
+input[type="text"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px var(--surface-1), 0 0 0 4px var(--brand);
+}
+
+textarea {
+  min-height: var(--size-10);
+  font-family: var(--font-monospace-code);
+  resize: vertical;
+}
+
+/* Buttons */
+button {
+  padding: var(--size-2) var(--size-4);
+  border-radius: var(--radius-2);
+  cursor: pointer;
+  font-size: var(--font-size-1);
+  font-weight: var(--font-weight-5);
+  border: none;
+  transition: background-color var(--duration-fast), transform var(--duration-fast);
+  font-family: inherit;
+}
+
+.btn-primary {
+  background-color: var(--brand);
+  color: var(--gray-12);
+}
+
+.btn-primary:hover {
+  background-color: var(--orange-4);
+}
+
+.btn-primary:active {
+  background-color: var(--orange-5);
+}
+
+
+.btn-danger {
+  background-color: var(--red-6);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: var(--red-7);
+}
+
+.btn-danger:active {
+  background-color: var(--red-8);
+}
+
+.btn-full-width {
+  width: 100%;
+  margin-bottom: var(--size-2);
+}
+
+.button-row {
+  display: flex;
+  gap: var(--size-2);
+}
+
+#scrape-btn {
+  flex: 1;
+}
+
+.btn-secondary {
+  background-color: var(--surface-3);
+  color: var(--text-1);
+}
+
+.btn-secondary:hover {
+  background-color: var(--surface-4);
+}
+
+.btn-secondary:active {
+  background-color: var(--gray-10);
+}
+
+.btn-icon {
+  padding: var(--size-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+}
+
+/* Form Groups */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2);
+}
+
+.help-text {
+  font-size: var(--font-size-0);
+  color: var(--text-3);
+  margin-top: var(--size-1);
+  line-height: var(--font-line-height-2);
+}
+
+/* Status & Messages */
+.status {
+  margin-top: var(--size-3);
+  color: var(--green-5);
+  font-size: var(--font-size-1);
+}
+
+.error {
+  color: var(--red-5);
+  margin-top: var(--size-3);
+  font-size: var(--font-size-1);
+}
+
+/* Status Container (for popup) */
+.status-container {
+  padding: var(--size-3);
+  background: var(--surface-2);
+  border-radius: var(--radius-2);
+  font-size: var(--font-size-1);
+  display: none;
+  flex-direction: column;
+  gap: var(--size-2);
+}
+
+/* Progress Bar */
+.progress-bar {
+  height: var(--size-2);
+  background: var(--surface-3);
+  border-radius: var(--radius-2);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--green-6);
+  width: var(--progress, 0%);
+  transition: width var(--duration-normal) ease;
+}
+
+.progress-fill[data-state="error"] {
+  background: var(--red-6);
+}
+
+.progress-fill[data-state="success"] {
+  background: var(--green-6);
+}
+
+/* Log Text */
+.info {
+  font-size: var(--font-size-0);
+  font-weight: var(--font-weight-5);
+  color: var(--text-2);
+}
+
+.log {
+  color: var(--text-2);
+  font-size: var(--font-size-0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log[data-state="error"] {
+  color: var(--red-5);
+}
+
+.log[data-state="normal"] {
+  color: var(--text-2);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: var(--size-2);
+  height: var(--size-2);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface-1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: var(--radius-2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--surface-4);
+}
+
+.title {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: var(--size-2);
+
+  h1 {
+    font-family: var(--font-monospace-code);
+    font-size: var(--font-size-3);
+    margin: 0;
+    padding: 0;
+  }
+  h2 {
+    font-family: var(--font-sans);
+    font-size: var(--font-size-3);
+    margin: 0;
+    padding: 0;
+  }
+}

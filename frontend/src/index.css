@@ -8,11 +8,12 @@
 :root {
   /* Dark Scheme */
 
-  --brand-dark: var(--orange-3);
+  --brand-dark: var(--orange-6);
 
   --text-1-dark: var(--gray-3);
   --text-2-dark: var(--gray-5);
-  --text-3-dark: var(--gray-7);
+  --text-3-dark: var(--gray-6);
+  --text-4-dark: var(--gray-7);
 
   /* Translucent equivalents to gray */
   --surface-1-dark: var(--gray-12);
@@ -32,9 +33,10 @@
 
   --brand: var(--brand-dark);
 
-  --text-1: var(--text-1-dark);
-  --text-2: var(--text-2-dark);
-  --text-3: var(--text-3-dark);
+  --text-1: var(--text-1-dark); /* primary content: headers, body text, dynamic info  */
+  --text-2: var(--text-2-dark); /* secondary content: subheaders, secondary info */
+  --text-3: var(--text-3-dark); /* tertiary content: units */
+  --text-4: var(--text-4-dark); /* supporting typography: separators, some quotes */
 
   --surface-1: var(--surface-1-dark);
   --surface-2: var(--surface-2-dark);
@@ -57,8 +59,8 @@
   line-height: var(--font-line-height-1);
   font-weight: var(--font-weight-4);
 
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #121212;
+  color: var(--text-1);
+  background-color: var(--surface-1);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -75,19 +77,19 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background-color: var(--surface-1);
-  color: var(--text-primary);
+  color: var(--text-1);
   overflow: hidden;
   /* Prevent body scroll */
 }
 
 a {
   font-weight: 500;
-  color: var(--accent-color);
+  color: var(--brand);
   text-decoration: inherit;
 }
 
 a:hover {
-  color: var(--accent-color);
+  color: var(--brand);
 }
 
 /* Scrollbar styling */

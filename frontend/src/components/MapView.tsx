@@ -1,4 +1,5 @@
 import { MapboxOverlay } from "@deck.gl/mapbox";
+import { GeoJsonLayer, ScatterplotLayer, PathLayer } from "@deck.gl/layers";
 import { Layer, type DeckProps, type PickingInfo } from "@deck.gl/core";
 
 import Map, {
@@ -13,7 +14,6 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "./MapView.css";
 import { useCallback, useMemo } from "react";
 import type { Route, RouteDataPoint } from "../types.ts";
-import { GeoJsonLayer, ScatterplotLayer, PathLayer } from "deck.gl";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import { getGradeColor } from "../utils/geo";
 

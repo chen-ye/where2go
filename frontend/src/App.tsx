@@ -105,7 +105,6 @@ function App() {
 
   const handleSelectRoute = (id: number | null) => {
     setSelectedRouteId(id);
-    setDisplayGradeOnMap(false); // Reset color by grade when a new route is selected
   };
 
   return (

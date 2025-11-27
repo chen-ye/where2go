@@ -26,9 +26,22 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_PORT: 5432
-    command: run --allow-net --allow-read --allow-env --watch main.ts
+    command: deno run --allow-net --allow-read --allow-env --watch main.ts
     depends_on:
       - db
+
+  frontend-dev:
+    image: node:24-alpine
+    working_dir: /where2go/frontend
+    volumes:
+      - ./:/where2go
+    ports:
+      - "5174:5174"
+    environment:
+      VITE_API_URL: http://app:8070
+    command: sh -c "corepack enable && yarn install && yarn dev"
+    depends_on:
+      - app
 
 volumes:
   db-data:
