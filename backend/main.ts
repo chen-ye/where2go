@@ -117,9 +117,9 @@ router.get('/api/routes', async (ctx: RouterContext<string>) => {
   const mappedRoutes = result.map((row) => ({
     ...row,
     geojson: JSON.parse(row.geojson ?? '[]'),
-    distance: Number(row.distance),
-    total_ascent: Number(row.total_ascent),
-    total_descent: Number(row.total_descent),
+    distance: row.distance,
+    total_ascent: row.total_ascent,
+    total_descent: row.total_descent,
   }));
 
   ctx.response.body = mappedRoutes;
