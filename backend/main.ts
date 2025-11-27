@@ -113,6 +113,7 @@ router.get('/api/routes', async (ctx: RouterContext<string>) => {
       distance: sql<number>`ST_Length(${routes.geom}::geography)`,
       total_ascent: routes.totalAscent,
       total_descent: routes.totalDescent,
+      grades: routes.grades,
     })
     .from(routes)
     .$dynamic();
@@ -163,6 +164,7 @@ router.post('/api/routes', async (ctx: RouterContext<string>) => {
         gpxContent: gpx_content,
         tags: tags || [],
         geom: sql`ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)`,
+        grades: sql`calculate_route_grades(ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326))`,
         totalAscent: processed.totalAscent,
         totalDescent: processed.totalDescent,
       })
@@ -173,6 +175,7 @@ router.post('/api/routes', async (ctx: RouterContext<string>) => {
           gpxContent: sql`EXCLUDED.gpx_content`,
           tags: sql`EXCLUDED.tags`,
           geom: sql`EXCLUDED.geom`,
+          grades: sql`calculate_route_grades(EXCLUDED.geom)`,
           totalAscent: sql`EXCLUDED.total_ascent`,
           totalDescent: sql`EXCLUDED.total_descent`,
           createdAt: sql`CURRENT_TIMESTAMP`,
@@ -245,6 +248,7 @@ router.put('/api/routes/:id', async (ctx: RouterContext<string>) => {
       distance: sql<number>`ST_Length(${routes.geom}::geography)`,
       total_ascent: routes.totalAscent,
       total_descent: routes.totalDescent,
+      grades: routes.grades,
     })
     .from(routes)
     .where(eq(routes.id, parseInt(id)));
@@ -300,10 +304,14 @@ router.post('/api/routes/:id/recompute', async (ctx: RouterContext<string>) => {
     const geojsonStr = JSON.stringify(processed.geojson);
 
     // Update the route with recomputed values
+    // Using sql directly to call the function on the geometry we are setting
+    const geomSql = sql`ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)`;
+
     await db
       .update(routes)
       .set({
-        geom: sql`ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)`,
+        geom: geomSql,
+        grades: sql`calculate_route_grades(${geomSql})`,
         totalAscent: processed.totalAscent,
         totalDescent: processed.totalDescent,
       })
@@ -345,11 +353,13 @@ router.post('/api/routes/recompute', async (ctx: RouterContext<string>) => {
         }
 
         const geojsonStr = JSON.stringify(processed.geojson);
+        const geomSql = sql`ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)`;
 
         await db
           .update(routes)
           .set({
-            geom: sql`ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)`,
+            geom: geomSql,
+            grades: sql`calculate_route_grades(${geomSql})`,
             totalAscent: processed.totalAscent,
             totalDescent: processed.totalDescent,
           })
