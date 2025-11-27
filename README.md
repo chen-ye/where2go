@@ -1,4 +1,4 @@
-# where2go 🚴
+# where2go
 
 A route aggregator/bookmarking app. Think of it as Pocket, but for routes.
 
