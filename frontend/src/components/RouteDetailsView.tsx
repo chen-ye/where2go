@@ -49,6 +49,7 @@ interface RouteDetailsViewProps {
   onDelete: (id: number) => void;
   onUpdateTags: (id: number, tags: string[]) => void;
   onUpdateCompleted: (id: number, isCompleted: boolean) => void;
+  updatingRouteId: number | null;
   hoveredLocation: { lat: number; lon: number } | null;
   onHover: (location: { lat: number; lon: number } | null) => void;
   displayGradeOnMap: boolean;
@@ -62,6 +63,7 @@ export function RouteDetailsView({
   onDelete,
   onUpdateTags,
   onUpdateCompleted,
+  updatingRouteId,
   hoveredLocation,
   onHover,
   displayGradeOnMap,
@@ -69,6 +71,7 @@ export function RouteDetailsView({
   routeData,
 }: RouteDetailsViewProps) {
   const [tagPromptOpen, setTagPromptOpen] = useState(false);
+  const isUpdating = updatingRouteId === route.id;
 
   return (
     <>
@@ -79,6 +82,7 @@ export function RouteDetailsView({
             pressed={route.is_completed}
             onPressedChange={(pressed) => onUpdateCompleted(route.id, pressed)}
             title="Mark Complete"
+            disabled={isUpdating}
           >
             <Check size={18} />
           </Toggle>
@@ -153,15 +157,17 @@ export function RouteDetailsView({
         {route.tags?.map((tag) => (
           <div key={tag} className="tag-pill">
             {tag}
-            <span
+            <button
+              type="button"
               className="tag-remove"
+              disabled={isUpdating}
               onClick={() => {
                 const newTags = route.tags.filter((t) => t !== tag);
                 onUpdateTags(route.id, newTags);
               }}
             >
               <X size={12} />
-            </span>
+            </button>
           </div>
         ))}
         <PromptDialog
@@ -173,7 +179,7 @@ export function RouteDetailsView({
             if (newTag) onUpdateTags(route.id, [...(route.tags || []), newTag]);
           }}
           trigger={
-            <button type="button" className="add-tag-btn">
+            <button type="button" className="add-tag-btn" disabled={isUpdating}>
               <Plus size={12} /> New
             </button>
           }

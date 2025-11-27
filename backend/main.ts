@@ -82,7 +82,7 @@ function calculateElevationStats(
 // Helper to process GPX content and return computed values
 function processRouteGPX(
   gpxContent: string,
-): { geojson: GeoJSONLineString; totalAscent: number; totalDescent: number } | null {
+): { geojson: LineString; totalAscent: number; totalDescent: number } | null {
   const geojson = gpxToGeoJSON(gpxContent);
   if (!geojson) {
     return null;
@@ -236,8 +236,38 @@ router.put('/api/routes/:id', async (ctx: RouterContext<string>) => {
     .set(updateData)
     .where(eq(routes.id, parseInt(id)));
 
+  const result = await db
+    .select({
+      id: routes.id,
+      source_url: routes.sourceUrl,
+      title: routes.title,
+      tags: routes.tags,
+      is_completed: routes.isCompleted,
+      created_at: routes.createdAt,
+      geojson: sql<string>`ST_AsGeoJSON(${routes.geom})`,
+      distance: sql<number>`ST_Length(${routes.geom}::geography)`,
+      total_ascent: routes.totalAscent,
+      total_descent: routes.totalDescent,
+    })
+    .from(routes)
+    .where(eq(routes.id, parseInt(id)));
+
+  if (result.length === 0) {
+    ctx.response.status = 404;
+    return;
+  }
+
+  const row = result[0];
+  const mappedRoute = {
+    ...row,
+    geojson: JSON.parse(row.geojson ?? '[]'),
+    distance: row.distance,
+    total_ascent: row.total_ascent,
+    total_descent: row.total_descent,
+  };
+
   ctx.response.status = 200;
-  ctx.response.body = { success: true };
+  ctx.response.body = mappedRoute;
 });
 
 // Recompute stats for a single route

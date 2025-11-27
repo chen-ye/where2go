@@ -35,6 +35,8 @@ function App() {
     lon: number;
   } | null>(null);
 
+  const [updatingRouteId, setUpdatingRouteId] = useState<number | null>(null);
+
   // Update URL query parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -105,6 +107,7 @@ function App() {
   };
 
   const handleUpdateCompleted = async (id: number, isCompleted: boolean) => {
+    setUpdatingRouteId(id);
     try {
       const response = await fetch(`/api/routes/${id}`, {
         method: "PUT",
@@ -114,12 +117,17 @@ function App() {
         body: JSON.stringify({ is_completed: isCompleted }),
       });
       if (response.ok) {
-        await fetchRoutes();
+        const updatedRoute = await response.json();
+        setRoutes((prev) =>
+          prev.map((r) => (r.id === updatedRoute.id ? updatedRoute : r))
+        );
       } else {
         console.error("Failed to update completed status");
       }
     } catch (error) {
       console.error("Error updating completed status:", error);
+    } finally {
+      setUpdatingRouteId(null);
     }
   };
 
@@ -180,12 +188,26 @@ function App() {
   };
 
   const handleUpdateTags = async (id: number, newTags: string[]) => {
-    await fetch(`/api/routes/${id}`, {
-      method: "PUT",
-      body: JSON.stringify({ tags: newTags }),
-      headers: { "Content-Type": "application/json" },
-    });
-    fetchRoutes();
+    setUpdatingRouteId(id);
+    try {
+      const response = await fetch(`/api/routes/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ tags: newTags }),
+        headers: { "Content-Type": "application/json" },
+      });
+      if (response.ok) {
+        const updatedRoute = await response.json();
+        setRoutes((prev) =>
+          prev.map((r) => (r.id === updatedRoute.id ? updatedRoute : r))
+        );
+      } else {
+        console.error("Failed to update tags");
+      }
+    } catch (error) {
+      console.error("Error updating tags:", error);
+    } finally {
+      setUpdatingRouteId(null);
+    }
   };
 
   const handleSelectRoute = (id: number | null) => {
@@ -219,6 +241,7 @@ function App() {
               }}
               onUpdateTags={handleUpdateTags}
               onUpdateCompleted={handleUpdateCompleted}
+              updatingRouteId={updatingRouteId}
               hoveredLocation={hoveredLocation}
               onHover={setHoveredLocation}
               displayGradeOnMap={displayGradeOnMap}
