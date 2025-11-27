@@ -6,6 +6,7 @@ import toGeoJSON from '@mapbox/togeojson';
 import type { LineString, MultiLineString } from 'geojson';
 import { routes } from './schema.ts';
 import { desc, eq, sql } from 'drizzle-orm';
+import { getRouteAttributes, type SurfaceSegment } from './valhalla.ts';
 
 const app = new Application();
 app.use(oakCors({ origin: '*' })); // Enable CORS for all routes
@@ -80,20 +81,27 @@ function calculateElevationStats(
 }
 
 // Helper to process GPX content and return computed values
-function processRouteGPX(
+async function processRouteGPX(
   gpxContent: string,
-): { geojson: LineString; totalAscent: number; totalDescent: number } | null {
+): Promise<{
+  geojson: LineString;
+  totalAscent: number;
+  totalDescent: number;
+  surfaceSegments: SurfaceSegment[] | null;
+} | null> {
   const geojson = gpxToGeoJSON(gpxContent);
   if (!geojson) {
     return null;
   }
 
   const elevationStats = calculateElevationStats(geojson.coordinates);
+  const surfaceSegments = await getRouteAttributes(geojson.coordinates);
 
   return {
     geojson,
     totalAscent: elevationStats.totalAscent,
     totalDescent: elevationStats.totalDescent,
+    surfaceSegments,
   };
 }
 
@@ -113,6 +121,7 @@ router.get('/api/routes', async (ctx: RouterContext<string>) => {
       distance: sql<number>`ST_Length(${routes.geom}::geography)`,
       total_ascent: routes.totalAscent,
       total_descent: routes.totalDescent,
+      surface_segments: routes.surfaceSegments,
     })
     .from(routes)
     .$dynamic();
@@ -145,7 +154,7 @@ router.post('/api/routes', async (ctx: RouterContext<string>) => {
     return;
   }
 
-  const processed = processRouteGPX(gpx_content);
+  const processed = await processRouteGPX(gpx_content);
   if (!processed) {
     ctx.response.status = 400;
     ctx.response.body = { error: 'Invalid GPX content' };
@@ -165,6 +174,7 @@ router.post('/api/routes', async (ctx: RouterContext<string>) => {
         geom: sql`ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)`,
         totalAscent: processed.totalAscent,
         totalDescent: processed.totalDescent,
+        surfaceSegments: processed.surfaceSegments,
       })
       .onConflictDoUpdate({
         target: routes.sourceUrl,
@@ -175,6 +185,7 @@ router.post('/api/routes', async (ctx: RouterContext<string>) => {
           geom: sql`EXCLUDED.geom`,
           totalAscent: sql`EXCLUDED.total_ascent`,
           totalDescent: sql`EXCLUDED.total_descent`,
+          surfaceSegments: sql`EXCLUDED.surface_segments`,
           createdAt: sql`CURRENT_TIMESTAMP`,
         },
       });
@@ -245,6 +256,7 @@ router.put('/api/routes/:id', async (ctx: RouterContext<string>) => {
       distance: sql<number>`ST_Length(${routes.geom}::geography)`,
       total_ascent: routes.totalAscent,
       total_descent: routes.totalDescent,
+      surface_segments: routes.surfaceSegments,
     })
     .from(routes)
     .where(eq(routes.id, parseInt(id)));
@@ -289,7 +301,7 @@ router.post('/api/routes/:id/recompute', async (ctx: RouterContext<string>) => {
       return;
     }
 
-    const processed = processRouteGPX(gpx_content);
+    const processed = await processRouteGPX(gpx_content);
 
     if (!processed) {
       ctx.response.status = 400;
@@ -306,6 +318,7 @@ router.post('/api/routes/:id/recompute', async (ctx: RouterContext<string>) => {
         geom: sql`ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)`,
         totalAscent: processed.totalAscent,
         totalDescent: processed.totalDescent,
+        surfaceSegments: processed.surfaceSegments,
       })
       .where(eq(routes.id, parseInt(id)));
 
@@ -336,7 +349,7 @@ router.post('/api/routes/recompute', async (ctx: RouterContext<string>) => {
           continue;
         }
 
-        const processed = processRouteGPX(row.gpx_content);
+        const processed = await processRouteGPX(row.gpx_content);
 
         if (!processed) {
           console.error(`Failed to process GPX for route ${row.id}`);
@@ -352,6 +365,7 @@ router.post('/api/routes/recompute', async (ctx: RouterContext<string>) => {
             geom: sql`ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)`,
             totalAscent: processed.totalAscent,
             totalDescent: processed.totalDescent,
+            surfaceSegments: processed.surfaceSegments,
           })
           .where(eq(routes.id, row.id));
 

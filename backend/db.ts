@@ -57,4 +57,13 @@ export async function initDb() {
   } catch (e) {
     console.log('Column geom likely exists or error adding it', e);
   }
+
+  // Add surface_segments column if not exists
+  try {
+    await queryClient`
+      ALTER TABLE routes ADD COLUMN IF NOT EXISTS surface_segments JSONB;
+    `;
+  } catch (e) {
+    console.log('Column surface_segments likely exists or error adding it', e);
+  }
 }

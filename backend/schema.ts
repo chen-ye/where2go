@@ -1,4 +1,4 @@
-import { boolean, geometry, real, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, geometry, jsonb, real, serial, text, timestamp } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 
 export const routes = pgTable('routes', {
@@ -11,6 +11,7 @@ export const routes = pgTable('routes', {
   createdAt: timestamp('created_at').defaultNow(),
   totalAscent: real('total_ascent'),
   totalDescent: real('total_descent'),
+  surfaceSegments: jsonb('surface_segments'),
   // PostGIS geometry column - LineStringZ with SRID 4326
   geom: geometry('geom', { type: 'linestring', mode: 'xy', srid: 4326 }),
 });
