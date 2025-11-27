@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
+import { useDebounce } from "use-debounce";
 import "./App.css";
 import { TopBar } from "./components/TopBar.tsx";
 import { MapView } from "./components/MapView.tsx";
@@ -21,6 +22,7 @@ function App() {
   const [initialSearchParams] = useState(() => new URLSearchParams(window.location.search));
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(initialSearchParams.get(SEARCH_PARAM_ROUTE) ? parseInt(initialSearchParams.get(SEARCH_PARAM_ROUTE) || "") : null);
   const [searchQuery, setSearchQuery] = useState(initialSearchParams.get(SEARCH_PARAM_QUERY) || "");
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
   const [displayGradeOnMap, setDisplayGradeOnMap] = useState(initialSearchParams.get(SEARCH_PARAM_SHOW_GRADE) === "true");
   const [viewState, setViewState] = useState({
     longitude: -122.2, // Default to Bellevue area based on image
@@ -59,19 +61,45 @@ function App() {
 
   useEffect(() => {
     fetchRoutes();
-  }, [searchQuery]); // Refetch when query changes
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, [debouncedSearchQuery]); // Refetch when query changes
 
-  // TODO: this should be debounced, and use an abort signal to cancel previous requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const fetchRoutes = async () => {
+    // Cancel any pending request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new controller
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       const url = new URL("/api/routes", window.location.origin);
+      // Use the current value of debouncedSearchQuery (or pass it as arg if needed, but here it's fine)
+      // Note: If called from outside useEffect, we might want to use the latest state.
+      // However, searchQuery updates before debouncedSearchQuery.
+      // If we use searchQuery here, we might fetch based on non-debounced value if called directly.
+      // But fetchRoutes is mainly called by useEffect on debounced change.
+      // When called by handleUpdateCompleted, we probably want the current debounced search query context?
+      // Actually, if we use searchQuery here, and fetchRoutes is called by useEffect(debouncedSearchQuery),
+      // it works because by the time debouncedSearchQuery updates, searchQuery is already updated.
       if (searchQuery) {
         url.searchParams.set("search-regex", searchQuery);
       }
-      const res = await fetch(url);
+
+      const res = await fetch(url, { signal: controller.signal });
       const data = await res.json();
       setRoutes(data);
     } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') {
+        // Request was aborted, ignore
+        return;
+      }
       console.error("Failed to fetch routes", e);
     }
   };
