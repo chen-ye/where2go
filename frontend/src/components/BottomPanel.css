@@ -62,6 +62,7 @@
 
   .route-stats {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--size-3);
     color: var(--text-4);
     font-family: var(--font-monospace-code);
