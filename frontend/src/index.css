@@ -51,6 +51,10 @@
   --surface-shadow: var(--surface-shadow-dark);
   --shadow-strength: var(--shadow-strength-dark);
 
+  --blur-1: blur(2px);
+  --blur-2: blur(4px);
+  --blur-3: blur(8px);
+
   --font-monospace-code: 'JetBrains Mono', monospace;
 
   color-scheme: dark;

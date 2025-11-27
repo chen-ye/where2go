@@ -2,25 +2,23 @@
   width: 100%;
   display: flex;
   flex-direction: column;
+  gap: var(--size-3);
   overflow: hidden;
 }
 
 .search-results-header {
-  padding-inline-start: var(--size-3);
-  padding-block-end: var(--size-3);
-  border-bottom: var(--border-size-1) solid var(--surface-3);
+  padding-block: 0;
+  border-bottom: 1px solid var(--surface-3);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-bottom: var(--size-3);
 }
 
 .search-results-header h3 {
   margin: 0;
   font-size: var(--font-size-2);
-  font-weight: var(--font-weight-6);
-  letter-spacing: var(--font-letterspacing-2);
-  color: var(--text-4);
-  text-transform: uppercase;
+  color: var(--text-1);
 }
 
 .search-results-count {

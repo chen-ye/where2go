@@ -14,8 +14,32 @@
   flex-direction: column;
   gap: var(--size-4);
 
-  .maplibregl-ctrl {
-    margin: 0;
-    filter: invert(1);
+  .maplibregl-ctrl-group {
+    background-color: var(--surface-2-translucent);
+    backdrop-filter: var(--blur-3);
+    border: 1px solid var(--surface-3);
+    border-radius: var(--radius-2);
+    box-shadow: var(--shadow-3);
+    overflow: hidden;
+
+    button {
+      border-color: var(--surface-3);
+      background-color: transparent;
+      width: 30px;
+      height: 30px;
+
+      &:hover {
+        background-color: var(--surface-3);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--brand);
+        outline-offset: -2px;
+      }
+
+      .maplibregl-ctrl-icon {
+        filter: invert(1);
+      }
+    }
   }
 }
