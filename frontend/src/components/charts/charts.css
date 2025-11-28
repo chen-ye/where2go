@@ -52,8 +52,16 @@
 }
 
 .chart-tooltip-stat {
+  color: var(--text-2);
+  font-size: var(--font-size-0);
   font-weight: var(--font-weight-6);
   display: flex;
   align-items: center;
   gap: var(--size-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-tooltip-stat.primary {
+  color: var(--text-1);
+  font-size: var(--font-size-1);
 }

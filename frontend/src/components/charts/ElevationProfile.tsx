@@ -258,13 +258,11 @@ const ElevationChart = memo(
               positionAnchor: anchorName,
             }}
           >
-            <div className="chart-tooltip-stat" style={{ fontSize: "14px", fontWeight: "bold", color: "#fff" }}>
+            <div className="chart-tooltip-stat primary">
               {(activeTooltipData.elevation * METERS_TO_FEET).toFixed(0)} ft
             </div>
             <div className="chart-tooltip-stat" style={{
                 color: getGradeColor(activeTooltipData.grade),
-                fontSize: "11px",
-                fontVariantNumeric: "tabular-nums",
               }}
             >
                 {activeTooltipData.grade.toLocaleString("en-US", {
@@ -274,7 +272,7 @@ const ElevationChart = memo(
                 })}
                 %
             </div>
-            <div className="chart-tooltip-stat" style={{ color: "#aaa", fontSize: "11px", marginBottom: "2px" }}>
+            <div className="chart-tooltip-stat secondary">
                 {(activeTooltipData.distance * METERS_TO_MILES).toFixed(2)} mi
             </div>
           </Tooltip>

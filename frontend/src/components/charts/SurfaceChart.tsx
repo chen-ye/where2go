@@ -250,7 +250,7 @@ export function SurfaceChart({
             positionTryFallbacks: "flip-block, flip-inline, flip-block flip-inline",
           }}
         >
-          <div className="chart-tooltip-stat">
+          <div className="chart-tooltip-stat primary">
             {activeTooltipData.data.surface}
           </div>
           {!!activeTooltipData.data.road_class && (
