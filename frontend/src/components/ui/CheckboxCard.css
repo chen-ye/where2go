@@ -1,0 +1,62 @@
+.layer-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--size-2);
+  padding: var(--size-2);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-2);
+  cursor: pointer;
+  background-color: var(--surface-2);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.layer-card:hover {
+  background-color: var(--surface-3);
+  border-color: var(--brand);
+}
+
+.layer-card.checked {
+  background-color: var(--surface-3);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand);
+}
+
+.layer-card-label {
+  font-size: var(--font-size-00);
+  text-align: center;
+  color: var(--text-1);
+}
+
+/* Checkbox specific styles */
+.checkbox-card {
+  justify-content: space-between;
+}
+
+.layer-card-header {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.layer-checkbox {
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid var(--text-2);
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.layer-checkbox[data-state='checked'] {
+  background-color: var(--brand);
+  border-color: var(--brand);
+}
+
+.checkbox-indicator {
+  color: white;
+}

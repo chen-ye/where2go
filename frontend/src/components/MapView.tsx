@@ -1,9 +1,10 @@
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { GeoJsonLayer, ScatterplotLayer, PathLayer } from "@deck.gl/layers";
-import { Layer, type DeckProps, type PickingInfo } from "@deck.gl/core";
+import { Layer as DeckLayer, type DeckProps, type PickingInfo } from "@deck.gl/core";
 
 import Map, {
   Source,
+  Layer,
   NavigationControl,
   GeolocateControl,
   useControl,
@@ -12,10 +13,13 @@ import Map, {
 } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./MapView.css";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef, useEffect } from "react";
+import { LayerSelector } from "./LayerSelector";
+import { BASEMAPS, OVERLAYS } from "../utils/layerConfig";
 import type { Route, RouteDataPoint } from "../types.ts";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import { getGradeColor } from "../utils/geo";
+import type { MapRef } from "react-map-gl/maplibre";
 
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
@@ -23,12 +27,22 @@ function DeckGLOverlay(props: DeckProps) {
   return null;
 }
 
-const MAPTILER_API_KEY = "di0gshXc0zUqmVTNctjb";
+// Offset elevation to avoid z-fighting
+const elvOffset = 5;
+
+// Helper to convert hex to rgb
+const hexToRgb = (hex: string): [number, number, number, number] => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b, 255];
+};
 
 interface MapViewProps {
   routes: Route[];
   selectedRouteId: number | null;
-  onSelectRoute: (id: number | null) => void;
+  selectionSource: 'map' | 'search' | null;
+  onSelectRoute: (id: number | null, source?: 'map' | 'search') => void;
   viewState: {
     longitude: number;
     latitude: number;
@@ -39,11 +53,19 @@ interface MapViewProps {
   onHover: (location: { lat: number; lon: number } | null) => void;
   displayGradeOnMap: boolean;
   routeData?: RouteDataPoint[];
+  baseStyle: string;
+  onBaseStyleChange: (style: string) => void;
+  customStyleUrl: string;
+  onCustomStyleUrlChange: (url: string) => void;
+  activeOverlays: Set<string>;
+  onToggleOverlay: (id: string, active: boolean) => void;
+  padding?: { top: number; bottom: number; left: number; right: number };
 }
 
 export function MapView({
   routes,
   selectedRouteId,
+  selectionSource,
   onSelectRoute,
   viewState,
   onMove,
@@ -51,7 +73,37 @@ export function MapView({
   onHover,
   displayGradeOnMap,
   routeData,
+  baseStyle,
+  onBaseStyleChange,
+  customStyleUrl,
+  onCustomStyleUrlChange,
+  activeOverlays,
+  onToggleOverlay,
+  padding,
 }: MapViewProps) {
+  const mapRef = useRef<MapRef>(null);
+
+  // Fly to selected route's bounding box only when selected from search
+  useEffect(() => {
+    if (!selectedRouteId || !mapRef.current || selectionSource !== 'search') return;
+
+    const selectedRoute = routes.find((r) => r.id === selectedRouteId);
+    if (!selectedRoute?.bbox) return;
+
+    // Extract bounds from the bbox LineString
+    // ST_BoundingDiagonal returns a LineString with two points: [southwest, northeast]
+    const coords = selectedRoute.bbox.coordinates as number[][];
+    const bounds: [[number, number], [number, number]] = [
+      [coords[0][0], coords[0][1]], // [minLng, minLat]
+      [coords[1][0], coords[1][1]], // [maxLng, maxLat]
+    ];
+
+    mapRef.current.fitBounds(bounds, {
+      padding: { top: 100, bottom: 100, left: 100, right: 100 },
+      duration: 1000,
+    });
+  }, [selectedRouteId, routes, selectionSource]);
+
   // const [hoverInfo, setHoverInfo] = useState<PickingInfo<Feature<Geometry, {}>>>();
 
   const routesGeoJson: FeatureCollection = useMemo(() => {
@@ -62,81 +114,38 @@ export function MapView({
         properties: {
           id: r.id,
           title: r.title,
-          selected: r.id === selectedRouteId,
+          is_completed: r.is_completed,
+          grades: r.grades,
         },
         geometry: r.geojson,
       })),
     };
-  }, [routes, selectedRouteId]);
+  }, [routes]);
 
   const deckGLLayers: DeckProps["layers"] = useMemo(() => {
-    const layers: Layer[] = [];
+    const layers: DeckLayer[] = [];
 
     // If displayGradeOnMap is enabled and a route is selected, we render the selected route as segments
     if (
-      displayGradeOnMap &&
       selectedRouteId &&
       routeData &&
       routeData.length > 1
     ) {
-      // Actually deck.gl PathLayer expects coordinates.
-      // routeData has lat, lon.
-      const pathCoords = routeData.map((p) => [p.lon, p.lat]);
-
-      const colors: [number, number, number, number][] = [];
-
-      // Helper to convert hex to rgb
-      const hexToRgb = (hex: string): [number, number, number, number] => {
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return [r, g, b, 255];
-      };
-
-      // Map grades to vertex colors
-      for (let i = 0; i < routeData.length; i++) {
-        // For vertex i, we use its grade.
-        // Note: routeData[i].grade is the grade of the segment ENDING at i (calculated from i-1 to i).
-        // But for coloring, we might want the segment STARTING at i?
-        // In the previous loop:
-        // grades.push(calculateGrade(coords[i], coords[i+1]));
-        // colors.push(hexToRgb(getGradeColor(grades[gradeIndex])));
-
-        // routeData[i].grade is calculated from i-1 to i.
-        // So routeData[i].grade is the grade of the segment arriving at i.
-        // If we want the grade of the segment departing i, we need routeData[i+1].grade.
-
-        // Let's look at previous logic:
-        // grades[i] = grade(i, i+1)
-        // So for vertex i, we want grade(i, i+1).
-        // That corresponds to routeData[i+1].grade.
-
-        let grade = 0;
-        if (i < routeData.length - 1) {
-          grade = routeData[i + 1].grade;
-        } else {
-          // Last point, use previous grade
-          grade = routeData[i].grade;
-        }
-
-        colors.push(hexToRgb(getGradeColor(grade)));
-      }
-
       layers.push(
-        new PathLayer<{
-          path: [number, number][];
-          colors: [number, number, number, number][];
-        }>({
-          id: "selected-route-segments",
-          data: [{ path: pathCoords, colors }],
-          getPath: (d) => d.path,
-          getColor: (d) => d.colors,
-          getWidth: 60,
+        new PathLayer<RouteDataPoint[]>({
+          id: "selected-route",
+          data: [routeData],
+          getPath: (d) => { return d.flatMap((p) => [p.lon, p.lat, p.elevation + elvOffset])},
+          getColor: (d) => {
+            return displayGradeOnMap ? ([...d, d.at(-1)] as RouteDataPoint[]).map((p) => hexToRgb(getGradeColor(p.grade))) : [217, 119, 6, 255];
+          },
+          getWidth: 40,
           widthUnits: "meters",
           capRounded: true,
           jointRounded: true,
           pickable: false,
           widthMinPixels: 2,
+          _pathType: 'open',
         })
       );
     }
@@ -144,24 +153,20 @@ export function MapView({
     // Main routes layer
     layers.push(
       new GeoJsonLayer({
-        id: "route-lines",
+        id: "routes",
         data: routesGeoJson,
         getLineColor: (object) => {
           const selectedRoute = object.properties.id === selectedRouteId;
-          // find the route object to check completion status
-          const route = routes.find((r) => r.id === object.properties.id);
-          const isCompleted = route?.is_completed;
+          const isCompleted = object.properties.is_completed;
 
           if (selectedRoute) {
-            return displayGradeOnMap ? [0, 0, 0, 0] : [217, 119, 6, 255];
+            return [0, 0, 0, 0];
+            // return displayGradeOnMap ? [0, 0, 0, 0] : [217, 119, 6, 255];
           }
-          if (isCompleted) {
-            return [17, 70, 120, 60];
-          }
-          return [167, 119, 199, 80];
+          return isCompleted ? [167, 119, 199, 255 * 0.4] : [17, 70, 120, 255 * 0.6];
         },
         getLineWidth: (object) =>
-          object.properties.id === selectedRouteId ? 60 : 10,
+          object.properties.id === selectedRouteId ? 60 : 20,
         lineWidthUnits: "meters",
         pickable: true,
         stroked: true,
@@ -178,7 +183,7 @@ export function MapView({
         },
         lineWidthMinPixels: 1,
         onClick: (info) => {
-          onSelectRoute(info.object.properties.id);
+          onSelectRoute(info.object.properties.id, 'map');
         },
         updateTriggers: {
           getLineColor: [selectedRouteId, displayGradeOnMap],
@@ -213,24 +218,52 @@ export function MapView({
     routes,
   ]);
 
+  const mapStyle = useMemo(() => {
+    if (baseStyle === "custom") {
+      return customStyleUrl;
+    }
+    const config = BASEMAPS.find((b) => b.id === baseStyle);
+    if (config) {
+      // Append API key from config if present
+      if (config.apiKey && !config.url.includes("key=")) {
+        const separator = config.url.includes("?") ? "&" : "?";
+        return `${config.url}${separator}key=${config.apiKey}`;
+      }
+      return config.url;
+    }
+    // Fallback to first available basemap
+    return BASEMAPS[0]?.url ?? "";
+  }, [baseStyle, customStyleUrl]);
+
   return (
-    <div className="map-container">
+    <div
+      className="map-container"
+      style={
+        {
+          "--map-padding-top": `${padding?.top ?? 0}px`,
+          "--map-padding-bottom": `${padding?.bottom ?? 0}px`,
+          "--map-padding-left": `${padding?.left ?? 0}px`,
+          "--map-padding-right": `${padding?.right ?? 0}px`,
+        } as React.CSSProperties
+      }
+    >
       <Map
+        ref={mapRef}
         {...viewState}
+        padding={padding}
         onMove={(evt) => onMove(evt.viewState)}
-        mapStyle={`https://api.maptiler.com/maps/dataviz-v4-dark/style.json?key=${MAPTILER_API_KEY}`}
-        // mapStyle={`https://api.maptiler.com/maps/outdoor-v4-dark/style.json?key=${MAPTILER_API_KEY}`}
+        mapStyle={mapStyle}
         terrain={{
-          source: "maptiler-terrain",
+          source: "terrain",
           exaggeration: 1,
         }}
         onClick={useCallback(
           (e: MapLayerMouseEvent) => {
             const feature = e.features?.[0];
             if (feature) {
-              onSelectRoute(feature.properties?.id);
+              onSelectRoute(feature.properties?.id, 'map');
             } else {
-              onSelectRoute(null);
+              onSelectRoute(null, 'map');
             }
           },
           [onSelectRoute]
@@ -244,12 +277,53 @@ export function MapView({
           visualizePitch={true}
           visualizeRoll={true}
         />
+        <LayerSelector
+          currentStyle={baseStyle}
+          onStyleChange={onBaseStyleChange}
+          customStyleUrl={customStyleUrl}
+          onCustomStyleUrlChange={onCustomStyleUrlChange}
+          activeOverlays={activeOverlays}
+          onToggleOverlay={onToggleOverlay}
+        />
+
+        {(() => {
+          // Sort active overlays by order (Low -> High)
+          const activeConfigs = OVERLAYS.filter((o) => activeOverlays.has(o.id));
+          // Render in reverse order (High -> Low) so that the "top" layer exists
+          // when the "bottom" layer tries to insert itself before it.
+          const reversedConfigs = activeConfigs.toReversed();
+
+          return reversedConfigs.map((overlay, index) => {
+            // The layer "above" this one is the previous one in the reversed list
+            const aboveOverlay = index > 0 ? reversedConfigs[index - 1] : undefined;
+            const beforeId = aboveOverlay ? `${aboveOverlay.id}-layer` : undefined;
+
+            return (
+              <Source
+                key={overlay.id}
+                id={overlay.id}
+                type="raster"
+                tiles={[overlay.url]}
+                tileSize={256}
+              >
+                <Layer
+                  id={`${overlay.id}-layer`}
+                  type="raster"
+                  paint={{ "raster-opacity": overlay.opacity }}
+                  beforeId={beforeId}
+                />
+              </Source>
+            );
+          });
+        })()}
+
         <Source
-          id="maptiler-terrain"
+          id="terrain"
           type="raster-dem"
-          url={`https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key=${MAPTILER_API_KEY}`}
+          tiles={["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"]}
           tileSize={256}
-          maxzoom={11} // Max zoom level for Terrain RGB
+          encoding="terrarium"
+          maxzoom={15}
         />
         <Source id="routes-data" type="geojson" data={routesGeoJson}>
           <DeckGLOverlay

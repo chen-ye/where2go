@@ -43,7 +43,7 @@ You'll also want to install the Chrome extension:
 1. Open `chrome://extensions/`
 2. Enable "Developer mode"
 3. Click "Load unpacked"
-4. Select the `/extension` directory
+4. Select the [`/extension`](./extension) directory
 5. Click on the extension icon. On first run, an options tab will open. Set the
    where2go endpoint to your endpoint.
 6. Navigate to a route or route collection page on Strava or RideWithGPS (you’ll
@@ -51,6 +51,73 @@ You'll also want to install the Chrome extension:
    https://ridewithgps.com/collections/2915253
 7. Click the extension icon, and hit import. Routes will be imported and added
    to your where2go instance.
+
+## Customizing Map Layers
+
+The map supports configurable basemaps and overlay layers through JSON
+configuration files.
+
+### Basemaps
+
+Basemap configurations are stored in
+[`frontend/config/layers/basemaps/`](./frontend/config/layers/basemaps). Each
+basemap is defined by a JSON file with the following schema:
+
+```json
+{
+  "id": "unique-basemap-id",
+  "name": "Display Name",
+  "url": "https://example.com/style.json",
+  "apiKey": "optional-api-key"
+}
+```
+
+- `id`: Unique identifier for the basemap
+- `name`: Human-readable name shown in the layer selector
+- `url`: MapLibre style URL
+- `apiKey`: Optional API key appended to the URL as `?key=` query parameter
+
+The app includes CartoDB Dark Matter as a free default basemap. To add a new
+basemap, create a new JSON file in the basemaps directory. The basemap will
+automatically appear in the layer selector.
+
+Some example configs utilize MapTiler are provided in
+[`frontend/config/layers/basemaps/*.example`](./frontend/config/layers/basemaps/*.example).
+MapTiler provides a free account with a small monthly limit. To use these
+configs, you'll need to sign up for a MapTiler account and add your API key to
+the configs.
+
+### Overlay Layers
+
+Overlay configurations are stored in
+[`frontend/config/layers/overlay/`](./frontend/config/layers/overlay). Each
+overlay is defined by a JSON file with the following schema:
+
+```json
+{
+  "order": 1,
+  "id": "unique-overlay-id",
+  "name": "Display Name",
+  "url": "https://example.com/tiles/{z}/{x}/{y}.png",
+  "opacity": 0.7
+}
+```
+
+- `order`: Stacking order (lower numbers appear below higher numbers)
+- `id`: Unique identifier for the overlay
+- `name`: Human-readable name shown in the layer selector
+- `url`: Tile URL in slippy map format (`{z}/{x}/{y}`)
+- `opacity`: Layer opacity (0.0 to 1.0)
+
+The `url` can be either a raster tile URL (as shown above) or a MapLibre style
+URL. To add a new overlay, create a new JSON file in the overlay directory. The
+overlay will automatically appear in the layer selector.
+
+Some example configs utilize Strava Heatmap are provided in the
+[`frontend/config/layers/overlay/*.example` files](./frontend/config/layers/overlay).
+To use these configs, you'll need to set up a
+[Strava Heatmap proxy service](https://github.com/chen-ye/strava-heatmap-proxy)
+and add your API key to the configs.
 
 ## Dev Stuff
 

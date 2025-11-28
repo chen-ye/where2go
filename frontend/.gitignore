@@ -24,3 +24,9 @@ dist-ssr
 *.sw?
 
 .yarn/install-state.gz
+
+# Non-public map layers
+config/layers/basemaps/dataviz-v4-dark.json
+config/layers/basemaps/outdoors-v4-dark.json
+config/layers/overlay/strava-heatmap-global.json
+config/layers/overlay/strava-heatmap-personal.json

@@ -1,0 +1,7 @@
+{
+  "order": 2,
+  "id": "strava-heatmap-global",
+  "name": "Global Heatmap",
+  "url": "{your_strava_heatmap_proxy_url}/global/mobileblue/sport_Ride/{z}/{x}/{y}@2x.png",
+  "opacity": 0.7
+}

@@ -1,0 +1,7 @@
+{
+  "order": 1,
+  "id": "strava-heatmap-personal",
+  "name": "Personal Heatmap",
+  "url": "{your_strava_heatmap_proxy_url}/personal/purple/all/{z}/{x}/{y}@2x.png",
+  "opacity": 0.7
+}

@@ -6,7 +6,7 @@ import { RouteStat } from "./RouteStat";
 
 interface SearchResultsViewProps {
   results: Route[];
-  onSelectRoute: (id: number) => void;
+  onSelectRoute: (id: number, source?: 'map' | 'search') => void;
   onClose: () => void;
 }
 
@@ -18,7 +18,7 @@ export function SearchResultsView({
   return (
     <div className="search-results-view">
       <div className="search-results-header">
-        <h3>{results.length} Routes Found</h3>
+        <h3>Search Results · {results.length} Routes</h3>
         <button type="button" className="icon-button" onClick={onClose}>
           <X size={18} />
         </button>
@@ -28,7 +28,7 @@ export function SearchResultsView({
           <div
             key={route.id}
             className="search-result-row"
-            onClick={() => onSelectRoute(route.id)}
+            onClick={() => onSelectRoute(route.id, 'search')}
           >
             <div className="col-title" title={route.title}>
               {route.title}
