@@ -26,6 +26,7 @@ function App() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [initialSearchParams] = useState(() => new URLSearchParams(window.location.search));
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(initialSearchParams.get(SEARCH_PARAM_ROUTE) ? parseInt(initialSearchParams.get(SEARCH_PARAM_ROUTE) || "") : null);
+  const [selectionSource, setSelectionSource] = useState<'map' | 'search' | null>(null);
   const [searchQuery, setSearchQuery] = useState(initialSearchParams.get(SEARCH_PARAM_QUERY) || "");
   const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
   const [displayGradeOnMap, setDisplayGradeOnMap] = useState(initialSearchParams.get(SEARCH_PARAM_SHOW_GRADE) === "true");
@@ -261,7 +262,8 @@ function App() {
     }
   };
 
-  const handleSelectRoute = (id: number | null) => {
+  const handleSelectRoute = (id: number | null, source?: 'map' | 'search') => {
+    setSelectionSource(source ?? null);
     setSelectedRouteId(id);
   };
 
@@ -288,6 +290,7 @@ function App() {
       <MapView
         routes={routes}
         selectedRouteId={selectedRouteId}
+        selectionSource={selectionSource}
         onSelectRoute={handleSelectRoute}
         viewState={viewState}
         onMove={setViewState}

@@ -7,6 +7,7 @@ export interface Route {
   tags: string[];
   is_completed: boolean;
   geojson: LineString | MultiLineString;
+  bbox?: LineString;
   grades?: number[];
   // Mock data for stats if not present in backend yet
   distance?: number;

@@ -13,12 +13,13 @@ import Map, {
 } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./MapView.css";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useEffect } from "react";
 import { LayerSelector } from "./LayerSelector";
 import { BASEMAPS, OVERLAYS } from "../utils/layerConfig";
 import type { Route, RouteDataPoint } from "../types.ts";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import { getGradeColor } from "../utils/geo";
+import type { MapRef } from "react-map-gl/maplibre";
 
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
@@ -40,7 +41,8 @@ const hexToRgb = (hex: string): [number, number, number, number] => {
 interface MapViewProps {
   routes: Route[];
   selectedRouteId: number | null;
-  onSelectRoute: (id: number | null) => void;
+  selectionSource: 'map' | 'search' | null;
+  onSelectRoute: (id: number | null, source?: 'map' | 'search') => void;
   viewState: {
     longitude: number;
     latitude: number;
@@ -63,6 +65,7 @@ interface MapViewProps {
 export function MapView({
   routes,
   selectedRouteId,
+  selectionSource,
   onSelectRoute,
   viewState,
   onMove,
@@ -78,6 +81,29 @@ export function MapView({
   onToggleOverlay,
   padding,
 }: MapViewProps) {
+  const mapRef = useRef<MapRef>(null);
+
+  // Fly to selected route's bounding box only when selected from search
+  useEffect(() => {
+    if (!selectedRouteId || !mapRef.current || selectionSource !== 'search') return;
+
+    const selectedRoute = routes.find((r) => r.id === selectedRouteId);
+    if (!selectedRoute?.bbox) return;
+
+    // Extract bounds from the bbox LineString
+    // ST_BoundingDiagonal returns a LineString with two points: [southwest, northeast]
+    const coords = selectedRoute.bbox.coordinates as number[][];
+    const bounds: [[number, number], [number, number]] = [
+      [coords[0][0], coords[0][1]], // [minLng, minLat]
+      [coords[1][0], coords[1][1]], // [maxLng, maxLat]
+    ];
+
+    mapRef.current.fitBounds(bounds, {
+      padding: { top: 100, bottom: 100, left: 100, right: 100 },
+      duration: 1000,
+    });
+  }, [selectedRouteId, routes, selectionSource]);
+
   // const [hoverInfo, setHoverInfo] = useState<PickingInfo<Feature<Geometry, {}>>>();
 
   const routesGeoJson: FeatureCollection = useMemo(() => {
@@ -157,7 +183,7 @@ export function MapView({
         },
         lineWidthMinPixels: 1,
         onClick: (info) => {
-          onSelectRoute(info.object.properties.id);
+          onSelectRoute(info.object.properties.id, 'map');
         },
         updateTriggers: {
           getLineColor: [selectedRouteId, displayGradeOnMap],
@@ -222,6 +248,7 @@ export function MapView({
       }
     >
       <Map
+        ref={mapRef}
         {...viewState}
         padding={padding}
         onMove={(evt) => onMove(evt.viewState)}
@@ -234,9 +261,9 @@ export function MapView({
           (e: MapLayerMouseEvent) => {
             const feature = e.features?.[0];
             if (feature) {
-              onSelectRoute(feature.properties?.id);
+              onSelectRoute(feature.properties?.id, 'map');
             } else {
-              onSelectRoute(null);
+              onSelectRoute(null, 'map');
             }
           },
           [onSelectRoute]

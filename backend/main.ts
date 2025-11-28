@@ -114,6 +114,7 @@ router.get('/api/routes', async (ctx: RouterContext<string>) => {
       total_ascent: routes.totalAscent,
       total_descent: routes.totalDescent,
       grades: routes.grades,
+      bbox: sql<string>`ST_AsGeoJSON(ST_BoundingDiagonal(${routes.geom}))`,
     })
     .from(routes)
     .$dynamic();
@@ -127,6 +128,7 @@ router.get('/api/routes', async (ctx: RouterContext<string>) => {
   const mappedRoutes = result.map((row) => ({
     ...row,
     geojson: JSON.parse(row.geojson ?? '[]'),
+    bbox: JSON.parse(row.bbox ?? '{}'),
   }));
 
   ctx.response.body = mappedRoutes;
@@ -249,6 +251,7 @@ router.put('/api/routes/:id', async (ctx: RouterContext<string>) => {
       total_ascent: routes.totalAscent,
       total_descent: routes.totalDescent,
       grades: routes.grades,
+      bbox: sql<string>`ST_AsGeoJSON(ST_BoundingDiagonal(${routes.geom}))`,
     })
     .from(routes)
     .where(eq(routes.id, parseInt(id)));
@@ -262,6 +265,7 @@ router.put('/api/routes/:id', async (ctx: RouterContext<string>) => {
   const mappedRoute = {
     ...row,
     geojson: JSON.parse(row.geojson ?? '[]'),
+    bbox: JSON.parse(row.bbox ?? '{}'),
   };
 
   ctx.response.status = 200;
