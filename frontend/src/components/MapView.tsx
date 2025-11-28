@@ -77,12 +77,12 @@ export function MapView({
         properties: {
           id: r.id,
           title: r.title,
-          selected: r.id === selectedRouteId,
+          is_completed: r.is_completed,
         },
         geometry: r.geojson,
       })),
     };
-  }, [routes, selectedRouteId]);
+  }, [routes]);
 
   const deckGLLayers: DeckProps["layers"] = useMemo(() => {
     const layers: DeckLayer[] = [];
@@ -121,11 +121,6 @@ export function MapView({
         // So routeData[i].grade is the grade of the segment arriving at i.
         // If we want the grade of the segment departing i, we need routeData[i+1].grade.
 
-        // Let's look at previous logic:
-        // grades[i] = grade(i, i+1)
-        // So for vertex i, we want grade(i, i+1).
-        // That corresponds to routeData[i+1].grade.
-
         let grade = 0;
         if (i < routeData.length - 1) {
           grade = routeData[i + 1].grade;
@@ -137,23 +132,25 @@ export function MapView({
         colors.push(hexToRgb(getGradeColor(grade)));
       }
 
-      layers.push(
-        new PathLayer<{
-          path: [number, number][];
-          colors: [number, number, number, number][];
-        }>({
-          id: "selected-route",
-          data: [{ path: pathCoords, colors }],
-          getPath: (d) => d.path,
-          getColor: (d) => d.colors,
-          getWidth: 60,
-          widthUnits: "meters",
-          capRounded: true,
-          jointRounded: true,
-          pickable: false,
-          widthMinPixels: 2,
-        })
-      );
+      if (displayGradeOnMap) {
+        layers.push(
+          new PathLayer<{
+            path: [number, number][];
+            colors: [number, number, number, number][];
+          }>({
+            id: "selected-route",
+            data: [{ path: pathCoords, colors }],
+            getPath: (d) => d.path,
+            getColor: (d) => d.colors,
+            getWidth: 60,
+            widthUnits: "meters",
+            capRounded: true,
+            jointRounded: true,
+            pickable: false,
+            widthMinPixels: 2,
+          })
+        );
+      }
     }
 
     // Main routes layer
@@ -163,9 +160,7 @@ export function MapView({
         data: routesGeoJson,
         getLineColor: (object) => {
           const selectedRoute = object.properties.id === selectedRouteId;
-          // find the route object to check completion status
-          const route = routes.find((r) => r.id === object.properties.id);
-          const isCompleted = route?.is_completed;
+          const isCompleted = object.properties.is_completed;
 
           if (selectedRoute) {
             return displayGradeOnMap ? [0, 0, 0, 0] : [217, 119, 6, 255];
