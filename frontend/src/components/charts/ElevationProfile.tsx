@@ -1,15 +1,16 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useId } from "react";
 import { Group } from "@visx/group";
-import { AreaClosed, Line, LinePath } from "@visx/shape";
+import { AreaClosed, LinePath } from "@visx/shape";
 import { scaleLinear } from "@visx/scale";
 import { AxisBottom, AxisLeft } from "@visx/axis";
 import { curveMonotoneX } from "@visx/curve";
 import { ParentSize } from "@visx/responsive";
 import { localPoint } from "@visx/event";
-import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
+import { useTooltip, Tooltip } from "@visx/tooltip";
 import { bisector } from "d3-array";
-import { getGradeColor, METERS_TO_MILES, METERS_TO_FEET } from "../utils/geo";
-import type { RouteDataPoint } from "../types";
+import { getGradeColor, METERS_TO_MILES, METERS_TO_FEET } from "../../utils/geo";
+import type { RouteDataPoint } from "../../types";
+import "./charts.css";
 
 interface ElevationProfileProps {
   data: RouteDataPoint[];
@@ -40,7 +41,6 @@ const ElevationChart = memo(
     tooltipTop,
     showTooltip,
     hideTooltip,
-    TooltipInPortal,
   }: {
     data: RouteDataPoint[];
     width: number;
@@ -53,8 +53,9 @@ const ElevationChart = memo(
     tooltipTop: number | undefined;
     showTooltip: (args: any) => void;
     hideTooltip: () => void;
-    TooltipInPortal: any;
   }) => {
+    const anchorId = useId();
+    const anchorName = `--elevation-cursor-datum-${anchorId.replace(/:/g, "")}`;
     const xMax = width - margin.left - margin.right;
     const yMax = height - margin.top - margin.bottom;
 
@@ -221,73 +222,62 @@ const ElevationChart = memo(
 
             {showActiveTooltip && activeTooltipData && (
               <g>
-                <Line
-                  from={{ x: xScale(getX(activeTooltipData)), y: 0 }}
-                  to={{ x: xScale(getX(activeTooltipData)), y: yMax }}
-                  stroke="#666"
-                  strokeWidth={1}
-                  pointerEvents="none"
-                  strokeDasharray="5,5"
-                />
-                <circle
-                  cx={xScale(getX(activeTooltipData))}
-                  cy={yScale(getY(activeTooltipData))}
-                  r={4}
-                  fill={getGradeColor(activeTooltipData.grade)}
-                  stroke="#fff"
-                  strokeWidth={2}
-                  pointerEvents="none"
-                />
+                {/* SVG cursor removed, replaced by HTML elements below */}
               </g>
             )}
           </Group>
         </svg>
-
         {showActiveTooltip && activeTooltipData && (
-          <TooltipInPortal
+          <>
+            {/* Vertical Line */}
+            <div
+              className="chart-cursor-line"
+              style={{
+                top: margin.top,
+                left: xScale(getX(activeTooltipData)) + margin.left,
+                height: yMax,
+              }}
+            />
+            {/* Datum Point (Anchor) */}
+            <div
+              className="chart-cursor-datum"
+              style={{
+                '--offset-x': `${xScale(getX(activeTooltipData)) + margin.left}px`,
+                '--offset-y': `${yScale(getY(activeTooltipData)) + margin.top}px`,
+                backgroundColor: getGradeColor(activeTooltipData.grade),
+                anchorName,
+              } as React.CSSProperties}
+            />
+          </>
+        )}
+        {showActiveTooltip && activeTooltipData && (
+          <Tooltip
             key={Math.random()}
-            top={activeTooltipTop}
-            left={activeTooltipLeft}
+            className="chart-tooltip"
             style={{
-              ...defaultStyles,
-              background: "rgba(0, 0, 0, 0.9)",
-              color: "#fff",
-              border: "1px solid #444",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.5)",
-              fontSize: "12px",
-              padding: "8px 12px",
-              borderRadius: "4px",
-              lineHeight: "1.4",
-              zIndex: 1000,
-              fontFamily: "JetBrains Mono, monospace",
-              willChange: "transform",
+              positionAnchor: anchorName,
             }}
           >
-            <div style={{ fontSize: "14px", fontWeight: "bold", color: "#fff" }}>
+            <div className="chart-tooltip-stat" style={{ fontSize: "14px", fontWeight: "bold", color: "#fff" }}>
               {(activeTooltipData.elevation * METERS_TO_FEET).toFixed(0)} ft
             </div>
-            <div
-              style={{
+            <div className="chart-tooltip-stat" style={{
                 color: getGradeColor(activeTooltipData.grade),
                 fontSize: "11px",
                 fontVariantNumeric: "tabular-nums",
               }}
             >
-              <strong>
                 {activeTooltipData.grade.toLocaleString("en-US", {
                   minimumFractionDigits: 1,
                   maximumFractionDigits: 1,
                   signDisplay: "always",
                 })}
                 %
-              </strong>
             </div>
-            <div style={{ color: "#aaa", fontSize: "11px", marginBottom: "2px" }}>
-              <strong>
+            <div className="chart-tooltip-stat" style={{ color: "#aaa", fontSize: "11px", marginBottom: "2px" }}>
                 {(activeTooltipData.distance * METERS_TO_MILES).toFixed(2)} mi
-              </strong>
             </div>
-          </TooltipInPortal>
+          </Tooltip>
         )}
       </>
     );
@@ -309,10 +299,6 @@ export function ElevationProfile({
     hideTooltip,
   } = useTooltip<RouteDataPoint>();
 
-  const { containerRef, TooltipInPortal } = useTooltipInPortal({
-    scroll: true,
-  });
-
   if (data.length === 0) {
     return (
       <div
@@ -330,10 +316,7 @@ export function ElevationProfile({
   }
 
   return (
-    <div
-      style={{ height, width: "100%", position: "relative" }}
-      ref={containerRef}
-    >
+    <div className="chart-container" style={{ height }}>
       <ParentSize>
         {({ width, height }) =>
           width < 10 ? null : (
@@ -349,7 +332,6 @@ export function ElevationProfile({
               tooltipTop={tooltipTop}
               showTooltip={showTooltip}
               hideTooltip={hideTooltip}
-              TooltipInPortal={TooltipInPortal}
             />
           )
         }

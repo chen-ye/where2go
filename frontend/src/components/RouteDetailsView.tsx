@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Trash2, ExternalLink, Download, X, Plus, Check, RefreshCw } from "lucide-react";
 import type { Route, RouteDataPoint } from "../types.ts";
-import { ElevationProfile } from "./ElevationProfile.tsx";
+import { ElevationProfile } from "./charts/ElevationProfile.tsx";
 import { METERS_TO_MILES, METERS_TO_FEET } from "../utils/geo";
 import { PromptDialog } from "./ui/PromptDialog";
 import {
@@ -14,10 +14,13 @@ import {
 import { Switch } from "./ui/Switch";
 import { Toggle } from "./ui/Toggle";
 import { RouteStat } from "./RouteStat";
+import { SurfaceChart } from "./charts/SurfaceChart";
+import { ParentSize } from "@visx/responsive";
 import "./RouteDetailsView.css";
 
 interface RouteDetailsViewProps {
   route: Route;
+  recomputing: boolean;
   onClose: () => void;
   onRecompute: (id: number) => void;
   onDelete: (id: number) => void;
@@ -222,17 +225,18 @@ export function RouteDetailsView({
             <AccordionTrigger>Surfaces</AccordionTrigger>
           </AccordionHeader>
           <AccordionContent>
-            <div
-              style={{
-                height: "50px",
-                background: "#222",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#555",
-              }}
-            >
-              Surface Data Placeholder
+            <div style={{ height: 20, width: "100%" }}>
+              <ParentSize>
+                {({ width }) => (
+                  <SurfaceChart
+                    data={routeData}
+                    segments={route.valhalla_segments || []}
+                    width={width}
+                    hoveredLocation={hoveredLocation}
+                    onHover={onHover}
+                  />
+                )}
+              </ParentSize>
             </div>
           </AccordionContent>
         </AccordionItem>

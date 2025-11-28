@@ -12,6 +12,8 @@ import {
 } from "./utils/geo";
 import { SearchResultsView } from "./components/SearchResultsView.tsx";
 import { RouteDetailsView } from "./components/RouteDetailsView.tsx";
+import { Toaster } from "./components/ui/Toaster";
+import { toast } from "./components/ui/use-toast";
 
 const SEARCH_PARAM_ROUTE = "route";
 const SEARCH_PARAM_QUERY = "q";
@@ -95,10 +97,11 @@ function App() {
     // Add basemap and overlays
     params.set(SEARCH_PARAM_BASEMAP, baseStyle);
 
+    for (const overlay of params.getAll(SEARCH_PARAM_OVERLAY)) {
+      params.delete(SEARCH_PARAM_OVERLAY, overlay);
+    }
     for (const overlay of activeOverlays) {
-      if (!params.has(SEARCH_PARAM_OVERLAY, overlay)) {
-        params.append(SEARCH_PARAM_OVERLAY, overlay);
-      }
+      params.append(SEARCH_PARAM_OVERLAY, overlay);
     }
 
     const newUrl =
@@ -283,17 +286,24 @@ function App() {
 
       if (response.ok) {
         const result = await response.json();
-        alert(
-          `Recompute complete!\nSuccess: ${result.successCount}\nErrors: ${result.errorCount}\nTotal: ${result.total}`
-        );
+        toast({
+          title: "Recompute Complete",
+          description: `Success: ${result.successCount}, Errors: ${result.errorCount}, Total: ${result.total}`,
+        });
         // Optionally reload the page or refresh route data
         fetchRoutes();
       } else {
-        alert('Failed to recompute routes');
+        toast({
+          title: "Error",
+          description: "Failed to recompute routes",
+        });
       }
     } catch (error) {
       console.error('Error recomputing routes:', error);
-      alert('Error recomputing routes');
+      toast({
+        title: "Error",
+        description: "Error recomputing routes",
+      });
     } finally {
       setRecomputing(false);
     }
@@ -308,17 +318,24 @@ function App() {
 
       if (response.ok) {
         const result = await response.json();
-        alert(
-          `Recompute complete!\nSuccess: ${result.successCount}\nErrors: ${result.errorCount}\nTotal: ${result.total}`
-        );
+        toast({
+          title: "Recompute Complete",
+          description: `Success: ${result.successCount}, Errors: ${result.errorCount}, Total: ${result.total}`,
+        });
         // Optionally reload the page or refresh route data
         fetchRoutes();
       } else {
-        alert('Failed to recompute route');
+        toast({
+          title: "Error",
+          description: "Failed to recompute route",
+        });
       }
     } catch (error) {
       console.error('Error recomputing route:', error);
-      alert('Error recomputing route');
+      toast({
+        title: "Error",
+        description: "Error recomputing route",
+      });
     } finally {
       setRecomputing(false);
     }
@@ -417,6 +434,7 @@ function App() {
         description="Are you sure you want to delete this route? This action cannot be undone."
         onConfirm={handleConfirmDelete}
       />
+      <Toaster />
     </>
   );
 }

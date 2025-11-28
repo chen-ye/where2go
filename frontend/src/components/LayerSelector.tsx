@@ -129,7 +129,7 @@ export function LayerSelector({
 
           <div className="layer-section">
             <h3 className="layer-section-title">Routes</h3>
-            <div className="layer-grid" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '0 4px' }}>
+            <div className="layer-sliders" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <Slider
                 label="Selected"
                 value={localOpacity.selected}

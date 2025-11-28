@@ -46,7 +46,7 @@
   display: block;
   width: 16px;
   height: 16px;
-  background-color: var(--surface-1);
+  background-color: var(--brand);
   box-shadow: var(--shadow-2);
   border-radius: var(--radius-round);
   border: 1px solid var(--surface-3);
@@ -55,7 +55,7 @@
 }
 
 .slider-thumb:hover {
-  background-color: var(--surface-2);
+  background-color: var(--brand-dark);
   border-color: var(--surface-4);
 }
 
@@ -74,24 +74,15 @@
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: var(--surface-4);
+  background-color: var(--surface-2-translucent);
+  backdrop-filter: var(--blur-3);
   color: var(--text-1);
-  padding: 4px 8px;
-  border-radius: var(--radius-1);
-  font-size: var(--font-size-00);
+  padding: var(--size-1) var(--size-2);
+  border-radius: var(--radius-3);
+  font-size: var(--font-size-0);
   font-weight: var(--font-weight-6);
   white-space: nowrap;
   pointer-events: none;
   box-shadow: var(--shadow-2);
-  /* Triangle */
-  &::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -4px;
-    border-width: 4px;
-    border-style: solid;
-    border-color: var(--surface-4) transparent transparent transparent;
-  }
+  z-index: 1;
 }
