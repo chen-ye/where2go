@@ -26,6 +26,13 @@
   color: var(--text-1);
 }
 
+.dialog-actions {
+  display: flex;
+  margin-top: var(--size-5);
+  justify-content: flex-end;
+  gap: var(--size-3);
+}
+
 .DialogContent:focus {
   outline: none;
 }

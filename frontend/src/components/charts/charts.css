@@ -65,3 +65,23 @@
   color: var(--text-1);
   font-size: var(--font-size-1);
 }
+
+.chart-tooltip-stat.secondary {
+  color: var(--text-3);
+}
+
+.chart-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+}
+
+.chart-axis-stroke {
+  stroke: var(--gray-6);
+}
+
+.chart-axis-tick {
+  stroke: var(--gray-6);
+  fill: var(--text-3);
+}

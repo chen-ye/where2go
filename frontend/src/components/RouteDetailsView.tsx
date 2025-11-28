@@ -195,11 +195,11 @@ export function RouteDetailsView({
               </div>
             </AccordionTrigger>
             <div
-              style={{ display: "flex", alignItems: "center", gap: 8 }}
+              className="map-toggle-controls"
               onClick={(e) => e.stopPropagation()}
             >
               <label
-                style={{ fontSize: 12, color: "#888" }}
+                className="map-toggle-label"
                 htmlFor="display-grade-on-map"
               >
                 Display on Map
@@ -225,19 +225,18 @@ export function RouteDetailsView({
             <AccordionTrigger>Surfaces</AccordionTrigger>
           </AccordionHeader>
           <AccordionContent>
-            <div style={{ height: 20, width: "100%" }}>
-              <ParentSize>
-                {({ width }) => (
-                  <SurfaceChart
-                    data={routeData}
-                    segments={route.valhalla_segments || []}
-                    width={width}
-                    hoveredLocation={hoveredLocation}
-                    onHover={onHover}
-                  />
-                )}
-              </ParentSize>
-            </div>
+            <div className="chart-spacer" />
+            <ParentSize>
+              {({ width }) => (
+                <SurfaceChart
+                  data={routeData}
+                  segments={route.valhalla_segments || []}
+                  width={width}
+                  hoveredLocation={hoveredLocation}
+                  onHover={onHover}
+                />
+              )}
+            </ParentSize>
           </AccordionContent>
         </AccordionItem>
       </Accordion>

@@ -21,6 +21,27 @@
   line-height: var(--font-lineheight-3);
 }
 
+.route-nav-actions {
+  display: flex;
+  gap: var(--size-2);
+}
+
+.map-toggle-label {
+  font-size: var(--font-size-0);
+  color: var(--text-3);
+}
+
+.map-toggle-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2);
+}
+
+.chart-spacer {
+  height: var(--size-4);
+  width: 100%;
+}
+
 .header-actions {
   display: flex;
   gap: var(--size-2);

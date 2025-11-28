@@ -22,7 +22,7 @@ export function ConfirmDialog({ open, onOpenChange, title, description, onConfir
         <Dialog.Content className="DialogContent">
           <Dialog.Title className="DialogTitle">{title}</Dialog.Title>
           {description && <Dialog.Description className="DialogDescription">{description}</Dialog.Description>}
-          <div style={{ display: 'flex', marginTop: 25, justifyContent: 'flex-end', gap: 10 }}>
+          <div className="dialog-actions">
             <Dialog.Close asChild>
               <button className="Button green">Cancel</button>
             </Dialog.Close>

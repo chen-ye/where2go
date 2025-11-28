@@ -42,7 +42,7 @@ export function PromptDialog({ open, onOpenChange, title, description, defaultVa
               autoFocus
             />
           </fieldset>
-          <div style={{ display: 'flex', marginTop: 25, justifyContent: 'flex-end', gap: 10 }}>
+          <div className="dialog-actions">
             <Dialog.Close asChild>
               <button className="Button green">Cancel</button>
             </Dialog.Close>

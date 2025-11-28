@@ -110,15 +110,6 @@ const ElevationChart = memo(
     const activeTooltipData = tooltipOpen ? tooltipData : externalTooltipData;
     const showActiveTooltip = tooltipOpen || !!externalTooltipData;
 
-    // Calculate tooltip position for external hover
-    let activeTooltipLeft = tooltipLeft;
-    let activeTooltipTop = tooltipTop;
-
-    if (!tooltipOpen && externalTooltipData) {
-      activeTooltipLeft = xScale(getX(externalTooltipData)) + margin.left;
-      activeTooltipTop = yScale(getY(externalTooltipData)) + margin.top;
-    }
-
     return (
       <>
         <svg width={width} height={height}>
@@ -160,17 +151,17 @@ const ElevationChart = memo(
               x={(d: RouteDataPoint) => xScale(getX(d)) ?? 0}
               y={(d: RouteDataPoint) => yScale(getY(d)) ?? 0}
               strokeWidth={2}
-              stroke="#cdcdcdff"
+              stroke="var(--gray-4)"
               curve={curveMonotoneX}
             />
 
             <AxisBottom
               scale={xScale}
               top={yMax}
-              stroke="#444"
-              tickStroke="#444"
+              stroke="var(--gray-6)"
+              tickStroke="var(--gray-6)"
               tickLabelProps={() => ({
-                fill: "#888",
+                fill: "var(--text-3)",
                 fontSize: 10,
                 textAnchor: "middle",
               })}
@@ -178,10 +169,10 @@ const ElevationChart = memo(
 
             <AxisLeft
               scale={yScale}
-              stroke="#444"
-              tickStroke="#444"
+              stroke="var(--gray-6)"
+              tickStroke="var(--gray-6)"
               tickLabelProps={() => ({
-                fill: "#888",
+                fill: "var(--text-3)",
                 fontSize: 10,
                 textAnchor: "end",
                 dx: -5,
@@ -299,15 +290,7 @@ export function ElevationProfile({
 
   if (data.length === 0) {
     return (
-      <div
-        style={{
-          height,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#666",
-        }}
-      >
+      <div className="chart-empty-state" style={{ height }}>
         No elevation data available
       </div>
     );
