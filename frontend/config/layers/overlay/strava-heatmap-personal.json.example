@@ -12,7 +12,8 @@
       "tiles": [
         "{your_strava_heatmap_proxy_url}/personal/purple/all/{z}/{x}/{y}@2x.png"
       ],
-      "tileSize": 256
+      "tileSize": 256,
+      "maxzoom": 14
     }
   },
   "layers": [
