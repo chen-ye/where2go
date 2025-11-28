@@ -100,6 +100,14 @@ export function LayerSelector({
               ))}
             </div>
           </div>
+
+          <div className="layer-separator" />
+
+          <div className="layer-section">
+            <h3 className="layer-section-title">Routes</h3>
+            {/* TODO: A set of sliders which allows setting the opacity of each route type: incomplete, complete, and selected */}
+          </div>
+
           <Popover.Arrow className="popover-arrow" />
         </Popover.Content>
       </Popover.Portal>

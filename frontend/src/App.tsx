@@ -88,8 +88,11 @@ function App() {
 
     // Add basemap and overlays
     params.set(SEARCH_PARAM_BASEMAP, baseStyle);
+
     for (const overlay of activeOverlays) {
-      params.append(SEARCH_PARAM_OVERLAY, overlay);
+      if (!params.has(SEARCH_PARAM_OVERLAY, overlay)) {
+        params.append(SEARCH_PARAM_OVERLAY, overlay);
+      }
     }
 
     const newUrl =
