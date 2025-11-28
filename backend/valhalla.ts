@@ -1,17 +1,6 @@
-export interface ValhallaSegment {
-  start: number;
-  end: number;
-  duration: number;
-  length: number; // km
-  surface: string;
-  road_class?: string;
-  speed?: number;
-  use?: string;
-  bicycle_type?: string;
-  lane_count?: number;
-  cycle_lane?: string;
-  bicycle_network?: string;
-}
+import type { ValhallaSegment } from '../shared/types/valhalla.ts';
+export type { ValhallaSegment };
+
 
 interface ValhallaEdge {
   begin_shape_index: number;

@@ -25,7 +25,8 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
-      "@config/*": ["./config/*"]
+      "@config/*": ["./config/*"],
+      "@shared/*": ["../shared/*"]
     },
     "resolveJsonModule": true
   },
