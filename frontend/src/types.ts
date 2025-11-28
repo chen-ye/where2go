@@ -4,6 +4,7 @@ export interface ValhallaSegment {
   start: number;
   end: number;
   duration: number;
+  length: number; // km
   surface: string;
   road_class?: string;
   speed?: number;

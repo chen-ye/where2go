@@ -2,6 +2,7 @@ export interface ValhallaSegment {
   start: number;
   end: number;
   duration: number;
+  length: number; // km
   surface: string;
   road_class?: string;
   speed?: number;
@@ -102,6 +103,7 @@ export async function getRouteAttributes(
         start: edge.begin_shape_index,
         end: edge.end_shape_index,
         duration: Math.round(duration), // rounding to nearest second
+        length: edge.length, // km
         surface: edge.surface || 'unknown',
         road_class: edge.road_class,
         speed: edge.speed,
