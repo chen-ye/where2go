@@ -79,3 +79,21 @@
     }
   }
 }
+
+/* Deck.gl Tooltip Styling */
+/* Using chained selectors to increase specificity and override inline styles */
+.deck-tooltip.deck-tooltip.deck-tooltip {
+  background: var(--surface-2-translucent);
+  backdrop-filter: var(--blur-3);
+  color: var(--text-1);
+  border: var(--border-size-1) solid var(--surface-3);
+  box-shadow: var(--shadow-3);
+  font-size: var(--font-size-0);
+  padding: var(--size-2) var(--size-3);
+  border-radius: var(--radius-2);
+  line-height: var(--font-lineheight-2);
+  font-family: var(--font-monospace-code);
+  z-index: 1000;
+  max-width: none;
+  pointer-events: none;
+}
