@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useControl } from "react-map-gl/maplibre";
 import * as Popover from "@radix-ui/react-popover";
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import { Layers } from "lucide-react";
+import { useDebounce } from "@uidotdev/usehooks";
 import "./LayerSelector.css";
 import { BASEMAPS, OVERLAYS } from "../utils/layerConfig";
 import { RadioCard } from "./ui/RadioCard.tsx";
 import { CheckboxCard } from "./ui/CheckboxCard.tsx";
+import { Slider } from "./ui/Slider.tsx";
 
 export type BaseStyle = string;
 
@@ -18,6 +20,8 @@ export interface LayerSelectorProps {
   onCustomStyleUrlChange: (url: string) => void;
   activeOverlays: Set<string>;
   onToggleOverlay: (id: string, active: boolean) => void;
+  routeOpacity: { selected: number; completed: number; incomplete: number };
+  onOpacityChange: (opacity: { selected: number; completed: number; incomplete: number }) => void;
 }
 
 export function LayerSelector({
@@ -27,8 +31,28 @@ export function LayerSelector({
   onCustomStyleUrlChange,
   activeOverlays,
   onToggleOverlay,
+  routeOpacity,
+  onOpacityChange,
 }: LayerSelectorProps) {
   const [container, setContainer] = useState<HTMLElement | null>(null);
+
+  // Local state for sliders to ensure smooth UI updates
+  const [localOpacity, setLocalOpacity] = useState(routeOpacity);
+  const debouncedOpacity = useDebounce(localOpacity, 200);
+
+  // Sync prop changes to local state (if changed externally)
+  useEffect(() => {
+    setLocalOpacity(routeOpacity);
+  }, [routeOpacity.selected, routeOpacity.completed, routeOpacity.incomplete]);
+
+  // Sync debounced local state to parent
+  useEffect(() => {
+    onOpacityChange(debouncedOpacity);
+  }, [debouncedOpacity, onOpacityChange]);
+
+  const handleOpacityChange = (key: keyof typeof routeOpacity, value: number) => {
+    setLocalOpacity((prev) => ({ ...prev, [key]: value }));
+  };
 
   useControl(
     () => {
@@ -105,7 +129,23 @@ export function LayerSelector({
 
           <div className="layer-section">
             <h3 className="layer-section-title">Routes</h3>
-            {/* TODO: A set of sliders which allows setting the opacity of each route type: incomplete, complete, and selected */}
+            <div className="layer-grid" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '0 4px' }}>
+              <Slider
+                label="Selected"
+                value={localOpacity.selected}
+                onValueChange={(val) => handleOpacityChange("selected", val)}
+              />
+              <Slider
+                label="Completed"
+                value={localOpacity.completed}
+                onValueChange={(val) => handleOpacityChange("completed", val)}
+              />
+              <Slider
+                label="Incomplete"
+                value={localOpacity.incomplete}
+                onValueChange={(val) => handleOpacityChange("incomplete", val)}
+              />
+            </div>
           </div>
 
           <Popover.Arrow className="popover-arrow" />

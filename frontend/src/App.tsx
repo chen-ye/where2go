@@ -55,6 +55,12 @@ function App() {
     return new Set(overlays);
   });
 
+  const [routeOpacity, setRouteOpacity] = useState({
+    selected: 100,
+    completed: 40,
+    incomplete: 60,
+  });
+
   const [hoveredLocation, setHoveredLocation] = useState<{
     lat: number;
     lon: number;
@@ -317,6 +323,8 @@ function App() {
             return next;
           });
         }}
+        routeOpacity={routeOpacity}
+        onOpacityChange={setRouteOpacity}
         padding={mapPadding}
       />
       <BottomPanel ref={bottomPanelRef}>

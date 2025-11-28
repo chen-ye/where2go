@@ -59,6 +59,8 @@ interface MapViewProps {
   onCustomStyleUrlChange: (url: string) => void;
   activeOverlays: Set<string>;
   onToggleOverlay: (id: string, active: boolean) => void;
+  routeOpacity: { selected: number; completed: number; incomplete: number };
+  onOpacityChange: (opacity: { selected: number; completed: number; incomplete: number }) => void;
   padding?: { top: number; bottom: number; left: number; right: number };
 }
 
@@ -79,6 +81,8 @@ export function MapView({
   onCustomStyleUrlChange,
   activeOverlays,
   onToggleOverlay,
+  routeOpacity,
+  onOpacityChange,
   padding,
 }: MapViewProps) {
   const mapRef = useRef<MapRef>(null);
@@ -137,7 +141,7 @@ export function MapView({
           data: [routeData],
           getPath: (d) => { return d.flatMap((p) => [p.lon, p.lat, p.elevation + elvOffset])},
           getColor: (d) => {
-            return displayGradeOnMap ? ([...d, d.at(-1)] as RouteDataPoint[]).map((p) => hexToRgb(getGradeColor(p.grade))) : [217, 119, 6, 255];
+            return displayGradeOnMap ? ([...d, d.at(-1)] as RouteDataPoint[]).map((p) => hexToRgb(getGradeColor(p.grade))) : [217, 119, 6, Math.floor(routeOpacity.selected * 2.55)];
           },
           getWidth: 40,
           widthUnits: "meters",
@@ -163,7 +167,9 @@ export function MapView({
             return [0, 0, 0, 0];
             // return displayGradeOnMap ? [0, 0, 0, 0] : [217, 119, 6, 255];
           }
-          return isCompleted ? [167, 119, 199, 255 * 0.4] : [17, 70, 120, 255 * 0.6];
+          return isCompleted
+            ? [167, 119, 199, Math.floor(routeOpacity.completed * 2.55)]
+            : [17, 70, 120, Math.floor(routeOpacity.incomplete * 2.55)];
         },
         getLineWidth: (object) =>
           object.properties.id === selectedRouteId ? 60 : 20,
@@ -186,7 +192,7 @@ export function MapView({
           onSelectRoute(info.object.properties.id, 'map');
         },
         updateTriggers: {
-          getLineColor: [selectedRouteId, displayGradeOnMap],
+          getLineColor: [selectedRouteId, displayGradeOnMap, routeOpacity],
           getLineWidth: selectedRouteId,
         },
       })
@@ -284,6 +290,8 @@ export function MapView({
           onCustomStyleUrlChange={onCustomStyleUrlChange}
           activeOverlays={activeOverlays}
           onToggleOverlay={onToggleOverlay}
+          routeOpacity={routeOpacity}
+          onOpacityChange={onOpacityChange}
         />
 
         {(() => {
