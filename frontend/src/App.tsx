@@ -183,6 +183,9 @@ function App() {
     const points: RouteDataPoint[] = [];
     let totalDist = 0;
 
+    // Use precomputed grades if available
+    const precomputedGrades = selectedRoute.grades;
+
     for (let i = 0; i < coords.length; i++) {
       const [lon, lat, ele] = coords[i];
       let grade = 0;
@@ -196,7 +199,19 @@ function App() {
           lon
         );
         totalDist += distMeters;
-        grade = calculateGrade(coords[i - 1], coords[i]);
+
+        // If precomputed grades exist, use them.
+        // Note: precomputedGrades[i-1] corresponds to the segment from point i-1 to i.
+        // The array calculated in backend has N-1 elements for N points.
+        if (precomputedGrades && precomputedGrades.length > 0) {
+          // Check bounds just in case
+          if (i - 1 < precomputedGrades.length) {
+            grade = precomputedGrades[i - 1];
+          }
+        } else {
+          // Fallback to on-the-fly calculation
+          grade = calculateGrade(coords[i - 1], coords[i]);
+        }
       }
 
       points.push({

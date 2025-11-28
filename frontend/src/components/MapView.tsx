@@ -78,6 +78,7 @@ export function MapView({
           id: r.id,
           title: r.title,
           is_completed: r.is_completed,
+          grades: r.grades,
         },
         geometry: r.geojson,
       })),

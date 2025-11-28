@@ -1,5 +1,10 @@
 import { boolean, geometry, real, serial, text, timestamp } from 'drizzle-orm/pg-core';
-import { pgTable } from 'drizzle-orm/pg-core';
+import { pgTable, customType } from 'drizzle-orm/pg-core';
+
+// Define a custom type for real array since 'real[]' isn't directly supported in drizzle-orm/pg-core yet or needs specific handling
+// Actually, drizzle has .array() support for some types, but real[] might be tricky.
+// Let's check Drizzle docs or standard usage.
+// Drizzle supports array(real) using `real("grades").array()`.
 
 export const routes = pgTable('routes', {
   id: serial('id').primaryKey(),
@@ -13,6 +18,7 @@ export const routes = pgTable('routes', {
   totalDescent: real('total_descent'),
   // PostGIS geometry column - LineStringZ with SRID 4326
   geom: geometry('geom', { type: 'linestring', mode: 'xy', srid: 4326 }),
+  grades: real('grades').array(),
 });
 
 export type Route = typeof routes.$inferSelect;

@@ -17,6 +17,13 @@ const queryClient = postgres(connectionString, {
 export const db = drizzle(queryClient, { schema });
 
 export async function initDb() {
+  // Check if PostGIS extension exists, if not add it
+  try {
+    await queryClient`CREATE EXTENSION IF NOT EXISTS postgis;`;
+  } catch (e) {
+    console.error('Error creating postgis extension:', e);
+  }
+
   // Create table if not exists - using  raw SQL since Drizzle migrations
   // are more complex for simple cases
   await queryClient`
@@ -42,13 +49,6 @@ export async function initDb() {
     console.log('Column is_completed likely exists or error adding it', e);
   }
 
-  // Check if PostGIS extension exists, if not add it
-  try {
-    await queryClient`CREATE EXTENSION IF NOT EXISTS postgis;`;
-  } catch (e) {
-    console.error('Error creating postgis extension:', e);
-  }
-
   // Add geometry column if not exists
   try {
     await queryClient`
@@ -56,5 +56,64 @@ export async function initDb() {
     `;
   } catch (e) {
     console.log('Column geom likely exists or error adding it', e);
+  }
+
+  // Add grades column if not exists
+  try {
+    await queryClient`
+      ALTER TABLE routes ADD COLUMN IF NOT EXISTS grades REAL[];
+    `;
+  } catch (e) {
+    console.log('Column grades likely exists or error adding it', e);
+  }
+
+  // Create calculate_route_grades function
+  try {
+    await queryClient`
+      CREATE OR REPLACE FUNCTION calculate_route_grades(geom geometry) RETURNS real[] AS $$
+      DECLARE
+          num_points integer;
+          i integer;
+          p1 geometry;
+          p2 geometry;
+          dist float;
+          ele_diff float;
+          grade float;
+          grades real[] := '{}';
+      BEGIN
+          IF geom IS NULL THEN
+              RETURN grades;
+          END IF;
+
+          num_points := ST_NumPoints(geom);
+          IF num_points < 2 THEN
+              RETURN grades;
+          END IF;
+
+          FOR i IN 1..num_points-1 LOOP
+              p1 := ST_PointN(geom, i);
+              p2 := ST_PointN(geom, i+1);
+
+              -- Calculate distance in meters (using geography for accuracy)
+              dist := ST_Distance(p1::geography, p2::geography);
+
+              -- Elevation difference in meters
+              ele_diff := ST_Z(p2) - ST_Z(p1);
+
+              IF dist > 0 THEN
+                  grade := (ele_diff / dist) * 100;
+              ELSE
+                  grade := 0;
+              END IF;
+
+              grades := array_append(grades, grade::real);
+          END LOOP;
+
+          RETURN grades;
+      END;
+      $$ LANGUAGE plpgsql;
+    `;
+  } catch (e) {
+    console.error('Error creating calculate_route_grades function:', e);
   }
 }
