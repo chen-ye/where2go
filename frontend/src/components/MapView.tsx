@@ -16,9 +16,11 @@ import "./MapView.css";
 import { useCallback, useMemo, useRef, useEffect } from "react";
 import { LayerSelector } from "./LayerSelector";
 import { BASEMAPS, OVERLAYS } from "../utils/layerConfig";
+import { getGradeColor } from "../utils/geo";
+import { hexToRgb } from "../utils/colors";
+import { getOpenPropsRgb } from "../utils/colors";
 import type { Route, RouteDataPoint } from "../types.ts";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
-import { getGradeColor } from "../utils/geo";
 import type { MapRef } from "react-map-gl/maplibre";
 
 function DeckGLOverlay(props: DeckProps) {
@@ -29,14 +31,6 @@ function DeckGLOverlay(props: DeckProps) {
 
 // Offset elevation to avoid z-fighting
 const elvOffset = 5;
-
-// Helper to convert hex to rgb
-const hexToRgb = (hex: string): [number, number, number, number] => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return [r, g, b, 255];
-};
 
 interface MapViewProps {
   routes: Route[];
@@ -141,7 +135,7 @@ export function MapView({
           data: [routeData],
           getPath: (d) => { return d.flatMap((p) => [p.lon, p.lat, p.elevation + elvOffset])},
           getColor: (d) => {
-            return displayGradeOnMap ? ([...d, d.at(-1)] as RouteDataPoint[]).map((p) => hexToRgb(getGradeColor(p.grade))) : [217, 119, 6, Math.floor(routeOpacity.selected * 2.55)];
+            return displayGradeOnMap ? ([...d, d.at(-1)] as RouteDataPoint[]).map((p) => hexToRgb(getGradeColor(p.grade))) : [...getOpenPropsRgb("--orange-6"), Math.floor(routeOpacity.selected * 2.55)];
           },
           getWidth: 40,
           widthUnits: "meters",
@@ -168,8 +162,8 @@ export function MapView({
             // return displayGradeOnMap ? [0, 0, 0, 0] : [217, 119, 6, 255];
           }
           return isCompleted
-            ? [167, 119, 199, Math.floor(routeOpacity.completed * 2.55)]
-            : [17, 70, 120, Math.floor(routeOpacity.incomplete * 2.55)];
+            ? [...getOpenPropsRgb("--purple-6"), Math.floor(routeOpacity.completed * 2.55)]
+            : [...getOpenPropsRgb("--blue-7"), Math.floor(routeOpacity.incomplete * 2.55)];
         },
         getLineWidth: (object) =>
           object.properties.id === selectedRouteId ? 60 : 20,
@@ -204,8 +198,8 @@ export function MapView({
           id: "hover-marker",
           data: [{ position: [hoveredLocation.lon, hoveredLocation.lat] }],
           getPosition: (d: { position: [number, number] }) => d.position,
-          getFillColor: [255, 255, 255],
-          getLineColor: [0, 0, 0],
+          getFillColor: getOpenPropsRgb("--gray-0"),
+          getLineColor: getOpenPropsRgb("--gray-12"),
           getLineWidth: 2,
           getRadius: 10,
           radiusMinPixels: 5,
@@ -222,6 +216,8 @@ export function MapView({
     onHover,
     displayGradeOnMap,
     routes,
+    routeOpacity,
+    routeData,
   ]);
 
   const mapStyle = useMemo(() => {
