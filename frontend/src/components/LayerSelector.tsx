@@ -3,10 +3,11 @@ import { createPortal } from "react-dom";
 import { useControl } from "react-map-gl/maplibre";
 import * as Popover from "@radix-ui/react-popover";
 import * as RadioGroup from "@radix-ui/react-radio-group";
-import * as Checkbox from "@radix-ui/react-checkbox";
-import { Layers, Check } from "lucide-react";
+import { Layers } from "lucide-react";
 import "./LayerSelector.css";
 import { BASEMAPS, OVERLAYS } from "../utils/layerConfig";
+import { RadioCard } from "./ui/RadioCard.tsx";
+import { CheckboxCard } from "./ui/CheckboxCard.tsx";
 
 export type BaseStyle = string;
 
@@ -64,15 +65,13 @@ export function LayerSelector({
               onValueChange={(val) => onStyleChange(val)}
             >
               {BASEMAPS.map((basemap) => (
-                <RadioGroup.Item key={basemap.id} value={basemap.id} className="layer-card">
-                  <div className={`layer-card-preview ${basemap.id}-preview`} />
-                  <span className="layer-card-label">{basemap.name}</span>
-                </RadioGroup.Item>
+                <RadioCard
+                  key={basemap.id}
+                  id={basemap.id}
+                  name={basemap.name}
+                  value={basemap.id}
+                />
               ))}
-              {/* <RadioGroup.Item value="custom" className="layer-card">
-                <div className="layer-card-preview custom-preview" />
-                <span className="layer-card-label">Custom</span>
-              </RadioGroup.Item> */}
             </RadioGroup.Root>
             {currentStyle === "custom" && (
               <input
@@ -90,30 +89,15 @@ export function LayerSelector({
           <div className="layer-section">
             <h3 className="layer-section-title">Overlays</h3>
             <div className="layer-grid">
-              {OVERLAYS.map((overlay) => {
-                const checked = activeOverlays.has(overlay.id);
-                return (
-                  <div
-                    key={overlay.id}
-                    className={`layer-card checkbox-card ${checked ? "checked" : ""}`}
-                    onClick={() => onToggleOverlay(overlay.id, !checked)}
-                  >
-                    <div className="layer-card-header">
-                      <Checkbox.Root
-                        className="layer-checkbox"
-                        checked={checked}
-                        onCheckedChange={(c) => onToggleOverlay(overlay.id, c === true)}
-                        id={overlay.id}
-                      >
-                        <Checkbox.Indicator className="checkbox-indicator">
-                          <Check size={12} />
-                        </Checkbox.Indicator>
-                      </Checkbox.Root>
-                    </div>
-                    <span className="layer-card-label">{overlay.name}</span>
-                  </div>
-                );
-              })}
+              {OVERLAYS.map((overlay) => (
+                <CheckboxCard
+                  key={overlay.id}
+                  id={overlay.id}
+                  name={overlay.name}
+                  checked={activeOverlays.has(overlay.id)}
+                  onCheckedChange={(checked) => onToggleOverlay(overlay.id, checked)}
+                />
+              ))}
             </div>
           </div>
           <Popover.Arrow className="popover-arrow" />

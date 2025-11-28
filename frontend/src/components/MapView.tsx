@@ -42,6 +42,12 @@ interface MapViewProps {
   onHover: (location: { lat: number; lon: number } | null) => void;
   displayGradeOnMap: boolean;
   routeData?: RouteDataPoint[];
+  baseStyle: string;
+  onBaseStyleChange: (style: string) => void;
+  customStyleUrl: string;
+  onCustomStyleUrlChange: (url: string) => void;
+  activeOverlays: Set<string>;
+  onToggleOverlay: (id: string, active: boolean) => void;
 }
 
 export function MapView({
@@ -54,6 +60,12 @@ export function MapView({
   onHover,
   displayGradeOnMap,
   routeData,
+  baseStyle,
+  onBaseStyleChange,
+  customStyleUrl,
+  onCustomStyleUrlChange,
+  activeOverlays,
+  onToggleOverlay,
 }: MapViewProps) {
   // const [hoverInfo, setHoverInfo] = useState<PickingInfo<Feature<Geometry, {}>>>();
 
@@ -130,7 +142,7 @@ export function MapView({
           path: [number, number][];
           colors: [number, number, number, number][];
         }>({
-          id: "selected-route-segments",
+          id: "selected-route",
           data: [{ path: pathCoords, colors }],
           getPath: (d) => d.path,
           getColor: (d) => d.colors,
@@ -147,7 +159,7 @@ export function MapView({
     // Main routes layer
     layers.push(
       new GeoJsonLayer({
-        id: "route-lines",
+        id: "routes",
         data: routesGeoJson,
         getLineColor: (object) => {
           const selectedRoute = object.properties.id === selectedRouteId;
@@ -158,13 +170,10 @@ export function MapView({
           if (selectedRoute) {
             return displayGradeOnMap ? [0, 0, 0, 0] : [217, 119, 6, 255];
           }
-          if (isCompleted) {
-            return [17, 70, 120, 60];
-          }
-          return [167, 119, 199, 80];
+          return isCompleted ? [167, 119, 199, 255 * 0.4] : [17, 70, 120, 255 * 0.6];
         },
         getLineWidth: (object) =>
-          object.properties.id === selectedRouteId ? 60 : 10,
+          object.properties.id === selectedRouteId ? 60 : 20,
         lineWidthUnits: "meters",
         pickable: true,
         stroked: true,
@@ -216,9 +225,7 @@ export function MapView({
     routes,
   ]);
 
-  const [baseStyle, setBaseStyle] = useState<string>("carto-dark");
-  const [customStyleUrl, setCustomStyleUrl] = useState("");
-  const [activeOverlays, setActiveOverlays] = useState<Set<string>>(new Set());
+
 
   const mapStyle = useMemo(() => {
     if (baseStyle === "custom") {
@@ -269,21 +276,11 @@ export function MapView({
         />
         <LayerSelector
           currentStyle={baseStyle}
-          onStyleChange={setBaseStyle}
+          onStyleChange={onBaseStyleChange}
           customStyleUrl={customStyleUrl}
-          onCustomStyleUrlChange={setCustomStyleUrl}
+          onCustomStyleUrlChange={onCustomStyleUrlChange}
           activeOverlays={activeOverlays}
-          onToggleOverlay={(id, active) => {
-            setActiveOverlays((prev) => {
-              const next = new Set(prev);
-              if (active) {
-                next.add(id);
-              } else {
-                next.delete(id);
-              }
-              return next;
-            });
-          }}
+          onToggleOverlay={onToggleOverlay}
         />
 
         {(() => {

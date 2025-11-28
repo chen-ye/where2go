@@ -16,6 +16,11 @@ import { RouteDetailsView } from "./components/RouteDetailsView.tsx";
 const SEARCH_PARAM_ROUTE = "route";
 const SEARCH_PARAM_QUERY = "q";
 const SEARCH_PARAM_SHOW_GRADE = "show-grade";
+const SEARCH_PARAM_LAT = "lat";
+const SEARCH_PARAM_LNG = "lng";
+const SEARCH_PARAM_ZOOM = "zoom";
+const SEARCH_PARAM_BASEMAP = "basemap";
+const SEARCH_PARAM_OVERLAY = "overlay";
 
 function App() {
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -24,10 +29,29 @@ function App() {
   const [searchQuery, setSearchQuery] = useState(initialSearchParams.get(SEARCH_PARAM_QUERY) || "");
   const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
   const [displayGradeOnMap, setDisplayGradeOnMap] = useState(initialSearchParams.get(SEARCH_PARAM_SHOW_GRADE) === "true");
-  const [viewState, setViewState] = useState({
-    longitude: -122.2, // Default to Bellevue area based on image
-    latitude: 47.61,
-    zoom: 11,
+  const [viewState, setViewState] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const lat = params.get(SEARCH_PARAM_LAT);
+    const lng = params.get(SEARCH_PARAM_LNG);
+    const zoom = params.get(SEARCH_PARAM_ZOOM);
+    // Default to Bellevue, WA
+    return {
+      longitude: lng ? parseFloat(lng) : -122.2,
+      latitude: lat ? parseFloat(lat) : 47.61,
+      zoom: zoom ? parseFloat(zoom) : 11,
+    };
+  });
+  const [debouncedViewState] = useDebounce(viewState, 500);
+
+  const [baseStyle, setBaseStyle] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(SEARCH_PARAM_BASEMAP) ?? "carto-dark";
+  });
+  const [customStyleUrl, setCustomStyleUrl] = useState("");
+  const [activeOverlays, setActiveOverlays] = useState<Set<string>>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const overlays = params.getAll(SEARCH_PARAM_OVERLAY);
+    return new Set(overlays);
   });
 
   const [hoveredLocation, setHoveredLocation] = useState<{
@@ -55,11 +79,23 @@ function App() {
     } else {
       params.delete(SEARCH_PARAM_SHOW_GRADE);
     }
+
+    // Add camera position (debounced to avoid overload during panning)
+    params.set(SEARCH_PARAM_LAT, debouncedViewState.latitude.toFixed(4));
+    params.set(SEARCH_PARAM_LNG, debouncedViewState.longitude.toFixed(4));
+    params.set(SEARCH_PARAM_ZOOM, debouncedViewState.zoom.toFixed(2));
+
+    // Add basemap and overlays
+    params.set(SEARCH_PARAM_BASEMAP, baseStyle);
+    for (const overlay of activeOverlays) {
+      params.append(SEARCH_PARAM_OVERLAY, overlay);
+    }
+
     const newUrl =
       window.location.pathname +
       (params.toString() ? "?" + params.toString() : "");
     window.history.replaceState({}, "", newUrl);
-  }, [searchQuery, selectedRouteId, displayGradeOnMap]);
+  }, [searchQuery, selectedRouteId, displayGradeOnMap, debouncedViewState, baseStyle, activeOverlays]);
 
   useEffect(() => {
     fetchRoutes();
@@ -227,6 +263,22 @@ function App() {
         onHover={setHoveredLocation}
         displayGradeOnMap={displayGradeOnMap}
         routeData={routeData}
+        baseStyle={baseStyle}
+        onBaseStyleChange={setBaseStyle}
+        customStyleUrl={customStyleUrl}
+        onCustomStyleUrlChange={setCustomStyleUrl}
+        activeOverlays={activeOverlays}
+        onToggleOverlay={(id, active) => {
+          setActiveOverlays((prev) => {
+            const next = new Set(prev);
+            if (active) {
+              next.add(id);
+            } else {
+              next.delete(id);
+            }
+            return next;
+          });
+        }}
       />
       {(selectedRoute || searchQuery) && (
         <BottomPanel>
