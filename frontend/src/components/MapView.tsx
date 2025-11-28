@@ -26,7 +26,16 @@ function DeckGLOverlay(props: DeckProps) {
   return null;
 }
 
+// Offset elevation to avoid z-fighting
+const elvOffset = 5;
 
+// Helper to convert hex to rgb
+const hexToRgb = (hex: string): [number, number, number, number] => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b, 255];
+};
 
 interface MapViewProps {
   routes: Route[];
@@ -48,6 +57,7 @@ interface MapViewProps {
   onCustomStyleUrlChange: (url: string) => void;
   activeOverlays: Set<string>;
   onToggleOverlay: (id: string, active: boolean) => void;
+  padding?: { top: number; bottom: number; left: number; right: number };
 }
 
 export function MapView({
@@ -66,6 +76,7 @@ export function MapView({
   onCustomStyleUrlChange,
   activeOverlays,
   onToggleOverlay,
+  padding,
 }: MapViewProps) {
   // const [hoverInfo, setHoverInfo] = useState<PickingInfo<Feature<Geometry, {}>>>();
 
@@ -90,68 +101,27 @@ export function MapView({
 
     // If displayGradeOnMap is enabled and a route is selected, we render the selected route as segments
     if (
-      displayGradeOnMap &&
       selectedRouteId &&
       routeData &&
       routeData.length > 1
     ) {
-      // Actually deck.gl PathLayer expects coordinates.
-      // routeData has lat, lon.
-      const pathCoords = routeData.map((p) => [p.lon, p.lat]);
-
-      const colors: [number, number, number, number][] = [];
-
-      // Helper to convert hex to rgb
-      const hexToRgb = (hex: string): [number, number, number, number] => {
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return [r, g, b, 255];
-      };
-
-      // Map grades to vertex colors
-      for (let i = 0; i < routeData.length; i++) {
-        // For vertex i, we use its grade.
-        // Note: routeData[i].grade is the grade of the segment ENDING at i (calculated from i-1 to i).
-        // But for coloring, we might want the segment STARTING at i?
-        // In the previous loop:
-        // grades.push(calculateGrade(coords[i], coords[i+1]));
-        // colors.push(hexToRgb(getGradeColor(grades[gradeIndex])));
-
-        // routeData[i].grade is calculated from i-1 to i.
-        // So routeData[i].grade is the grade of the segment arriving at i.
-        // If we want the grade of the segment departing i, we need routeData[i+1].grade.
-
-        let grade = 0;
-        if (i < routeData.length - 1) {
-          grade = routeData[i + 1].grade;
-        } else {
-          // Last point, use previous grade
-          grade = routeData[i].grade;
-        }
-
-        colors.push(hexToRgb(getGradeColor(grade)));
-      }
-
-      if (displayGradeOnMap) {
-        layers.push(
-          new PathLayer<{
-            path: [number, number][];
-            colors: [number, number, number, number][];
-          }>({
-            id: "selected-route",
-            data: [{ path: pathCoords, colors }],
-            getPath: (d) => d.path,
-            getColor: (d) => d.colors,
-            getWidth: 60,
-            widthUnits: "meters",
-            capRounded: true,
-            jointRounded: true,
-            pickable: false,
-            widthMinPixels: 2,
-          })
-        );
-      }
+      layers.push(
+        new PathLayer<RouteDataPoint[]>({
+          id: "selected-route",
+          data: [routeData],
+          getPath: (d) => { return d.flatMap((p) => [p.lon, p.lat, p.elevation + elvOffset])},
+          getColor: (d) => {
+            return displayGradeOnMap ? ([...d, d.at(-1)] as RouteDataPoint[]).map((p) => hexToRgb(getGradeColor(p.grade))) : [217, 119, 6, 255];
+          },
+          getWidth: 40,
+          widthUnits: "meters",
+          capRounded: true,
+          jointRounded: true,
+          pickable: false,
+          widthMinPixels: 2,
+          _pathType: 'open',
+        })
+      );
     }
 
     // Main routes layer
@@ -164,7 +134,8 @@ export function MapView({
           const isCompleted = object.properties.is_completed;
 
           if (selectedRoute) {
-            return displayGradeOnMap ? [0, 0, 0, 0] : [217, 119, 6, 255];
+            return [0, 0, 0, 0];
+            // return displayGradeOnMap ? [0, 0, 0, 0] : [217, 119, 6, 255];
           }
           return isCompleted ? [167, 119, 199, 255 * 0.4] : [17, 70, 120, 255 * 0.6];
         },
@@ -221,8 +192,6 @@ export function MapView({
     routes,
   ]);
 
-
-
   const mapStyle = useMemo(() => {
     if (baseStyle === "custom") {
       return customStyleUrl;
@@ -241,9 +210,20 @@ export function MapView({
   }, [baseStyle, customStyleUrl]);
 
   return (
-    <div className="map-container">
+    <div
+      className="map-container"
+      style={
+        {
+          "--map-padding-top": `${padding?.top ?? 0}px`,
+          "--map-padding-bottom": `${padding?.bottom ?? 0}px`,
+          "--map-padding-left": `${padding?.left ?? 0}px`,
+          "--map-padding-right": `${padding?.right ?? 0}px`,
+        } as React.CSSProperties
+      }
+    >
       <Map
         {...viewState}
+        padding={padding}
         onMove={(evt) => onMove(evt.viewState)}
         mapStyle={mapStyle}
         terrain={{

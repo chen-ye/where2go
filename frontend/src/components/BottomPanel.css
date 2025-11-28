@@ -15,5 +15,8 @@
   overflow-y: auto;
   transition: transform 0.3s ease-in-out;
   will-change: transform;
+}
 
+.bottom-panel:empty {
+  display: none;
 }

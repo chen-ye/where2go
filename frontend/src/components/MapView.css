@@ -6,44 +6,76 @@
   top: 0;
   left: 0;
   z-index: 0;
-}
 
-.map-container .maplibregl-ctrl-top-right {
-  margin: var(--size-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--size-4);
+  .maplibregl-ctrl-top-right {
+    margin: var(--size-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4);
 
-  .maplibregl-ctrl {
-    margin: 0;
+    .maplibregl-ctrl {
+      margin: 0;
+    }
+
+    .maplibregl-ctrl-group {
+      background-color: var(--surface-3-translucent);
+      backdrop-filter: var(--blur-3);
+      border: var(--border-width-1) solid var(--surface-3);
+      border-radius: var(--radius-2);
+      box-shadow: var(--shadow-3);
+      overflow: hidden;
+
+      button {
+        border-color: var(--surface-3);
+        background-color: transparent;
+        width: 30px;
+        height: 30px;
+
+        &:hover {
+          background-color: var(--surface-3);
+        }
+
+        &:focus-visible {
+          outline: 2px solid var(--brand);
+          outline-offset: -2px;
+        }
+
+        .maplibregl-ctrl-icon {
+          filter: invert(1);
+        }
+      }
+    }
   }
 
-  .maplibregl-ctrl-group {
-    background-color: var(--surface-2-translucent);
+  .maplibregl-ctrl-bottom-right {
+    margin-bottom: calc(var(--map-padding-bottom, 0px));
+  }
+
+  .maplibregl-ctrl-bottom-left {
+    margin-bottom: calc(var(--map-padding-bottom, 0px));
+  }
+
+  .maplibregl-ctrl-attrib {
+    margin: var(--size-4);
+    color: var(--text-1);
+    background-color: var(--surface-3-translucent);
     backdrop-filter: var(--blur-3);
-    border: 1px solid var(--surface-3);
-    border-radius: var(--radius-2);
+    border: var(--border-width-1) solid var(--surface-3);
     box-shadow: var(--shadow-3);
     overflow: hidden;
 
-    button {
-      border-color: var(--surface-3);
-      background-color: transparent;
-      width: 30px;
-      height: 30px;
+    .maplibregl-ctrl-attrib-inner {
+      color: var(--text-4);
+    }
 
-      &:hover {
-        background-color: var(--surface-3);
-      }
+    .maplibregl-ctrl-attrib-button {
+      filter: invert(1) brightness(0.8);
+      margin: inherit;
+      padding-inline: 0;
+    }
 
-      &:focus-visible {
-        outline: 2px solid var(--brand);
-        outline-offset: -2px;
-      }
-
-      .maplibregl-ctrl-icon {
-        filter: invert(1);
-      }
+    a {
+      color: var(--text-3);
     }
   }
 }

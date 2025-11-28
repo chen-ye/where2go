@@ -1,6 +1,6 @@
 import { Search, RefreshCw } from 'lucide-react';
 import './TopBar.css';
-import { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -13,63 +13,67 @@ interface TopBarProps {
   onSearchChange: (query: string) => void;
 }
 
-export function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
-  const [recomputing, setRecomputing] = useState(false);
+export const TopBar = forwardRef<HTMLDivElement, TopBarProps>(
+  ({ searchQuery, onSearchChange }, ref) => {
+    const [recomputing, setRecomputing] = useState(false);
 
-  const handleRecomputeAll = async () => {
-    setRecomputing(true);
+    const handleRecomputeAll = async () => {
+      setRecomputing(true);
 
-    try {
-      const response = await fetch('/api/routes/recompute', {
-        method: 'POST',
-      });
+      try {
+        const response = await fetch('/api/routes/recompute', {
+          method: 'POST',
+        });
 
-      if (response.ok) {
-        const result = await response.json();
-        alert(`Recompute complete!\nSuccess: ${result.successCount}\nErrors: ${result.errorCount}\nTotal: ${result.total}`);
-        // Optionally reload the page or refresh route data
-        window.location.reload();
-      } else {
-        alert('Failed to recompute routes');
+        if (response.ok) {
+          const result = await response.json();
+          alert(
+            `Recompute complete!\nSuccess: ${result.successCount}\nErrors: ${result.errorCount}\nTotal: ${result.total}`
+          );
+          // Optionally reload the page or refresh route data
+          window.location.reload();
+        } else {
+          alert('Failed to recompute routes');
+        }
+      } catch (error) {
+        console.error('Error recomputing routes:', error);
+        alert('Error recomputing routes');
+      } finally {
+        setRecomputing(false);
       }
-    } catch (error) {
-      console.error('Error recomputing routes:', error);
-      alert('Error recomputing routes');
-    } finally {
-      setRecomputing(false);
-    }
-  };
+    };
 
-  return (
-    <div className="top-bar">
-      <div className="logo-container-wrapper">
-        <DropdownMenu>
+    return (
+      <div className="top-bar" ref={ref}>
+        <div className="logo-container-wrapper">
+          <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <div
-                  className="logo-container"
-                  style={{ cursor: 'pointer' }}
-                >
-                  where2go
-                </div>
+              <div className="logo-container" style={{ cursor: 'pointer' }}>
+                where2go
+              </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-                <DropdownMenuItem onSelect={handleRecomputeAll} disabled={recomputing}>
-                    <RefreshCw size={16} style={{ marginRight: 8 }} />
-                    {recomputing ? 'Recomputing...' : 'Recompute All Routes'}
-                </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={handleRecomputeAll}
+                disabled={recomputing}
+              >
+                <RefreshCw size={16} style={{ marginRight: 8 }} />
+                {recomputing ? 'Recomputing...' : 'Recompute All Routes'}
+              </DropdownMenuItem>
             </DropdownMenuContent>
-        </DropdownMenu>
+          </DropdownMenu>
+        </div>
+        <div className="search-container">
+          <input
+            type="text"
+            className="search-input"
+            placeholder="search"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+          <Search className="search-icon" size={18} />
+        </div>
       </div>
-      <div className="search-container">
-        <input
-          type="text"
-          className="search-input"
-          placeholder="search"
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
-        <Search className="search-icon" size={18} />
-      </div>
-    </div>
-  );
-}
+    );
+  }
+);

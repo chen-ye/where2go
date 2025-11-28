@@ -2098,6 +2098,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@uidotdev/usehooks@npm:^2.4.1":
+  version: 2.4.1
+  resolution: "@uidotdev/usehooks@npm:2.4.1"
+  peerDependencies:
+    react: ">=18.0.0"
+    react-dom: ">=18.0.0"
+  checksum: 10c0/181c43fb324dbe4fef9762c61ab4b8235efa48abedf39a9bfeab65872522c43dae789c4f85b82a1164ed7bb18ae7ff25c3a19e7c4e0eb944937ac7f8109cee9b
+  languageName: node
+  linkType: hard
+
 "@vis.gl/react-mapbox@npm:8.1.0":
   version: 8.1.0
   resolution: "@vis.gl/react-mapbox@npm:8.1.0"
@@ -2818,6 +2828,7 @@ __metadata:
     "@types/node": "npm:^24.10.1"
     "@types/react": "npm:^19.2.7"
     "@types/react-dom": "npm:^19.2.3"
+    "@uidotdev/usehooks": "npm:^2.4.1"
     "@visx/axis": "npm:^3.12.0"
     "@visx/curve": "npm:^3.12.0"
     "@visx/event": "npm:^3.12.0"
@@ -2837,7 +2848,6 @@ __metadata:
     react-dom: "npm:^19.2.0"
     react-map-gl: "npm:^8.1.0"
     typescript: "npm:~5.9.3"
-    use-debounce: "npm:^10.0.6"
     vite: "npm:^7.2.4"
   languageName: unknown
   linkType: soft
@@ -3986,15 +3996,6 @@ __metadata:
     "@types/react":
       optional: true
   checksum: 10c0/f887488c6e6075cdad4962979da1714b217bcb1ee009a9e57ce9a844bcfc4c3a99e93983dfc2e5af9e0913824d24e730090ff255e902c516dcb58d2d3837e01c
-  languageName: node
-  linkType: hard
-
-"use-debounce@npm:^10.0.6":
-  version: 10.0.6
-  resolution: "use-debounce@npm:10.0.6"
-  peerDependencies:
-    react: "*"
-  checksum: 10c0/f0745de48fc344e6f90ea24384f3c79bf0733d06649827241135847abd67ee8db32f523d490c3276bce9f5a6867194ab1c0187bf6b84cabe1dd679037f4a527e
   languageName: node
   linkType: hard
 

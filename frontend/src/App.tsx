@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from "react";
-import { useDebounce } from "use-debounce";
+import { useMeasure, useDebounce } from "@uidotdev/usehooks";
 import "./App.css";
 import { TopBar } from "./components/TopBar.tsx";
 import { MapView } from "./components/MapView.tsx";
@@ -41,7 +41,7 @@ function App() {
       zoom: zoom ? parseFloat(zoom) : 11,
     };
   });
-  const [debouncedViewState] = useDebounce(viewState, 500);
+  const debouncedViewState = useDebounce(viewState, 500);
 
   const [baseStyle, setBaseStyle] = useState<string>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -265,9 +265,26 @@ function App() {
     setSelectedRouteId(id);
   };
 
+  const [topBarRef, { height: topBarHeight }] = useMeasure();
+  const [bottomPanelRef, { height: bottomPanelHeight }] = useMeasure();
+
+  const mapPadding = useMemo(
+    () => ({
+      top: topBarHeight ?? 0,
+      bottom: bottomPanelHeight ?? 0,
+      left: 0,
+      right: 0,
+    }),
+    [topBarHeight, bottomPanelHeight]
+  );
+
   return (
     <>
-      <TopBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+      <TopBar
+        ref={topBarRef}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
       <MapView
         routes={routes}
         selectedRouteId={selectedRouteId}
@@ -294,35 +311,34 @@ function App() {
             return next;
           });
         }}
+        padding={mapPadding}
       />
-      {(selectedRoute || searchQuery) && (
-        <BottomPanel>
-          {selectedRoute ? (
-            <RouteDetailsView
-              route={selectedRoute}
-              routeData={routeData}
-              onClose={() => setSelectedRouteId(null)}
-              onDelete={(id) => {
-                setRouteToDelete(id);
-                setDeleteConfirmOpen(true);
-              }}
-              onUpdateTags={handleUpdateTags}
-              onUpdateCompleted={handleUpdateCompleted}
-              updatingRouteId={updatingRouteId}
-              hoveredLocation={hoveredLocation}
-              onHover={setHoveredLocation}
-              displayGradeOnMap={displayGradeOnMap}
-              onToggleDisplayGradeOnMap={setDisplayGradeOnMap}
-            />
-          ) : (
-            <SearchResultsView
-              results={routes}
-              onSelectRoute={handleSelectRoute}
-              onClose={() => setSearchQuery("")}
-            />
-          )}
-        </BottomPanel>
-      )}
+      <BottomPanel ref={bottomPanelRef}>
+        {selectedRoute ? (
+          <RouteDetailsView
+            route={selectedRoute}
+            routeData={routeData}
+            onClose={() => setSelectedRouteId(null)}
+            onDelete={(id) => {
+              setRouteToDelete(id);
+              setDeleteConfirmOpen(true);
+            }}
+            onUpdateTags={handleUpdateTags}
+            onUpdateCompleted={handleUpdateCompleted}
+            updatingRouteId={updatingRouteId}
+            hoveredLocation={hoveredLocation}
+            onHover={setHoveredLocation}
+            displayGradeOnMap={displayGradeOnMap}
+            onToggleDisplayGradeOnMap={setDisplayGradeOnMap}
+          />
+        ) : searchQuery ? (
+          <SearchResultsView
+            results={routes}
+            onSelectRoute={handleSelectRoute}
+            onClose={() => setSearchQuery("")}
+          />
+        ) : null}
+      </BottomPanel>
       <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
