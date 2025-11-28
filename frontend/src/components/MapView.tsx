@@ -228,8 +228,9 @@ export function MapView({
     if (config) {
       // Append API key from config if present
       if (config.apiKey && !config.url.includes("key=")) {
-        const separator = config.url.includes("?") ? "&" : "?";
-        return `${config.url}${separator}key=${config.apiKey}`;
+        const url = new URL(config.url);
+        url.searchParams.set("key", config.apiKey);
+        return url.toString();
       }
       return config.url;
     }
