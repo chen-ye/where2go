@@ -94,6 +94,7 @@ export function LayerSelector({
                   id={basemap.id}
                   name={basemap.name}
                   value={basemap.id}
+                  thumbnail={basemap.thumbnail}
                 />
               ))}
             </RadioGroup.Root>
@@ -120,6 +121,7 @@ export function LayerSelector({
                   name={overlay.name}
                   checked={activeOverlays.has(overlay.id)}
                   onCheckedChange={(checked) => onToggleOverlay(overlay.id, checked)}
+                  thumbnail={overlay.thumbnail}
                 />
               ))}
             </div>

@@ -1,21 +1,6 @@
-.layer-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--size-2);
-  padding: var(--size-2);
-  border: 1px solid var(--surface-3);
-  border-radius: var(--radius-2);
-  cursor: pointer;
-  background-color: var(--surface-2);
-  transition: all 0.2s ease;
-  position: relative;
-}
+@import './LayerCard.css';
 
-.layer-card:hover {
-  background-color: var(--surface-3);
-  border-color: var(--brand);
-}
+/* CheckboxCard specific styles */
 
 .layer-card.checked {
   background-color: var(--surface-3);
@@ -23,21 +8,21 @@
   box-shadow: 0 0 0 1px var(--brand);
 }
 
-.layer-card-label {
-  font-size: var(--font-size-00);
-  text-align: center;
-  color: var(--text-1);
-}
-
-/* Checkbox specific styles */
 .checkbox-card {
   justify-content: space-between;
 }
 
 .layer-card-header {
   width: 100%;
+  aspect-ratio: 16/9;
   display: flex;
   justify-content: flex-end;
+  border-radius: var(--radius-1);
+  background-color: var(--surface-4);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: var(--size-1);
 }
 
 .layer-checkbox {

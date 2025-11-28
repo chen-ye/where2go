@@ -7,15 +7,19 @@ interface CheckboxCardProps {
   name: string;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
+  thumbnail?: string;
 }
 
-export function CheckboxCard({ id, name, checked, onCheckedChange }: CheckboxCardProps) {
+export function CheckboxCard({ id, name, checked, onCheckedChange, thumbnail }: CheckboxCardProps) {
   return (
     <div
       className={`layer-card checkbox-card ${checked ? "checked" : ""}`}
       onClick={() => onCheckedChange(!checked)}
     >
-      <div className="layer-card-header">
+      <div
+        className="layer-card-header"
+        style={thumbnail ? { backgroundImage: `url(${thumbnail})` } : undefined}
+      >
         <Checkbox.Root
           className="layer-checkbox"
           checked={checked}

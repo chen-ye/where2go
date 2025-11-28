@@ -5,13 +5,17 @@ interface RadioCardProps {
   id: string;
   name: string;
   value: string;
+  thumbnail?: string;
 }
 
-export function RadioCard({ id, name, value }: RadioCardProps) {
+export function RadioCard({ id, name, value, thumbnail }: RadioCardProps) {
   return (
     <RadioGroup.Item value={value} className="layer-card">
-      <div className={`layer-card-preview ${id}-preview`} />
-      <span className="layer-card-label">{name}</span>
+      <div
+        className="layer-card-preview"
+        style={thumbnail ? { backgroundImage: `url(${thumbnail})` } : undefined}
+      />
+      <div className="layer-card-label">{name}</div>
     </RadioGroup.Item>
   );
 }

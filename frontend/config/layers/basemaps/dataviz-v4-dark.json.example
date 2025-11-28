@@ -1,5 +1,6 @@
 {
   "id": "dataviz-v4-dark",
   "name": "Dataviz",
-  "url": "https://api.maptiler.com/maps/dataviz-v4-dark/style.json?key={your_maptiler_api_key}"
+  "url": "https://api.maptiler.com/maps/dataviz-v4-dark/style.json?key={your_maptiler_api_key}",
+  "thumbnail": "https://api.maptiler.com/maps/dataviz-v4-dark/static/0,0,2/300x200.png?key={your_maptiler_api_key}"
 }

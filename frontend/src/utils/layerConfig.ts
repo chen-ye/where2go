@@ -4,6 +4,7 @@ export interface BasemapConfig extends Partial<StyleSpecification> {
   id: string;
   name: string;
   url?: string;
+  thumbnail?: string;
 }
 
 export interface OverlayConfig extends Partial<StyleSpecification> {
@@ -11,6 +12,7 @@ export interface OverlayConfig extends Partial<StyleSpecification> {
   id: string;
   name: string;
   url?: string;
+  thumbnail?: string;
   // Legacy property, migrated to paint['raster-opacity']
   opacity?: number;
 }
