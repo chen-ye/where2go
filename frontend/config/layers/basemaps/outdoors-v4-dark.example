@@ -1,6 +1,0 @@
-{
-  "id": "outdoors-v4-dark",
-  "name": "Outdoor",
-  "url": "https://api.maptiler.com/maps/outdoor-v4-dark/style.json",
-  "apiKey": "{your_maptiler_api_key}"
-}

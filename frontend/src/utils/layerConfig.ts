@@ -1,16 +1,18 @@
-export interface BasemapConfig {
+import type { StyleSpecification } from "maplibre-gl";
+
+export interface BasemapConfig extends Partial<StyleSpecification> {
   id: string;
   name: string;
-  url: string;
-  apiKey?: string;
+  url?: string;
 }
 
-export interface OverlayConfig {
+export interface OverlayConfig extends Partial<StyleSpecification> {
   order: number;
   id: string;
   name: string;
-  url: string;
-  opacity: number;
+  url?: string;
+  // Legacy property, migrated to paint['raster-opacity']
+  opacity?: number;
 }
 
 // Use Vite's glob import to load all JSON files from the config directories

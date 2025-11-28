@@ -2,6 +2,27 @@
   "order": 1,
   "id": "strava-heatmap-personal",
   "name": "Personal Heatmap",
-  "url": "{your_strava_heatmap_proxy_url}/personal/purple/all/{z}/{x}/{y}@2x.png",
-  "opacity": 0.7
+  "paint": {
+    "raster-opacity": 0.7
+  },
+  "version": 8,
+  "sources": {
+    "strava-heatmap-personal": {
+      "type": "raster",
+      "tiles": [
+        "{your_strava_heatmap_proxy_url}/personal/purple/all/{z}/{x}/{y}@2x.png"
+      ],
+      "tileSize": 256
+    }
+  },
+  "layers": [
+    {
+      "id": "strava-heatmap-personal-layer",
+      "type": "raster",
+      "source": "strava-heatmap-personal",
+      "paint": {
+        "raster-opacity": 0.7
+      }
+    }
+  ]
 }

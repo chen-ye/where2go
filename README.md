@@ -60,57 +60,87 @@ configuration files.
 ### Basemaps
 
 Basemap configurations are stored in
-[`frontend/config/layers/basemaps/`](./frontend/config/layers/basemaps). Each
-basemap is defined by a JSON file with the following schema:
+[`frontend/config/layers/basemaps/`](./frontend/config/layers/basemaps). They
+utilize the
+[MapLibre Style Specification](https://maplibre.org/maplibre-style-spec/), with
+a few custom properties. Here is an example basemap configuration:
 
 ```json
 {
   "id": "unique-basemap-id",
   "name": "Display Name",
-  "url": "https://example.com/style.json",
-  "apiKey": "optional-api-key"
+  "url": "https://example.com/style.json"
 }
 ```
 
+**Custom Properties:**
+
 - `id`: Unique identifier for the basemap
 - `name`: Human-readable name shown in the layer selector
-- `url`: MapLibre style URL
-- `apiKey`: Optional API key appended to the URL as `?key=` query parameter
+- `url`: Optional. URL to a remote MapLibre style JSON. Properties defined
+  locally will override those from the remote style.
+
+All other properties follow the
+[MapLibre Style Specification](https://maplibre.org/maplibre-style-spec/). You
+can define a complete style inline or reference a remote style via `url`.
 
 The app includes CartoDB Dark Matter as a free default basemap. To add a new
 basemap, create a new JSON file in the basemaps directory. The basemap will
 automatically appear in the layer selector.
 
-Some example configs utilize MapTiler are provided in
-[`frontend/config/layers/basemaps/*.example`](./frontend/config/layers/basemaps/*.example).
+Some example configs utilizing MapTiler are provided in
+[`frontend/config/layers/basemaps/`](./frontend/config/layers/basemaps/).
 MapTiler provides a free account with a small monthly limit. To use these
-configs, you'll need to sign up for a MapTiler account and add your API key to
-the configs.
+configs, you'll need to sign up for a MapTiler account and include your API key
+in the style URL.
 
 ### Overlay Layers
 
 Overlay configurations are stored in
-[`frontend/config/layers/overlay/`](./frontend/config/layers/overlay). Each
-overlay is defined by a JSON file with the following schema:
+[`frontend/config/layers/overlay/`](./frontend/config/layers/overlay). They also
+use the MapLibre Style Specification. Here's an example style for a raster
+overlay:
 
 ```json
 {
   "order": 1,
   "id": "unique-overlay-id",
   "name": "Display Name",
-  "url": "https://example.com/tiles/{z}/{x}/{y}.png",
-  "opacity": 0.7
+  "version": 8,
+  "sources": {
+    "overlay-source": {
+      "type": "raster",
+      "tiles": ["https://example.com/tiles/{z}/{x}/{y}.png"],
+      "tileSize": 256
+    }
+  },
+  "layers": [
+    {
+      "id": "overlay-layer",
+      "type": "raster",
+      "source": "overlay-source",
+      "paint": {
+        "raster-opacity": 0.7
+      }
+    }
+  ]
 }
 ```
+
+**Custom Properties:**
 
 - `order`: Stacking order (lower numbers appear below higher numbers)
 - `id`: Unique identifier for the overlay
 - `name`: Human-readable name shown in the layer selector
-- `url`: Tile URL in slippy map format (`{z}/{x}/{y}`)
-- `opacity`: Layer opacity (0.0 to 1.0)
+- `url`: Optional. URL to a remote MapLibre style JSON. Properties defined
+  locally will override those from the remote style.
 
-The `url` can be either a raster tile URL (as shown above) or a MapLibre style
-URL. To add a new overlay, create a new JSON file in the overlay directory. The
+All other properties follow the
+[MapLibre Style Specification](https://maplibre.org/maplibre-style-spec/). Most
+commonly, you'll define `sources` and `layers` inline as shown in the example
+above.
+
+To add a new overlay, create a new JSON file in the overlay directory. The
 overlay will automatically appear in the layer selector.
 
 Some example configs utilize Strava Heatmap are provided in the

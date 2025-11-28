@@ -13,7 +13,7 @@ import Map, {
 } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./MapView.css";
-import { useCallback, useMemo, useRef, useEffect } from "react";
+import { useCallback, useMemo, useRef, useEffect, useState } from "react";
 import { LayerSelector } from "./LayerSelector";
 import { BASEMAPS, OVERLAYS } from "../utils/layerConfig";
 import { getGradeColor } from "../utils/geo";
@@ -23,6 +23,8 @@ import type { Route, RouteDataPoint } from "../types.ts";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type { MapRef } from "react-map-gl/maplibre";
 
+import type { StyleSpecification, LayerSpecification, SourceSpecification } from "maplibre-gl";
+
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
   overlay.setProps(props);
@@ -31,6 +33,61 @@ function DeckGLOverlay(props: DeckProps) {
 
 // Offset elevation to avoid z-fighting
 const elvOffset = 5;
+
+function useResolvedStyle(config: any): StyleSpecification | null {
+  const [style, setStyle] = useState<StyleSpecification | null>(null);
+
+  useEffect(() => {
+    if (!config) {
+      setStyle(null);
+      return;
+    }
+
+    const loadStyle = async () => {
+      // Handle MapLibre style
+      let baseStyle: Partial<StyleSpecification> = {};
+
+      if (config.url) {
+        try {
+          const response = await fetch(config.url);
+          baseStyle = await response.json();
+        } catch (e) {
+          console.error("Failed to load style:", config.url, e);
+        }
+      }
+
+      // Merge overrides
+      // Exclude internal config keys
+      const { id, name, url, order, opacity, ...overrides } = config;
+
+      setStyle({
+        ...baseStyle,
+        ...overrides,
+      } as StyleSpecification);
+    };
+
+    loadStyle();
+  }, [config]);
+
+  return style;
+}
+
+function OverlayRenderer({ config, beforeId }: { config: any; beforeId?: string }) {
+  const style = useResolvedStyle(config);
+
+  if (!style) return null;
+
+  return (
+    <>
+      {Object.entries(style.sources || {}).map(([id, source]) => (
+        <Source key={id} id={id} {...(source as SourceSpecification)} />
+      ))}
+      {style.layers?.map((layer) => (
+        <Layer key={layer.id} {...(layer as LayerSpecification)} beforeId={beforeId} />
+      ))}
+    </>
+  );
+}
 
 interface MapViewProps {
   routes: Route[];
@@ -220,23 +277,14 @@ export function MapView({
     routeData,
   ]);
 
-  const mapStyle = useMemo(() => {
+  const currentBaseConfig = useMemo(() => {
     if (baseStyle === "custom") {
-      return customStyleUrl;
+      return { url: customStyleUrl, id: 'custom', name: 'Custom' };
     }
-    const config = BASEMAPS.find((b) => b.id === baseStyle);
-    if (config) {
-      // Append API key from config if present
-      if (config.apiKey && !config.url.includes("key=")) {
-        const url = new URL(config.url);
-        url.searchParams.set("key", config.apiKey);
-        return url.toString();
-      }
-      return config.url;
-    }
-    // Fallback to first available basemap
-    return BASEMAPS[0]?.url ?? "";
+    return BASEMAPS.find((b) => b.id === baseStyle);
   }, [baseStyle, customStyleUrl]);
+
+  const resolvedMapStyle = useResolvedStyle(currentBaseConfig);
 
   return (
     <div
@@ -255,7 +303,7 @@ export function MapView({
         {...viewState}
         padding={padding}
         onMove={(evt) => onMove(evt.viewState)}
-        mapStyle={mapStyle}
+        mapStyle={resolvedMapStyle || { version: 8, sources: {}, layers: [] }}
         terrain={{
           source: "terrain",
           exaggeration: 1,
@@ -291,36 +339,9 @@ export function MapView({
           onOpacityChange={onOpacityChange}
         />
 
-        {(() => {
-          // Sort active overlays by order (Low -> High)
-          const activeConfigs = OVERLAYS.filter((o) => activeOverlays.has(o.id));
-          // Render in reverse order (High -> Low) so that the "top" layer exists
-          // when the "bottom" layer tries to insert itself before it.
-          const reversedConfigs = activeConfigs.toReversed();
-
-          return reversedConfigs.map((overlay, index) => {
-            // The layer "above" this one is the previous one in the reversed list
-            const aboveOverlay = index > 0 ? reversedConfigs[index - 1] : undefined;
-            const beforeId = aboveOverlay ? `${aboveOverlay.id}-layer` : undefined;
-
-            return (
-              <Source
-                key={overlay.id}
-                id={overlay.id}
-                type="raster"
-                tiles={[overlay.url]}
-                tileSize={256}
-              >
-                <Layer
-                  id={`${overlay.id}-layer`}
-                  type="raster"
-                  paint={{ "raster-opacity": overlay.opacity }}
-                  beforeId={beforeId}
-                />
-              </Source>
-            );
-          });
-        })()}
+        {OVERLAYS.filter((o) => activeOverlays.has(o.id)).map((config) => (
+          <OverlayRenderer key={config.id} config={config} />
+        ))}
 
         <Source
           id="terrain"
