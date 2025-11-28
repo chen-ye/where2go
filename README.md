@@ -38,20 +38,12 @@ Navigate to `http://localhost:5174` to view the app.
 > Modify the `.env` file and docker compose to connect to an existing Postgresql
 > instance with PostGIS extension.
 
-> [!TIP]
-> **Optional: MapTiler API Key** - The app comes with a free CartoDB Dark Matter
-> basemap by default. To use MapTiler's premium basemaps (Dataviz, Outdoor),
-> obtain a free API key from [MapTiler Cloud](https://cloud.maptiler.com) and
-> add it to the basemap config files in
-> `frontend/config/layers/basemaps/*.json`. Update the `"apiKey"` field in
-> `dataviz-v4-dark.json` and `outdoors-v4-dark.json`.
-
 You'll also want to install the Chrome extension:
 
 1. Open `chrome://extensions/`
 2. Enable "Developer mode"
 3. Click "Load unpacked"
-4. Select the `/extension` directory
+4. Select the [`/extension`](./extension) directory
 5. Click on the extension icon. On first run, an options tab will open. Set the
    where2go endpoint to your endpoint.
 6. Navigate to a route or route collection page on Strava or RideWithGPS (you’ll
@@ -63,11 +55,12 @@ You'll also want to install the Chrome extension:
 ## Customizing Map Layers
 
 The map supports configurable basemaps and overlay layers through JSON
-configuration files in `frontend/config/layers/`.
+configuration files.
 
 ### Basemaps
 
-Basemap configurations are stored in `frontend/config/layers/basemaps/`. Each
+Basemap configurations are stored in
+[`frontend/config/layers/basemaps/`](./frontend/config/layers/basemaps). Each
 basemap is defined by a JSON file with the following schema:
 
 ```json
@@ -88,9 +81,16 @@ The app includes CartoDB Dark Matter as a free default basemap. To add a new
 basemap, create a new JSON file in the basemaps directory. The basemap will
 automatically appear in the layer selector.
 
+Some example configs utilize MapTiler are provided in
+[`frontend/config/layers/basemaps/*.example`](./frontend/config/layers/basemaps/*.example).
+MapTiler provides a free account with a small monthly limit. To use these
+configs, you'll need to sign up for a MapTiler account and add your API key to
+the configs.
+
 ### Overlay Layers
 
-Overlay configurations are stored in `frontend/config/layers/overlay/`. Each
+Overlay configurations are stored in
+[`frontend/config/layers/overlay/`](./frontend/config/layers/overlay). Each
 overlay is defined by a JSON file with the following schema:
 
 ```json
@@ -112,6 +112,12 @@ overlay is defined by a JSON file with the following schema:
 The `url` can be either a raster tile URL (as shown above) or a MapLibre style
 URL. To add a new overlay, create a new JSON file in the overlay directory. The
 overlay will automatically appear in the layer selector.
+
+Some example configs utilize Strava Heatmap are provided in the
+[`frontend/config/layers/overlay/*.example` files](./frontend/config/layers/overlay).
+To use these configs, you'll need to set up a
+[Strava Heatmap proxy service](https://github.com/chen-ye/strava-heatmap-proxy)
+and add your API key to the configs.
 
 ## Dev Stuff
 
