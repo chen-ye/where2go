@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2, ExternalLink, Download, X, Plus, Check } from "lucide-react";
+import { Trash2, ExternalLink, Download, X, Plus, Check, RefreshCw } from "lucide-react";
 import type { Route, RouteDataPoint } from "../types.ts";
 import { ElevationProfile } from "./ElevationProfile.tsx";
 import { METERS_TO_MILES, METERS_TO_FEET } from "../utils/geo";
@@ -19,6 +19,7 @@ import "./RouteDetailsView.css";
 interface RouteDetailsViewProps {
   route: Route;
   onClose: () => void;
+  onRecompute: (id: number) => void;
   onDelete: (id: number) => void;
   onUpdateTags: (id: number, tags: string[]) => void;
   onUpdateCompleted: (id: number, isCompleted: boolean) => void;
@@ -32,7 +33,9 @@ interface RouteDetailsViewProps {
 
 export function RouteDetailsView({
   route,
+  recomputing,
   onClose,
+  onRecompute,
   onDelete,
   onUpdateTags,
   onUpdateCompleted,
@@ -76,6 +79,15 @@ export function RouteDetailsView({
           >
             <Download size={18} />
           </a>
+          <button
+            type="button"
+            disabled={recomputing}
+            onClick={() => onRecompute(route.id)}
+            className="icon-button"
+            title="Recompute"
+          >
+            <RefreshCw size={18} />
+          </button>
           <button
             type="button"
             onClick={() => onDelete(route.id)}

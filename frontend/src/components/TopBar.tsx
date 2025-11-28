@@ -11,37 +11,12 @@ import {
 interface TopBarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  onRecomputeAll: () => void;
+  recomputing: boolean;
 }
 
 export const TopBar = forwardRef<HTMLDivElement, TopBarProps>(
-  ({ searchQuery, onSearchChange }, ref) => {
-    const [recomputing, setRecomputing] = useState(false);
-
-    const handleRecomputeAll = async () => {
-      setRecomputing(true);
-
-      try {
-        const response = await fetch('/api/routes/recompute', {
-          method: 'POST',
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          alert(
-            `Recompute complete!\nSuccess: ${result.successCount}\nErrors: ${result.errorCount}\nTotal: ${result.total}`
-          );
-          // Optionally reload the page or refresh route data
-          window.location.reload();
-        } else {
-          alert('Failed to recompute routes');
-        }
-      } catch (error) {
-        console.error('Error recomputing routes:', error);
-        alert('Error recomputing routes');
-      } finally {
-        setRecomputing(false);
-      }
-    };
+  ({ searchQuery, onSearchChange, onRecomputeAll, recomputing }, ref) => {
 
     return (
       <div className="top-bar" ref={ref}>
@@ -54,7 +29,7 @@ export const TopBar = forwardRef<HTMLDivElement, TopBarProps>(
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuItem
-                onSelect={handleRecomputeAll}
+                onSelect={onRecomputeAll}
                 disabled={recomputing}
               >
                 <RefreshCw size={16} style={{ marginRight: 8 }} />

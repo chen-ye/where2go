@@ -265,6 +265,59 @@ function App() {
     }
   };
 
+  const [recomputing, setRecomputing] = useState(false);
+
+  const handleRecomputeAll = async () => {
+    setRecomputing(true);
+
+    try {
+      const response = await fetch('/api/routes/recompute', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(
+          `Recompute complete!\nSuccess: ${result.successCount}\nErrors: ${result.errorCount}\nTotal: ${result.total}`
+        );
+        // Optionally reload the page or refresh route data
+        fetchRoutes();
+      } else {
+        alert('Failed to recompute routes');
+      }
+    } catch (error) {
+      console.error('Error recomputing routes:', error);
+      alert('Error recomputing routes');
+    } finally {
+      setRecomputing(false);
+    }
+  };
+
+  const handleRecompute = async (id: number) => {
+    setRecomputing(true);
+    try {
+      const response = await fetch(`/api/routes/${id}/recompute`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(
+          `Recompute complete!\nSuccess: ${result.successCount}\nErrors: ${result.errorCount}\nTotal: ${result.total}`
+        );
+        // Optionally reload the page or refresh route data
+        fetchRoutes();
+      } else {
+        alert('Failed to recompute route');
+      }
+    } catch (error) {
+      console.error('Error recomputing route:', error);
+      alert('Error recomputing route');
+    } finally {
+      setRecomputing(false);
+    }
+  }
+
   const handleSelectRoute = (id: number | null, source?: 'map' | 'search') => {
     setSelectionSource(source ?? null);
     setSelectedRouteId(id);
@@ -287,6 +340,8 @@ function App() {
     <>
       <TopBar
         ref={topBarRef}
+        recomputing={recomputing}
+        onRecomputeAll={handleRecomputeAll}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
@@ -324,11 +379,13 @@ function App() {
           <RouteDetailsView
             route={selectedRoute}
             routeData={routeData}
+            recomputing={recomputing}
             onClose={() => setSelectedRouteId(null)}
             onDelete={(id) => {
               setRouteToDelete(id);
               setDeleteConfirmOpen(true);
             }}
+            onRecompute={handleRecompute}
             onUpdateTags={handleUpdateTags}
             onUpdateCompleted={handleUpdateCompleted}
             updatingRouteId={updatingRouteId}

@@ -9,7 +9,6 @@ export interface Route {
   geojson: LineString | MultiLineString;
   bbox?: LineString;
   grades?: number[];
-  // Mock data for stats if not present in backend yet
   distance?: number;
   elevation?: string;
   time?: string;
