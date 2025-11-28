@@ -116,4 +116,13 @@ export async function initDb() {
   } catch (e) {
     console.error('Error creating calculate_route_grades function:', e);
   }
+
+  // Add valhalla_segments column if not exists
+  try {
+    await queryClient`
+      ALTER TABLE routes ADD COLUMN IF NOT EXISTS valhalla_segments JSONB;
+    `;
+  } catch (e) {
+    console.log('Column valhalla_segments likely exists or error adding it', e);
+  }
 }

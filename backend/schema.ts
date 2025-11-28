@@ -1,4 +1,4 @@
-import { boolean, geometry, real, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, geometry, jsonb, real, serial, text, timestamp } from 'drizzle-orm/pg-core';
 import { pgTable, customType } from 'drizzle-orm/pg-core';
 
 // Define a custom type for real array since 'real[]' isn't directly supported in drizzle-orm/pg-core yet or needs specific handling
@@ -16,6 +16,7 @@ export const routes = pgTable('routes', {
   createdAt: timestamp('created_at').defaultNow(),
   totalAscent: real('total_ascent'),
   totalDescent: real('total_descent'),
+  valhallaSegments: jsonb('valhalla_segments'),
   // PostGIS geometry column - LineStringZ with SRID 4326
   geom: geometry('geom', { type: 'linestring', mode: 'xy', srid: 4326 }),
   grades: real('grades').array(),
