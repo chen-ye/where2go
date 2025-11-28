@@ -78,22 +78,20 @@
       color: var(--text-3);
     }
   }
-}
 
-/* Deck.gl Tooltip Styling */
-/* Using chained selectors to increase specificity and override inline styles */
-.deck-tooltip.deck-tooltip.deck-tooltip {
-  background: var(--surface-2-translucent);
-  backdrop-filter: var(--blur-3);
-  color: var(--text-1);
-  border: var(--border-size-1) solid var(--surface-3);
-  box-shadow: var(--shadow-3);
-  font-size: var(--font-size-0);
-  padding: var(--size-2) var(--size-3);
-  border-radius: var(--radius-2);
-  line-height: var(--font-lineheight-2);
-  font-family: var(--font-monospace-code);
-  z-index: 1000;
-  max-width: none;
-  pointer-events: none;
+  .deck-tooltip {
+    background: var(--surface-2-translucent) !important;
+    backdrop-filter: var(--blur-3) !important;
+    color: var(--text-1) !important;
+    border: var(--border-size-1) solid var(--surface-3) !important;
+    box-shadow: var(--shadow-3) !important;
+    font-size: var(--font-size-0) !important;
+    padding: var(--size-2) var(--size-3) !important;
+    border-radius: var(--radius-2) !important;
+    line-height: var(--font-lineheight-2) !important;
+    font-family: var(--font-monospace-code) !important;
+    z-index: 1000 !important;
+    max-width: none !important;
+    pointer-events: none !important;
+  }
 }
