@@ -1,0 +1,43 @@
+.add-tag-btn {
+  display: flex;
+  gap: var(--size-1);
+  align-items: center;
+  background: transparent;
+  border: var(--border-size-1) dashed var(--surface-3);
+  color: var(--text-2);
+  padding: var(--size-1) var(--size-2);
+  border-radius: var(--radius-2);
+  font-size: var(--font-size-0);
+  cursor: pointer;
+  text-box-trim: both;
+  font-family: var(--font-monospace-code);
+}
+
+.add-tag-btn:hover {
+  border-color: var(--text-2);
+  color: var(--text-1);
+}
+
+.add-tag-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.add-tag-btn.editing {
+  border-style: solid;
+  border-color: var(--brand);
+  background-color: var(--surface-2);
+  color: var(--text-1);
+  min-width: 120px;
+  cursor: text;
+}
+
+.add-tag-btn.editing:focus {
+  outline: none;
+}
+
+.add-tag-btn.editing:empty::before {
+  content: 'Enter tag...';
+  color: var(--text-3);
+  opacity: 0.6;
+}

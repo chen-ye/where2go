@@ -1,0 +1,32 @@
+.tag-pill {
+  font-family: var(--font-monospace-code);
+  background-color: var(--surface-3);
+  color: var(--text-1);
+  padding: var(--size-1) var(--size-2);
+  border-radius: var(--radius-2);
+  font-size: var(--font-size-0);
+  display: flex;
+  align-items: center;
+  gap: var(--size-1);
+  text-box-trim: both;
+}
+
+.tag-remove {
+  cursor: pointer;
+  opacity: 0.6;
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+
+.tag-remove:hover {
+  opacity: 1;
+}
+
+.tag-remove:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}

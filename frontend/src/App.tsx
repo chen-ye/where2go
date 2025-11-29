@@ -335,8 +335,14 @@ function App() {
           title: "Recompute Complete",
           description: `Success: ${result.successCount}, Errors: ${result.errorCount}, Total: ${result.total}`,
         });
-        // Optionally reload the page or refresh route data
-        fetchRoutes();
+        // Fetch only the updated route
+        const routeResponse = await fetch(`/api/routes/${id}`);
+        if (routeResponse.ok) {
+          const updatedRoute = await routeResponse.json();
+          setRoutes((prev) =>
+            prev.map((r) => (r.id === updatedRoute.id ? updatedRoute : r))
+          );
+        }
       } else {
         toast({
           title: "Error",

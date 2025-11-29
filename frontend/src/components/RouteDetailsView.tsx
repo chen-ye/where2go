@@ -1,9 +1,7 @@
-import { useState } from "react";
-import { Trash2, ExternalLink, Download, X, Plus, Check, RefreshCw } from "lucide-react";
+import { Trash2, ExternalLink, Download, Check, RefreshCw, X } from "lucide-react";
 import type { Route, RouteDataPoint } from "../types.ts";
 import { ElevationProfile } from "./charts/ElevationProfile.tsx";
 import { METERS_TO_MILES, METERS_TO_FEET } from "../utils/geo";
-import { PromptDialog } from "./ui/PromptDialog";
 import {
   Accordion,
   AccordionItem,
@@ -16,6 +14,8 @@ import { Toggle } from "./ui/Toggle";
 import { RouteStat } from "./RouteStat";
 import { SurfaceChart } from "./charts/SurfaceChart";
 import { ParentSize } from "@visx/responsive";
+import { Tag } from "./ui/Tag";
+import { NewTagButton } from "./ui/NewTagButton";
 import "./RouteDetailsView.css";
 
 interface RouteDetailsViewProps {
@@ -30,8 +30,8 @@ interface RouteDetailsViewProps {
   hoveredLocation: { lat: number; lon: number } | null;
   onHover: (location: { lat: number; lon: number } | null) => void;
   displayGradeOnMap: boolean;
-  onToggleDisplayGradeOnMap: (enabled: boolean) => void;
-  routeData: RouteDataPoint[];
+  onToggleDisplayGradeOnMap: (value: boolean) => void;
+  routeData?: RouteDataPoint[];
 }
 
 export function RouteDetailsView({
@@ -49,7 +49,6 @@ export function RouteDetailsView({
   onToggleDisplayGradeOnMap,
   routeData,
 }: RouteDetailsViewProps) {
-  const [tagPromptOpen, setTagPromptOpen] = useState(false);
   const isUpdating = updatingRouteId === route.id;
 
   return (
@@ -143,34 +142,21 @@ export function RouteDetailsView({
 
       <div className="tags-row">
         {route.tags?.map((tag) => (
-          <div key={tag} className="tag-pill">
-            {tag}
-            <button
-              type="button"
-              className="tag-remove"
-              disabled={isUpdating}
-              onClick={() => {
-                const newTags = route.tags.filter((t) => t !== tag);
-                onUpdateTags(route.id, newTags);
-              }}
-            >
-              <X size={12} />
-            </button>
-          </div>
+          <Tag
+            key={tag}
+            tag={tag}
+            onRemove={() => {
+              const newTags = route.tags.filter((t) => t !== tag);
+              onUpdateTags(route.id, newTags);
+            }}
+            disabled={isUpdating}
+          />
         ))}
-        <PromptDialog
-          open={tagPromptOpen}
-          onOpenChange={setTagPromptOpen}
-          title="Add Tag"
-          description="Enter a new tag for this route."
+        <NewTagButton
           onSubmit={(newTag) => {
-            if (newTag) onUpdateTags(route.id, [...(route.tags || []), newTag]);
+            onUpdateTags(route.id, [...(route.tags || []), newTag]);
           }}
-          trigger={
-            <button type="button" className="add-tag-btn" disabled={isUpdating}>
-              <Plus size={12} /> New
-            </button>
-          }
+          disabled={isUpdating}
         />
       </div>
 
@@ -213,7 +199,7 @@ export function RouteDetailsView({
           </AccordionHeader>
           <AccordionContent>
             <ElevationProfile
-              data={routeData}
+              data={routeData || []}
               hoveredLocation={hoveredLocation}
               onHover={onHover}
             />
@@ -229,7 +215,7 @@ export function RouteDetailsView({
             <ParentSize>
               {({ width }) => (
                 <SurfaceChart
-                  data={routeData}
+                  data={routeData || []}
                   segments={route.valhalla_segments || []}
                   width={width}
                   hoveredLocation={hoveredLocation}
