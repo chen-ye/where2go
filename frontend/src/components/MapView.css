@@ -35,6 +35,10 @@
           background-color: var(--surface-3);
         }
 
+        &:active {
+          background-color: var(--surface-4);
+        }
+
         &:focus-visible {
           outline: 2px solid var(--brand);
           outline-offset: -2px;
