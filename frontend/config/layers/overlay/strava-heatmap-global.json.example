@@ -1,10 +1,8 @@
 {
+  "$schema": "../../../../schema/overlayconfig.schema.json",
   "order": 2,
   "id": "strava-heatmap-global",
   "name": "Global Heatmap",
-  "paint": {
-    "raster-opacity": 0.7
-  },
   "version": 8,
   "sources": {
     "strava-heatmap-global": {

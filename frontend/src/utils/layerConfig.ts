@@ -1,19 +1,5 @@
-import { type RasterSourceSpecification, type StyleSpecification } from "maplibre-gl";
-
-export interface BasemapConfig extends Partial<StyleSpecification> {
-  id: string;
-  name: string;
-  url?: string;
-  thumbnail?: string;
-}
-
-export interface OverlayConfig extends Partial<StyleSpecification> {
-  order: number;
-  id: string;
-  name: string;
-  url?: string;
-  thumbnail?: string;
-}
+import { type RasterSourceSpecification } from "maplibre-gl";
+import type { BasemapConfig, OverlayConfig } from "./layerTypes.ts";
 
 // Use Vite's glob import to load all JSON files from the config directories
 const basemapModules = import.meta.glob<BasemapConfig>("@config/layers/basemaps/*.json", {

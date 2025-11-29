@@ -74,6 +74,8 @@ function App() {
     lon: number;
   } | null>(null);
 
+  const [hoveredSearchRouteId, setHoveredSearchRouteId] = useState<number | null>(null);
+
   const [updatingRouteId, setUpdatingRouteId] = useState<number | null>(null);
 
   // Update URL query parameters
@@ -448,6 +450,7 @@ function App() {
         }}
         routeOpacity={routeOpacity}
         onOpacityChange={setRouteOpacity}
+        hoveredSearchRouteId={hoveredSearchRouteId}
         padding={mapPadding}
       />
       <BottomPanel ref={bottomPanelRef}>
@@ -473,8 +476,10 @@ function App() {
         ) : searchQuery ? (
           <SearchResultsView
             results={routes}
+            selectedRouteId={selectedRouteId}
             onSelectRoute={handleSelectRoute}
             onClose={() => setSearchQuery("")}
+            onHoverRoute={setHoveredSearchRouteId}
           />
         ) : null}
       </BottomPanel>

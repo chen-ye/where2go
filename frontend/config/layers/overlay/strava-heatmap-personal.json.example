@@ -1,10 +1,8 @@
 {
+  "$schema": "../../../../schema/overlayconfig.schema.json",
   "order": 1,
   "id": "strava-heatmap-personal",
   "name": "Personal Heatmap",
-  "paint": {
-    "raster-opacity": 0.7
-  },
   "version": 8,
   "sources": {
     "strava-heatmap-personal": {
@@ -22,7 +20,7 @@
       "type": "raster",
       "source": "strava-heatmap-personal",
       "paint": {
-        "raster-opacity": 0.7
+        "raster-opacity": 1.0
       }
     }
   ]

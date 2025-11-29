@@ -120,6 +120,7 @@ interface MapViewProps {
   onToggleOverlay: (id: string, active: boolean) => void;
   routeOpacity: { selected: number; completed: number; incomplete: number };
   onOpacityChange: (opacity: { selected: number; completed: number; incomplete: number }) => void;
+  hoveredSearchRouteId: number | null;
   padding?: { top: number; bottom: number; left: number; right: number };
 }
 
@@ -142,6 +143,7 @@ export function MapView({
   onToggleOverlay,
   routeOpacity,
   onOpacityChange,
+  hoveredSearchRouteId,
   padding,
 }: MapViewProps) {
   const mapRef = useRef<MapRef>(null);
@@ -193,6 +195,10 @@ export function MapView({
     };
   }, [routes]);
 
+  const selectedRouteData = useMemo(() => {
+    return [routeData];
+  }, [routeData]);
+
   const deckGLLayers: DeckProps["layers"] = useMemo(() => {
     const layers: DeckLayer[] = [];
 
@@ -205,7 +211,7 @@ export function MapView({
       layers.push(
         new PathLayer<RouteDataPoint[]>({
           id: "selected-route",
-          data: [routeData],
+          data: selectedRouteData,
           getPath: (d) => { return d.flatMap((p) => [p.lon, p.lat, p.elevation + elvOffset])},
           getColor: (d) => {
             return displayGradeOnMap ? ([...d, d.at(-1)] as RouteDataPoint[]).map((p) => hexToRgb(getGradeColor(p.grade))) : [...getOpenPropsRgb("--orange-6"), Math.floor(routeOpacity.selected * 2.55)];
@@ -216,6 +222,10 @@ export function MapView({
           jointRounded: true,
           pickable: false,
           widthMinPixels: 2,
+          updateTriggers: {
+            getPath: [elvOffset],
+            getColor: [displayGradeOnMap, routeOpacity],
+          },
           _pathType: 'open',
         })
       );
@@ -228,15 +238,18 @@ export function MapView({
         data: routesGeoJson,
         getLineColor: (object) => {
           const selectedRoute = object.properties.id === selectedRouteId;
+          const isHovered = object.properties.id === hoveredSearchRouteId;
           const isCompleted = object.properties.is_completed;
 
           if (selectedRoute) {
             return [0, 0, 0, 0];
             // return displayGradeOnMap ? [0, 0, 0, 0] : [217, 119, 6, 255];
           }
+
+          // Hovered routes are fully opaque
           return isCompleted
-            ? [...getOpenPropsRgb("--purple-6"), Math.floor(routeOpacity.completed * 2.55)]
-            : [...getOpenPropsRgb("--blue-7"), Math.floor(routeOpacity.incomplete * 2.55)];
+            ? [...getOpenPropsRgb("--purple-6"), isHovered ? 255 : Math.floor(routeOpacity.completed * 2.55)]
+            : [...getOpenPropsRgb("--blue-7"), isHovered ? 255 : Math.floor(routeOpacity.incomplete * 2.55)];
         },
         getLineWidth: (object) =>
           object.properties.id === selectedRouteId ? 60 : 20,
@@ -259,7 +272,7 @@ export function MapView({
           onSelectRoute(info.object.properties.id, 'map');
         },
         updateTriggers: {
-          getLineColor: [selectedRouteId, displayGradeOnMap, routeOpacity],
+          getLineColor: [selectedRouteId, displayGradeOnMap, routeOpacity, hoveredSearchRouteId],
           getLineWidth: selectedRouteId,
         },
       })
@@ -285,12 +298,13 @@ export function MapView({
   }, [
     routesGeoJson,
     selectedRouteId,
+    hoveredSearchRouteId,
     hoveredLocation,
     onHover,
     displayGradeOnMap,
     routes,
     routeOpacity,
-    routeData,
+    selectedRouteData,
   ]);
 
   const currentBaseConfig = useMemo(() => {
