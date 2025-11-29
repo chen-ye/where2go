@@ -24,6 +24,10 @@
   background-color: var(--surface-2);
 }
 
+.filter-distance {
+  padding: var(--size-1) 0;
+}
+
 /* Search Results Filter Badges */
 .search-results-title-row {
   display: flex;
@@ -107,7 +111,7 @@
   gap: var(--size-2);
   font-size: var(--font-size-0);
   font-weight: var(--font-weight-6);
-  color: var(--text-2);
+  color: var(--text-3);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }

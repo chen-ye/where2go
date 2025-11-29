@@ -1,0 +1,97 @@
+.distance-slider {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-3);
+}
+
+.distance-inputs {
+  display: flex;
+  gap: var(--size-3);
+}
+
+.distance-input-group {
+  display: flex;
+  align-items: center;
+  gap: var(--size-1);
+  flex: 1;
+}
+
+.distance-input-group label {
+  font-size: var(--font-size-00);
+  color: var(--text-2);
+  min-width: 30px;
+}
+
+.distance-input-group input {
+  flex: 1;
+  padding: var(--size-1);
+  border-radius: var(--radius-1);
+  border: 1px solid var(--surface-3);
+  background-color: var(--surface-1);
+  color: var(--text-1);
+  font-size: var(--font-size-0);
+  width: 0; /* Allows flex to control width */
+}
+
+.distance-input-group input:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+
+.distance-unit {
+  font-size: var(--font-size-00);
+  color: var(--text-3);
+  min-width: 20px;
+}
+
+/* Radix Slider styles adapted from Slider.css */
+.distance-slider-root {
+  position: relative;
+  display: flex;
+  align-items: center;
+  user-select: none;
+  touch-action: none;
+  width: 100%;
+  height: 20px;
+}
+
+.distance-slider-track {
+  background-color: var(--surface-3);
+  position: relative;
+  flex-grow: 1;
+  border-radius: var(--radius-pill);
+  height: 4px;
+}
+
+.distance-slider-range {
+  position: absolute;
+  background-color: var(--brand);
+  border-radius: var(--radius-pill);
+  height: 100%;
+}
+
+.distance-slider-thumb {
+  display: block;
+  width: 16px;
+  height: 16px;
+  background-color: var(--brand);
+  box-shadow: var(--shadow-2);
+  border-radius: var(--radius-round);
+  border: 1px solid var(--surface-3);
+  cursor: grab;
+  position: relative;
+}
+
+.distance-slider-thumb:hover {
+  background-color: var(--brand-dark);
+  border-color: var(--surface-4);
+}
+
+.distance-slider-thumb:focus {
+  outline: none;
+  box-shadow: var(--shadow-3), 0 0 0 2px var(--brand);
+}
+
+.distance-slider-thumb:active {
+  cursor: grabbing;
+}

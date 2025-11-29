@@ -2,6 +2,7 @@ import { Filter, Globe, Plus, Minus, Tag as TagIcon } from "lucide-react";
 import "./FilterPanel.css";
 import { GenericPopover } from "./ui/GenericPopover";
 import { Tag } from "./ui/Tag";
+import { DistanceSlider } from "./DistanceSlider";
 
 interface FilterPanelProps {
   availableTags: string[];
@@ -12,6 +13,11 @@ interface FilterPanelProps {
   selectedDomains: string[];
   onToggleDomain: (domain: string) => void;
   onClearDomains: () => void;
+  minDistance: number; // in meters
+  maxDistance: number; // in meters
+  distanceRange: [number, number] | null; // in meters, null if not set
+  onDistanceChange: (range: [number, number]) => void;
+  onClearDistance: () => void;
 }
 
 export function FilterPanel({
@@ -23,10 +29,16 @@ export function FilterPanel({
   selectedDomains,
   onToggleDomain,
   onClearDomains,
+  minDistance,
+  maxDistance,
+  distanceRange,
+  onDistanceChange,
+  onClearDistance,
 }: FilterPanelProps) {
   const domainCount = selectedDomains.length;
   const tagCount = selectedTags.length;
-  const totalCount = domainCount + tagCount;
+  const hasDistanceFilter = distanceRange !== null;
+  const totalCount = domainCount + tagCount + (hasDistanceFilter ? 1 : 0);
   const hasSelection = totalCount > 0;
 
   return (
@@ -77,6 +89,30 @@ export function FilterPanel({
                   );
                 })
               )}
+            </div>
+          </div>
+
+          <div className="filter-divider" />
+
+          {/* Distance Section */}
+          <div className="filter-section">
+            <div className="filter-section-header">
+              <div className="filter-section-title">
+                <span>Distance</span>
+              </div>
+              {hasDistanceFilter && (
+                <button className="filter-section-clear" onClick={onClearDistance}>
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="filter-distance">
+              <DistanceSlider
+                min={minDistance}
+                max={maxDistance}
+                value={distanceRange || [minDistance, maxDistance]}
+                onChange={onDistanceChange}
+              />
             </div>
           </div>
 

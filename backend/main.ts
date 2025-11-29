@@ -152,6 +152,17 @@ router.get('/api/routes', async (ctx: RouterContext<string>) => {
     }
   }
 
+  const minDistanceParam = ctx.request.url.searchParams.get('minDistance');
+  const maxDistanceParam = ctx.request.url.searchParams.get('maxDistance');
+  if (minDistanceParam || maxDistanceParam) {
+    const minDistance = minDistanceParam ? parseFloat(minDistanceParam) : 0;
+    const maxDistance = maxDistanceParam ? parseFloat(maxDistanceParam) : Number.MAX_SAFE_INTEGER;
+
+    query = query.where(
+      sql`ST_Length(${routes.geom}::geography) >= ${minDistance} AND ST_Length(${routes.geom}::geography) <= ${maxDistance}`
+    );
+  }
+
   const result = await query.orderBy(desc(routes.title));
 
   const mappedRoutes = result.map((row) => ({

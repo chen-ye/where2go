@@ -10,6 +10,8 @@
   gap: var(--size-1);
   text-box-trim: both;
   border: 1px solid transparent; /* Ensure consistent sizing with buttons */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 button.tag-pill {

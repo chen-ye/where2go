@@ -69,10 +69,27 @@
   border-color: var(--surface-3);
 }
 
-.search-icon {
+.search-icon-container {
+
   position: absolute;
-  left: var(--size-3);
   top: 50%;
   transform: translateY(-50%);
+  left: var(--size-3);
+}
+
+.search-icon {
   color: var(--text-2);
+}
+
+.search-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: translateY(-50%) rotate(0deg);
+  }
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
 }

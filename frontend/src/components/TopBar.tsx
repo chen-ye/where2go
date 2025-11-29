@@ -1,4 +1,4 @@
-import { Search, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw, Loader2 } from 'lucide-react';
 import './TopBar.css';
 import { forwardRef } from 'react';
 import {
@@ -22,10 +22,16 @@ interface TopBarProps {
   selectedDomains: string[];
   onToggleDomain: (domain: string) => void;
   onClearDomains: () => void;
+  minDistance: number;
+  maxDistance: number;
+  distanceRange: [number, number] | null;
+  onDistanceChange: (range: [number, number]) => void;
+  onClearDistance: () => void;
+  fetchingRoutes: boolean;
 }
 
 export const TopBar = forwardRef<HTMLDivElement, TopBarProps>(
-  ({ searchQuery, onSearchChange, onRecomputeAll, recomputing, availableTags, selectedTags, onToggleTag, onClearTags, availableDomains, selectedDomains, onToggleDomain, onClearDomains }, ref) => {
+  ({ searchQuery, onSearchChange, onRecomputeAll, recomputing, availableTags, selectedTags, onToggleTag, onClearTags, availableDomains, selectedDomains, onToggleDomain, onClearDomains, minDistance, maxDistance, distanceRange, onDistanceChange, onClearDistance, fetchingRoutes }, ref) => {
 
     return (
       <div className="top-bar" ref={ref}>
@@ -55,7 +61,13 @@ export const TopBar = forwardRef<HTMLDivElement, TopBarProps>(
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
           />
-          <Search className="search-icon" size={18} />
+          <div className="search-icon-container">
+            {fetchingRoutes ? (
+              <Loader2 className="search-icon search-spinner" size={18} />
+            ) : (
+              <Search className="search-icon" size={18} />
+            )}
+          </div>
         </div>
         <FilterPanel
           availableTags={availableTags}
@@ -66,6 +78,11 @@ export const TopBar = forwardRef<HTMLDivElement, TopBarProps>(
           selectedDomains={selectedDomains}
           onToggleDomain={onToggleDomain}
           onClearDomains={onClearDomains}
+          minDistance={minDistance}
+          maxDistance={maxDistance}
+          distanceRange={distanceRange}
+          onDistanceChange={onDistanceChange}
+          onClearDistance={onClearDistance}
         />
       </div>
     );

@@ -125,4 +125,35 @@ export async function initDb() {
   } catch (e) {
     console.log('Column valhalla_segments likely exists or error adding it', e);
   }
+
+  // Create indexes for query optimization
+  try {
+    // Index for title text search (case-insensitive regex)
+    await queryClient`
+      CREATE INDEX IF NOT EXISTS idx_routes_title_text_pattern
+      ON routes USING btree (lower(title) text_pattern_ops);
+    `;
+
+    // Index for source_url pattern matching (domain filtering)
+    await queryClient`
+      CREATE INDEX IF NOT EXISTS idx_routes_source_url_pattern
+      ON routes USING btree (source_url text_pattern_ops);
+    `;
+
+    // GIN index for tags array operations (containment queries)
+    await queryClient`
+      CREATE INDEX IF NOT EXISTS idx_routes_tags_gin
+      ON routes USING gin (tags);
+    `;
+
+    // Spatial index for geometry (distance calculations)
+    await queryClient`
+      CREATE INDEX IF NOT EXISTS idx_routes_geom_gist
+      ON routes USING gist (geom);
+    `;
+
+    console.log('Database indexes created successfully');
+  } catch (e) {
+    console.error('Error creating indexes:', e);
+  }
 }

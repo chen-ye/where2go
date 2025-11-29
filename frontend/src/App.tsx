@@ -82,6 +82,9 @@ function App() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [availableDomains, setAvailableDomains] = useState<string[]>([]);
+  const [distanceRange, setDistanceRange] = useState<[number, number] | null>(null);
+  const debouncedDistanceRange = useDebounce(distanceRange, 300);
+  const [fetchingRoutes, setFetchingRoutes] = useState(false);
 
   // Fetch available tags and sources
   useEffect(() => {
@@ -157,7 +160,7 @@ function App() {
     return () => {
       abortControllerRef.current?.abort();
     };
-  }, [debouncedSearchQuery, selectedDomains, selectedTags]); // Refetch when query, domains, or tags change
+  }, [debouncedSearchQuery, selectedDomains, selectedTags, debouncedDistanceRange]); // Refetch when query, domains, tags, or distance change
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -171,6 +174,7 @@ function App() {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
+    setFetchingRoutes(true);
     try {
       const url = new URL("/api/routes", window.location.origin);
       // Use the current value of debouncedSearchQuery (or pass it as arg if needed, but here it's fine)
@@ -190,6 +194,10 @@ function App() {
       if (selectedTags.length > 0) {
         url.searchParams.set("tags", selectedTags.join(','));
       }
+      if (debouncedDistanceRange) {
+        url.searchParams.set("minDistance", debouncedDistanceRange[0].toString());
+        url.searchParams.set("maxDistance", debouncedDistanceRange[1].toString());
+      }
 
       const res = await fetch(url, { signal: controller.signal });
       const data = await res.json();
@@ -200,6 +208,8 @@ function App() {
         return;
       }
       console.error("Failed to fetch routes", e);
+    } finally {
+      setFetchingRoutes(false);
     }
   };
 
@@ -378,6 +388,16 @@ function App() {
     setSelectedDomains([]);
   };
 
+  const distanceExtent = useMemo(() => [0, 804672], [routes]);
+
+  const handleDistanceChange = (range: [number, number]) => {
+    setDistanceRange(range);
+  };
+
+  const handleClearDistance = () => {
+    setDistanceRange(null);
+  };
+
 
 
   const selectedRoute = useMemo(
@@ -510,6 +530,12 @@ function App() {
         selectedDomains={selectedDomains}
         onToggleDomain={handleToggleDomain}
         onClearDomains={handleClearDomains}
+        minDistance={distanceExtent[0]}
+        maxDistance={distanceExtent[1]}
+        distanceRange={distanceRange}
+        onDistanceChange={handleDistanceChange}
+        onClearDistance={handleClearDistance}
+        fetchingRoutes={fetchingRoutes}
       />
       <MapView
         routes={routes}
@@ -563,17 +589,20 @@ function App() {
             displayGradeOnMap={displayGradeOnMap}
             onToggleDisplayGradeOnMap={setDisplayGradeOnMap}
           />
-        ) : searchQuery || selectedTags.length > 0 || selectedDomains.length > 0 ? (
+        ) : searchQuery || selectedTags.length > 0 || selectedDomains.length > 0 || distanceRange !== null ? (
           <SearchResultsView
             searchQuery={debouncedSearchQuery}
             selectedTags={selectedTags}
             selectedDomains={selectedDomains}
+            distanceRange={debouncedDistanceRange}
+            fetchingRoutes={fetchingRoutes}
             results={routes}
             onSelectRoute={handleSelectRoute}
             onClose={() => {
               setSearchQuery("");
               setSelectedTags([]);
               setSelectedDomains([]);
+              setDistanceRange(null);
             }}
             onHoverRoute={setHoveredSearchRouteId}
           />

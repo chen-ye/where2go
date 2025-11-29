@@ -1,7 +1,7 @@
 import type { Route } from "../types";
 import { METERS_TO_MILES, METERS_TO_FEET } from "../utils/geo";
 import "./SearchResultsView.css";
-import { Check, X } from "lucide-react";
+import { Check, X, Loader2 } from "lucide-react";
 import { RouteStat } from "./RouteStat";
 import { Tag } from "./ui/Tag.tsx";
 
@@ -13,6 +13,8 @@ interface SearchResultsViewProps {
   onHoverRoute: (id: number | null) => void;
   selectedTags?: string[];
   selectedDomains?: string[];
+  distanceRange?: [number, number] | null;
+  fetchingRoutes?: boolean;
 }
 
 export function SearchResultsView({
@@ -23,6 +25,8 @@ export function SearchResultsView({
   onHoverRoute,
   selectedTags = [],
   selectedDomains = [],
+  distanceRange = null,
+  fetchingRoutes = false,
 }: SearchResultsViewProps) {
   return (
     <div className="search-results-view">
@@ -40,6 +44,11 @@ export function SearchResultsView({
                 #{tag}
               </Tag>
             ))}
+            {distanceRange && (
+              <Tag className="filter-badge distance-badge">
+                {Math.round(distanceRange[0] * METERS_TO_MILES)}-{Math.round(distanceRange[1] * METERS_TO_MILES)} mi
+              </Tag>
+            )}
           </span> · <span className="search-results-count">{results.length}</span> Routes</h3>
           <button type="button" className="icon-button" onClick={onClose}>
             <X size={18} />
@@ -51,6 +60,11 @@ export function SearchResultsView({
           onHoverRoute(null);
         }}
       >
+        {fetchingRoutes && (
+          <div className="search-results-loading">
+            <Loader2 size={24} className="search-results-spinner" />
+          </div>
+        )}
         {results.map((route) => (
           <div
             className="search-result-row"
