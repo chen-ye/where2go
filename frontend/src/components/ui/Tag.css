@@ -9,6 +9,20 @@
   align-items: center;
   gap: var(--size-1);
   text-box-trim: both;
+  border: 1px solid transparent; /* Ensure consistent sizing with buttons */
+}
+
+button.tag-pill {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button.tag-pill:hover {
+  background-color: var(--surface-4);
+}
+
+button.tag-pill:active {
+  background-color: var(--surface-5);
 }
 
 .tag-remove {
@@ -24,6 +38,10 @@
 
 .tag-remove:hover {
   opacity: 1;
+}
+
+.tag-remove:active {
+  opacity: 0.8;
 }
 
 .tag-remove:disabled {

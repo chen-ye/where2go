@@ -7,16 +7,21 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from './ui/DropdownMenu';
+import { TagFilter } from './TagFilter';
 
 interface TopBarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onRecomputeAll: () => void;
   recomputing: boolean;
+  availableTags: string[];
+  selectedTags: string[];
+  onToggleTag: (tag: string) => void;
+  onClearTags: () => void;
 }
 
 export const TopBar = forwardRef<HTMLDivElement, TopBarProps>(
-  ({ searchQuery, onSearchChange, onRecomputeAll, recomputing }, ref) => {
+  ({ searchQuery, onSearchChange, onRecomputeAll, recomputing, availableTags, selectedTags, onToggleTag, onClearTags }, ref) => {
 
     return (
       <div className="top-bar" ref={ref}>
@@ -48,6 +53,12 @@ export const TopBar = forwardRef<HTMLDivElement, TopBarProps>(
           />
           <Search className="search-icon" size={18} />
         </div>
+        <TagFilter
+          availableTags={availableTags}
+          selectedTags={selectedTags}
+          onToggleTag={onToggleTag}
+          onClearTags={onClearTags}
+        />
       </div>
     );
   }

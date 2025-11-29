@@ -15,47 +15,8 @@
   cursor: pointer;
 }
 
-.layer-selector-content {
-  background-color: var(--surface-3-translucent);
-  backdrop-filter: var(--blur-3);
-  border-radius: var(--radius-3);
-  padding: var(--size-4);
-  box-shadow: var(--shadow-4);
+.layer-selector-popover {
   width: 340px;
-  z-index: 1000;
-  border: 1px solid var(--surface-3);
-  animation-duration: 400ms;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform, opacity;
-}
-
-.layer-selector-content[data-state='open'] {
-  animation-name: slideUpAndFade;
-}
-.layer-selector-content[data-state='closed'] {
-  animation-name: slideDownAndFade;
-}
-
-@keyframes slideUpAndFade {
-  from {
-    opacity: 0;
-    transform: translateY(2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideDownAndFade {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(2px);
-  }
 }
 
 .layer-section {

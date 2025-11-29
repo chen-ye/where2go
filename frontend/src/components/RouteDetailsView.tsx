@@ -14,7 +14,7 @@ import { Toggle } from "./ui/Toggle";
 import { RouteStat } from "./RouteStat";
 import { SurfaceChart } from "./charts/SurfaceChart";
 import { ParentSize } from "@visx/responsive";
-import { Tag } from "./ui/Tag";
+import { Tag, TagRemoveButton } from "./ui/Tag";
 import { NewTagButton } from "./ui/NewTagButton";
 import "./RouteDetailsView.css";
 
@@ -142,15 +142,16 @@ export function RouteDetailsView({
 
       <div className="tags-row">
         {route.tags?.map((tag) => (
-          <Tag
-            key={tag}
-            tag={tag}
-            onRemove={() => {
-              const newTags = route.tags.filter((t) => t !== tag);
-              onUpdateTags(route.id, newTags);
-            }}
-            disabled={isUpdating}
-          />
+          <Tag key={tag}>
+            {tag}
+            <TagRemoveButton
+              onClick={() => {
+                const newTags = route.tags.filter((t) => t !== tag);
+                onUpdateTags(route.id, newTags);
+              }}
+              disabled={isUpdating}
+            />
+          </Tag>
         ))}
         <NewTagButton
           onSubmit={(newTag) => {

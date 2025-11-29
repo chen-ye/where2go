@@ -18,6 +18,10 @@
   color: var(--text-1);
 }
 
+.add-tag-btn:active {
+  background-color: var(--surface-2);
+}
+
 .add-tag-btn:disabled {
   cursor: not-allowed;
   opacity: 0.4;

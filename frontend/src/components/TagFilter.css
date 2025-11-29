@@ -1,0 +1,152 @@
+.tag-filter-trigger {
+  background-color: var(--surface-3-translucent);
+  backdrop-filter: blur(8px);
+  border: 1px solid transparent;
+  color: var(--text-2);
+  padding: var(--size-1);
+  border-radius: var(--radius-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  height: 42px; /* Match search input height (padding + font size approx) */
+  width: 42px;
+  box-shadow: var(--shadow-2);
+}
+
+.tag-filter-trigger:hover {
+  background-color: var(--surface-2);
+  color: var(--text-1);
+}
+
+.tag-filter-trigger:active {
+  background-color: var(--surface-3);
+}
+
+.tag-filter-trigger.active {
+  background: var(--brand);
+  color: white;
+  border-color: var(--brand);
+}
+
+.tag-filter-trigger.active:hover {
+  background: var(--brand);
+  opacity: 0.9;
+  color: white;
+}
+
+.tag-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--brand);
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  height: 16px;
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--surface-1);
+}
+
+.tag-filter-trigger.active .tag-count {
+  background: white;
+  color: var(--brand);
+  border-color: var(--brand);
+}
+
+.tag-filter-popover {
+  width: 300px;
+}
+
+.tag-filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--size-3);
+}
+
+.tag-filter-title {
+  font-size: var(--font-size-1);
+  font-weight: var(--font-weight-5);
+  color: var(--text-3);
+  margin: 0;
+}
+
+.tag-filter-clear {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  font-size: var(--font-size-0);
+  cursor: pointer;
+  padding: 0;
+}
+
+.tag-filter-clear:hover {
+  color: var(--text-1);
+  text-decoration: underline;
+}
+
+.tag-filter-clear:active {
+  color: var(--text-2);
+  transform: translateY(1px);
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-2);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.no-tags {
+  color: var(--text-3);
+  font-style: italic;
+  font-size: var(--font-size-0);
+}
+
+.tag-toggle {
+  font-family: var(--font-monospace-code);
+  background-color: var(--surface-3);
+  color: var(--text-2);
+  padding: var(--size-1) var(--size-2);
+  border-radius: var(--radius-2);
+  font-size: var(--font-size-0);
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--size-1);
+  transition: all 0.2s ease;
+  text-box-trim: both;
+}
+
+.tag-toggle:hover {
+  background-color: var(--surface-4);
+  color: var(--text-1);
+}
+
+.tag-pill.selected {
+  background-color: var(--brand);
+  color: white;
+  border-color: var(--brand);
+}
+
+.tag-pill.selected:hover {
+  background-color: var(--brand);
+  opacity: 0.9;
+}
+
+.tag-check {
+  margin-left: 2px;
+}
+
+.tag-filter-arrow {
+  fill: var(--surface-1);
+}

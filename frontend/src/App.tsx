@@ -78,6 +78,25 @@ function App() {
 
   const [updatingRouteId, setUpdatingRouteId] = useState<number | null>(null);
 
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  // Fetch available tags
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const response = await fetch("/api/tags");
+        if (response.ok) {
+          const tags = await response.json();
+          setAvailableTags(tags);
+        }
+      } catch (error) {
+        console.error("Error fetching tags:", error);
+      }
+    };
+    fetchTags();
+  }, [routes]); // Re-fetch tags when routes change (e.g. adding/removing tags)
+
   // Update URL query parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -193,7 +212,159 @@ function App() {
     }
   };
 
-  const selectedRoute = routes.find((r) => r.id === selectedRouteId);
+  const handleUpdateTags = async (id: number, newTags: string[]) => {
+    setUpdatingRouteId(id);
+    try {
+      const response = await fetch(`/api/routes/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ tags: newTags }),
+        headers: { "Content-Type": "application/json" },
+      });
+      if (response.ok) {
+        const updatedRoute = await response.json();
+        setRoutes((prev) =>
+          prev.map((r) => (r.id === updatedRoute.id ? updatedRoute : r))
+        );
+      } else {
+        console.error("Failed to update tags");
+      }
+    } catch (error) {
+      console.error("Error updating tags:", error);
+    } finally {
+      setUpdatingRouteId(null);
+    }
+  };
+
+  const handleToggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag)
+        ? prev.filter((t) => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
+  const handleClearTags = () => {
+    setSelectedTags([]);
+  };
+
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [routeToDelete, setRouteToDelete] = useState<number | null>(null);
+
+  const handleConfirmDelete = async () => {
+    if (routeToDelete !== null) {
+      await fetch(`/api/routes/${routeToDelete}`, { method: "DELETE" });
+      setSelectedRouteId(null);
+      fetchRoutes();
+      setRouteToDelete(null);
+    }
+    setDeleteConfirmOpen(false);
+  };
+
+  const [recomputing, setRecomputing] = useState(false);
+
+  const handleRecomputeAll = async () => {
+    setRecomputing(true);
+
+    try {
+      const response = await fetch('/api/routes/recompute', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: "Recompute Complete",
+          description: `Success: ${result.successCount}, Errors: ${result.errorCount}, Total: ${result.total}`,
+        });
+        // Optionally reload the page or refresh route data
+        fetchRoutes();
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to recompute routes",
+        });
+      }
+    } catch (error) {
+      console.error('Error recomputing routes:', error);
+      toast({
+        title: "Error",
+        description: "Error recomputing routes",
+      });
+    } finally {
+      setRecomputing(false);
+    }
+  };
+
+  const handleRecompute = async (id: number) => {
+    setRecomputing(true);
+    try {
+      const response = await fetch(`/api/routes/${id}/recompute`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        // TODO: type this and fix the success message
+        const result = await response.json();
+        toast({
+          // TODO: allow closing a toast using the toast button
+          title: "Recompute Complete",
+          description: `Success: ${result.successCount}, Errors: ${result.errorCount}, Total: ${result.total}`,
+        });
+        // Fetch only the updated route
+        const routeResponse = await fetch(`/api/routes/${id}`);
+        if (routeResponse.ok) {
+          const updatedRoute = await routeResponse.json();
+          setRoutes((prev) =>
+            prev.map((r) => (r.id === updatedRoute.id ? updatedRoute : r))
+          );
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to recompute route",
+        });
+      }
+    } catch (error) {
+      console.error('Error recomputing route:', error);
+      toast({
+        title: "Error",
+        description: "Error recomputing route",
+      });
+    } finally {
+      setRecomputing(false);
+    }
+  }
+
+  const handleSelectRoute = (id: number | null, source?: 'map' | 'search') => {
+    setSelectionSource(source ?? null);
+    setSelectedRouteId(id);
+  };
+
+  const filteredRoutes = useMemo(() => {
+    let filtered = routes;
+
+    // Filter by search query
+    if (debouncedSearchQuery) {
+      const lowerQuery = debouncedSearchQuery.toLowerCase();
+      filtered = filtered.filter((route) =>
+        route.title?.toLowerCase().includes(lowerQuery)
+      );
+    }
+
+    // Filter by tags (AND logic)
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter((route) =>
+        selectedTags.every((tag) => route.tags?.includes(tag))
+      );
+    }
+
+    return filtered;
+  }, [routes, debouncedSearchQuery, selectedTags]);
+
+  const selectedRoute = useMemo(
+    () => filteredRoutes.find((r) => r.id === selectedRouteId),
+    [filteredRoutes, selectedRouteId]
+  );
 
   const routeData = useMemo(() => {
     if (!selectedRoute || !selectedRoute.geojson) return [];
@@ -250,120 +421,6 @@ function App() {
     }
     return points;
   }, [selectedRoute]);
-
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [routeToDelete, setRouteToDelete] = useState<number | null>(null);
-
-  const handleConfirmDelete = async () => {
-    if (routeToDelete !== null) {
-      await fetch(`/api/routes/${routeToDelete}`, { method: "DELETE" });
-      setSelectedRouteId(null);
-      fetchRoutes();
-      setRouteToDelete(null);
-    }
-    setDeleteConfirmOpen(false);
-  };
-
-  const handleUpdateTags = async (id: number, newTags: string[]) => {
-    setUpdatingRouteId(id);
-    try {
-      const response = await fetch(`/api/routes/${id}`, {
-        method: "PUT",
-        body: JSON.stringify({ tags: newTags }),
-        headers: { "Content-Type": "application/json" },
-      });
-      if (response.ok) {
-        const updatedRoute = await response.json();
-        setRoutes((prev) =>
-          prev.map((r) => (r.id === updatedRoute.id ? updatedRoute : r))
-        );
-      } else {
-        console.error("Failed to update tags");
-      }
-    } catch (error) {
-      console.error("Error updating tags:", error);
-    } finally {
-      setUpdatingRouteId(null);
-    }
-  };
-
-  const [recomputing, setRecomputing] = useState(false);
-
-  const handleRecomputeAll = async () => {
-    setRecomputing(true);
-
-    try {
-      const response = await fetch('/api/routes/recompute', {
-        method: 'POST',
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        toast({
-          title: "Recompute Complete",
-          description: `Success: ${result.successCount}, Errors: ${result.errorCount}, Total: ${result.total}`,
-        });
-        // Optionally reload the page or refresh route data
-        fetchRoutes();
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to recompute routes",
-        });
-      }
-    } catch (error) {
-      console.error('Error recomputing routes:', error);
-      toast({
-        title: "Error",
-        description: "Error recomputing routes",
-      });
-    } finally {
-      setRecomputing(false);
-    }
-  };
-
-  const handleRecompute = async (id: number) => {
-    setRecomputing(true);
-    try {
-      const response = await fetch(`/api/routes/${id}/recompute`, {
-        method: 'POST',
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        toast({
-          title: "Recompute Complete",
-          description: `Success: ${result.successCount}, Errors: ${result.errorCount}, Total: ${result.total}`,
-        });
-        // Fetch only the updated route
-        const routeResponse = await fetch(`/api/routes/${id}`);
-        if (routeResponse.ok) {
-          const updatedRoute = await routeResponse.json();
-          setRoutes((prev) =>
-            prev.map((r) => (r.id === updatedRoute.id ? updatedRoute : r))
-          );
-        }
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to recompute route",
-        });
-      }
-    } catch (error) {
-      console.error('Error recomputing route:', error);
-      toast({
-        title: "Error",
-        description: "Error recomputing route",
-      });
-    } finally {
-      setRecomputing(false);
-    }
-  }
-
-  const handleSelectRoute = (id: number | null, source?: 'map' | 'search') => {
-    setSelectionSource(source ?? null);
-    setSelectedRouteId(id);
-  };
 
   const [topBarRef, { height: topBarHeight }] = useMeasure();
   const [bottomPanelRef, { height: bottomPanelHeight }] = useMeasure();
@@ -426,9 +483,13 @@ function App() {
         onRecomputeAll={handleRecomputeAll}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        availableTags={availableTags}
+        selectedTags={selectedTags}
+        onToggleTag={handleToggleTag}
+        onClearTags={handleClearTags}
       />
       <MapView
-        routes={routes}
+        routes={filteredRoutes}
         selectedRouteId={selectedRouteId}
         selectionSource={selectionSource}
         onSelectRoute={handleSelectRoute}
@@ -479,12 +540,15 @@ function App() {
             displayGradeOnMap={displayGradeOnMap}
             onToggleDisplayGradeOnMap={setDisplayGradeOnMap}
           />
-        ) : searchQuery ? (
+        ) : searchQuery || selectedTags.length > 0 ? (
           <SearchResultsView
-            results={routes}
+            results={filteredRoutes}
             selectedRouteId={selectedRouteId}
             onSelectRoute={handleSelectRoute}
-            onClose={() => setSearchQuery("")}
+            onClose={() => {
+              setSearchQuery("");
+              setSelectedTags([]);
+            }}
             onHoverRoute={setHoveredSearchRouteId}
           />
         ) : null}

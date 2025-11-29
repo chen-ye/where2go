@@ -3,7 +3,6 @@
   flex-direction: column;
   gap: var(--size-3);
   padding: var(--size-4);
-  padding-bottom: 0;
 }
 
 .bottom-panel-header {
@@ -66,10 +65,18 @@
   color: var(--text-1);
 }
 
+.icon-button:active {
+  background: var(--surface-3);
+}
+
 .icon-button.danger:hover {
   background: var(--red-9);
   color: var(--red-4);
   border-color: var(--red-4);
+}
+
+.icon-button.danger:active {
+  background: var(--red-8);
 }
 
 .route-stats {

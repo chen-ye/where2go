@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useControl } from "react-map-gl/maplibre";
-import * as Popover from "@radix-ui/react-popover";
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import { Layers } from "lucide-react";
 import { useDebounce } from "@uidotdev/usehooks";
@@ -11,6 +10,7 @@ import { BASEMAPS, OVERLAYS } from "../utils/layerConfig";
 import { RadioCard } from "./ui/RadioCard.tsx";
 import { CheckboxCard } from "./ui/CheckboxCard.tsx";
 import { Slider } from "./ui/Slider.tsx";
+import { GenericPopover } from "./ui/GenericPopover";
 
 export type BaseStyle = string;
 
@@ -76,14 +76,14 @@ export function LayerSelector({
   if (!container) return null;
 
   return createPortal(
-    <Popover.Root>
-      <Popover.Trigger asChild>
+    <GenericPopover
+      trigger={
         <button type="button" className="layer-selector-trigger" aria-label="Layer Selector">
           <Layers size={20} />
         </button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content className="layer-selector-content" sideOffset={5} align="end">
+      }
+      content={
+        <div className="layer-selector-content-inner">
           <div className="layer-section">
             <h3 className="layer-section-title">Basemap</h3>
             <RadioGroup.Root
@@ -152,11 +152,12 @@ export function LayerSelector({
               />
             </div>
           </div>
-
-          <Popover.Arrow className="popover-arrow" />
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>,
+        </div>
+      }
+      align="end"
+      sideOffset={5}
+      className="layer-selector-popover"
+    />,
     container
   );
 }

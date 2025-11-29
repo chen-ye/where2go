@@ -10,11 +10,14 @@
   gap: var(--size-4);
   pointer-events: none; /* Allow clicking through to map where empty */
   align-items: stretch;
+
+  > * {
+    pointer-events: auto;
+  }
 }
 
 .logo-container-wrapper {
   position: relative;
-  pointer-events: auto;
 }
 
 .logo-container {
@@ -35,17 +38,20 @@
   background-color: var(--surface-2);
 }
 
+.logo-container:active {
+  background-color: var(--surface-3);
+}
+
 .search-container {
   flex: 1;
+  gap: var(--size-4);
   display: flex;
-  max-width: 600px;
-  pointer-events: auto;
+  max-width: 256px;
   position: relative;
 }
 
 .search-input {
   width: 10px;
-  max-width: 256px;
   flex-grow: 1;
   background-color: var(--surface-3-translucent);
   backdrop-filter: blur(8px);

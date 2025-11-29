@@ -1,0 +1,74 @@
+.generic-popover-content {
+  background-color: var(--surface-3-translucent);
+  backdrop-filter: var(--blur-3);
+  border-radius: var(--radius-3);
+  padding: var(--size-4);
+  box-shadow: var(--shadow-4);
+  z-index: 1000;
+  border: 1px solid var(--surface-3);
+  animation-duration: 400ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+.generic-popover-content[data-state='open'][data-side='top'] {
+  animation-name: slideDownAndFade;
+}
+.generic-popover-content[data-state='open'][data-side='right'] {
+  animation-name: slideLeftAndFade;
+}
+.generic-popover-content[data-state='open'][data-side='bottom'] {
+  animation-name: slideUpAndFade;
+}
+.generic-popover-content[data-state='open'][data-side='left'] {
+  animation-name: slideRightAndFade;
+}
+
+.generic-popover-arrow {
+  fill: var(--surface-3-translucent);
+  backdrop-filter: var(--blur-3);
+}
+
+@keyframes slideUpAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDownAndFade {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+
+@keyframes slideLeftAndFade {
+  from {
+    opacity: 0;
+    transform: translateX(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideRightAndFade {
+  from {
+    opacity: 0;
+    transform: translateX(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

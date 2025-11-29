@@ -143,6 +143,15 @@ router.get('/api/routes', async (ctx: RouterContext<string>) => {
   ctx.response.body = mappedRoutes;
 });
 
+router.get('/api/tags', async (ctx: RouterContext<string>) => {
+  const result = await db.execute(
+    sql`SELECT DISTINCT unnest(${routes.tags}) as tag FROM ${routes} ORDER BY tag`
+  );
+
+  const tags = result.map((row) => row.tag).filter((tag) => tag !== null);
+  ctx.response.body = tags;
+});
+
 router.post('/api/routes', async (ctx: RouterContext<string>) => {
   const body = ctx.request.body;
   if (body.type() !== 'json') {

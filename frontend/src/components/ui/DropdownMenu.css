@@ -1,8 +1,8 @@
 /* DropdownMenu.css */
 .DropdownMenuContent {
   min-width: 220px;
-  background-color: var(--surface-1-translucent);
-  backdrop-filter: blur(8px);
+  background-color: var(--surface-2-translucent);
+  backdrop-filter: var(--blur-3);
   border-radius: var(--radius-2);
   padding: var(--size-1);
   box-shadow: var(--shadow-4);
@@ -68,7 +68,7 @@
 }
 
 .DropdownMenuArrow {
-  fill: var(--surface-1);
+  fill: var(--surface-2-translucent);
 }
 
 @keyframes slideUpAndFade {
