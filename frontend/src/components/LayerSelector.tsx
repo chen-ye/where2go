@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useControl } from "react-map-gl/maplibre";
@@ -58,9 +59,11 @@ export function LayerSelector({
     () => {
       const ctrl = document.createElement("div");
       ctrl.className = "maplibregl-ctrl maplibregl-ctrl-group layer-selector-control";
-      setContainer(ctrl);
       return {
-        onAdd: () => ctrl,
+        onAdd: () => {
+          setContainer(ctrl);
+          return ctrl;
+        },
         onRemove: () => {
           setContainer(null);
           ctrl.remove();
@@ -82,7 +85,7 @@ export function LayerSelector({
       <Popover.Portal>
         <Popover.Content className="layer-selector-content" sideOffset={5} align="end">
           <div className="layer-section">
-            <h3 className="layer-section-title">Base Map</h3>
+            <h3 className="layer-section-title">Basemap</h3>
             <RadioGroup.Root
               className="layer-grid"
               value={currentStyle}

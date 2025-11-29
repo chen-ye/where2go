@@ -19,20 +19,23 @@
   border-color: var(--brand);
 }
 
-.layer-card-preview {
+.layer-card-header {
   width: 100%;
   aspect-ratio: 16/9;
+  display: flex;
+  justify-content: flex-end;
   border-radius: var(--radius-1);
-  background-color: var(--surface-4);
+  background-color: var(--surface-1);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  padding: var(--size-1);
 }
 
 .layer-card-label {
   display: flex;
   text-align: left;
-  font-size: var(--font-size-00);
+  font-size: var(--font-size-0);
   font-weight: var(--font-weight-5);
   color: var(--text-1);
 }

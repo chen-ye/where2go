@@ -12,7 +12,7 @@ export function RadioCard({ id, name, value, thumbnail }: RadioCardProps) {
   return (
     <RadioGroup.Item value={value} className="layer-card">
       <div
-        className="layer-card-preview"
+        className="layer-card-header"
         style={thumbnail ? { backgroundImage: `url(${thumbnail})` } : undefined}
       />
       <div className="layer-card-label">{name}</div>

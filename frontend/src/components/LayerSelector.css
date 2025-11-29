@@ -61,13 +61,13 @@
 .layer-section {
   display: flex;
   flex-direction: column;
-  gap: var(--size-2);
+  gap: var(--size-3);
 }
 
 .layer-section-title {
-  font-size: var(--font-size-0);
-  font-weight: var(--font-weight-6);
-  color: var(--text-2);
+  font-size: var(--font-size-1);
+  font-weight: var(--font-weight-5);
+  color: var(--text-3);
   margin: 0;
 }
 
@@ -101,7 +101,7 @@
 .layer-separator {
   height: 1px;
   background-color: var(--surface-3);
-  margin: var(--size-3) 0;
+  margin-block: var(--size-3);
 }
 
 .popover-arrow {

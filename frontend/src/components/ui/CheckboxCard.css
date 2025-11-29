@@ -12,19 +12,6 @@
   justify-content: space-between;
 }
 
-.layer-card-header {
-  width: 100%;
-  aspect-ratio: 16/9;
-  display: flex;
-  justify-content: flex-end;
-  border-radius: var(--radius-1);
-  background-color: var(--surface-4);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  padding: var(--size-1);
-}
-
 .layer-checkbox {
   padding: 0;
   width: 16px;

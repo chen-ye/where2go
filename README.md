@@ -79,6 +79,18 @@ a few custom properties. Here is an example basemap configuration:
 - `name`: Human-readable name shown in the layer selector
 - `url`: Optional. URL to a remote MapLibre style JSON. Properties defined
   locally will override those from the remote style.
+- `thumbnail`: Optional. URL to a thumbnail image. Supports {z}, {x}, {y} per
+  the [TileJSON spec](https://github.com/mapbox/tilejson-spec/), which, if
+  provided, are subsituted to a default tile location.
+
+> [!NOTE]
+> The app resolves thumbnails in the following order:
+>
+> 1. This `thumbnail` property, if provided.
+> 2. A local image file with the same name as the config (e.g., `my-style.png`),
+>    co-located with the config file.
+> 3. If the style has a raster source, a thumbnail is auto-generated using a
+>    default tile location.
 
 All other properties follow the
 [MapLibre Style Specification](https://maplibre.org/maplibre-style-spec/). You
@@ -129,16 +141,10 @@ overlay:
 
 **Custom Properties:**
 
-- `order`: Stacking order (lower numbers appear below higher numbers)
-- `id`: Unique identifier for the overlay
-- `name`: Human-readable name shown in the layer selector
-- `url`: Optional. URL to a remote MapLibre style JSON. Properties defined
-  locally will override those from the remote style.
+Overrlay layers support the same custom properties as basemaps, with the
+addition of `order`
 
-All other properties follow the
-[MapLibre Style Specification](https://maplibre.org/maplibre-style-spec/). Most
-commonly, you'll define `sources` and `layers` inline as shown in the example
-above.
+- `order`: Stacking order (lower numbers appear below higher numbers)
 
 To add a new overlay, create a new JSON file in the overlay directory. The
 overlay will automatically appear in the layer selector.
