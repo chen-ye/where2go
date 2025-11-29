@@ -26,6 +26,25 @@
   column-gap: var(--size-3);
   align-items: center;
   border: var(--border-size-1) solid var(--surface-3);
+  position: relative;
+}
+
+.ToastRoot.destructive {
+  border-color: var(--red-6);
+  background-color: var(--red-2);
+  color: var(--red-11);
+}
+.ToastRoot.destructive .ToastTitle {
+    color: var(--red-11);
+}
+.ToastRoot.destructive .ToastDescription {
+    color: var(--red-11);
+}
+.ToastRoot.destructive .ToastClose {
+    color: var(--red-11);
+}
+.ToastRoot.destructive .ToastClose:hover {
+    background-color: var(--red-4);
 }
 
 .ToastRoot[data-state='open'] {
@@ -90,4 +109,28 @@
 
 .ToastAction {
   grid-area: action;
+}
+
+.ToastClose {
+  position: absolute;
+  top: var(--size-2);
+  right: var(--size-2);
+  padding: var(--size-1);
+  border-radius: var(--radius-2);
+  color: var(--text-2);
+  opacity: 0.7;
+  transition: opacity 0.2s, background-color 0.2s;
+  cursor: pointer;
+}
+
+.ToastClose:hover {
+  opacity: 1;
+  background-color: var(--surface-4);
+}
+
+/* Add an icon for close if needed, or rely on content */
+.ToastClose::after {
+  content: "✕"; /* Simple close icon */
+  font-size: var(--font-size-1);
+  line-height: 1;
 }

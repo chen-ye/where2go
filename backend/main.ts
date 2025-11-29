@@ -132,15 +132,53 @@ router.get('/api/routes', async (ctx: RouterContext<string>) => {
     query = query.where(sql`${routes.title} ~* ${searchRegex}`);
   }
 
+  const sourcesParam = ctx.request.url.searchParams.get('sources');
+  if (sourcesParam) {
+    const sources = sourcesParam.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    if (sources.length > 0) {
+      // Create a regex pattern to match any of the selected domains
+      // The pattern will be like: https?://(www\.)?(domain1|domain2|...)
+      const domainsPattern = sources.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+      query = query.where(sql`${routes.sourceUrl} ~* ${`^https?://(www\\.)?(${domainsPattern})`}`);
+    }
+  }
+
+  const tagsParam = ctx.request.url.searchParams.get('tags');
+  if (tagsParam) {
+    const tags = tagsParam.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    if (tags.length > 0) {
+      // Use Postgres array containment operator @> to find routes that have ALL the selected tags
+      query = query.where(sql`${routes.tags} @> ${tags}`);
+    }
+  }
+
   const result = await query.orderBy(desc(routes.title));
 
   const mappedRoutes = result.map((row) => ({
     ...row,
     geojson: JSON.parse(row.geojson ?? '[]'),
     bbox: JSON.parse(row.bbox ?? '{}'),
+    // Extract domain for frontend convenience if needed, though frontend does this too
   }));
 
   ctx.response.body = mappedRoutes;
+});
+
+router.get('/api/sources', async (ctx: RouterContext<string>) => {
+  // Extract unique domains from source_url
+  // Using regex to capture the domain part: https?://(www\.)?([^/]+)
+  const result = await db.execute(
+    sql`
+      SELECT DISTINCT
+        substring(source_url from 'https?://(?:www\.)?([^/]+)') as source
+      FROM ${routes}
+      WHERE source_url IS NOT NULL
+      ORDER BY source
+    `
+  );
+
+  const sources = result.map((row) => row.source).filter((source) => source !== null);
+  ctx.response.body = sources;
 });
 
 router.get('/api/tags', async (ctx: RouterContext<string>) => {

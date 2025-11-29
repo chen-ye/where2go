@@ -2,6 +2,7 @@
 const saveOptions = () => {
   const baseUrl = document.getElementById('baseUrl').value;
   const headersStr = document.getElementById('headers').value;
+  const autoPagination = document.getElementById('autoPagination').checked;
 
   let headers = {};
   try {
@@ -16,7 +17,7 @@ const saveOptions = () => {
   }
 
   chrome.storage.sync.set(
-    { baseUrl: baseUrl, headers: headers },
+    { baseUrl: baseUrl, headers: headers, autoPagination: autoPagination },
     () => {
       // Update status to let user know options were saved.
       const status = document.getElementById('status');
@@ -33,10 +34,11 @@ const saveOptions = () => {
 // stored in chrome.storage.
 const restoreOptions = () => {
   chrome.storage.sync.get(
-    { baseUrl: '', headers: {} },
+    { baseUrl: '', headers: {}, autoPagination: false },
     (items) => {
       document.getElementById('baseUrl').value = items.baseUrl;
       document.getElementById('headers').value = JSON.stringify(items.headers, null, 2);
+      document.getElementById('autoPagination').checked = items.autoPagination;
     }
   );
 };

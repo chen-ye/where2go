@@ -42,15 +42,17 @@
      * Message Event Listener
      * Handles coordination between the popup/background script and this content script.
      */
+    /**
+     * Message Event Listener
+     * Handles coordination between the popup/background script and this content script.
+     */
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const handlers = {
             scan_routes: () => {
-                try {
-                    const routes = scanRoutes();
-                    sendResponse({ success: true, routes });
-                } catch (e) {
-                    sendResponse({ success: false, error: e.message });
-                }
+                scanRoutes()
+                    .then(routes => sendResponse({ success: true, routes }))
+                    .catch(e => sendResponse({ success: false, error: e.message }));
+                return true; // Keep channel open for async response
             },
             fetch_route_gpx: () => {
                 processGpxUrl(request.gpxUrl, request.pageUrl)
@@ -68,41 +70,104 @@
     /**
      * Scans the current page context (URL and Anchors) for route patterns.
      * Uses a Map to deduplicate routes by ID.
+     * Supports auto-pagination if enabled.
      */
-    function scanRoutes() {
+    async function scanRoutes() {
         // Determine the current provider based on hostname
         const provider = PROVIDERS.find(p => window.location.hostname.includes(p.hostname));
         if (!provider) throw new Error("Current site is not supported.");
 
+        // Check if auto-pagination is enabled
+        const settings = await chrome.storage.sync.get({ autoPagination: false });
+        const autoPagination = settings.autoPagination;
+
         const uniqueRoutes = new Map();
 
-        // 1. Check current page URL (Handles "Single Page" scenario)
-        // 2. Check all anchor tags (Handles "List/Search" scenario)
-        // Note: Checking window.location.href FIRST ensures that if we are on a private route page,
-        // we capture the privacy_code from the main URL before any generic links on the page.
-        const candidates = [
-            window.location.href,
-            ...Array.from(document.querySelectorAll('a[href]'), a => a.getAttribute('href'))
-        ];
+        // Helper to add routes from a document/context
+        const addRoutesFromContext = (doc, baseUrl) => {
+            const candidates = [
+                baseUrl,
+                ...Array.from(doc.querySelectorAll('a[href]'), a => a.getAttribute('href'))
+            ];
 
-        candidates.forEach((urlStr) => {
-            if (!urlStr) return;
+            candidates.forEach((urlStr) => {
+                if (!urlStr) return;
 
-            // Normalize URL to handle relative paths
-            const fullUrl = new URL(urlStr, window.location.href);
-            const match = fullUrl.href.match(provider.regex);
+                // Normalize URL to handle relative paths
+                try {
+                    const fullUrl = new URL(urlStr, baseUrl);
+                    const match = fullUrl.href.match(provider.regex);
 
-            if (match) {
-                const id = match[1];
-                if (!uniqueRoutes.has(id)) {
-                    uniqueRoutes.set(id, {
-                        id: id,
-                        gpxUrl: provider.getGpxUrl(id, fullUrl),
-                        pageUrl: fullUrl
-                    });
+                    if (match) {
+                        const id = match[1];
+                        if (!uniqueRoutes.has(id)) {
+                            uniqueRoutes.set(id, {
+                                id: id,
+                                gpxUrl: provider.getGpxUrl(id, fullUrl),
+                                pageUrl: fullUrl
+                            });
+                        }
+                    }
+                } catch (e) {
+                    // Ignore invalid URLs
+                }
+            });
+        };
+
+        // Initial scan
+        addRoutesFromContext(document, window.location.href);
+
+        // TODO: fix auto pagination
+        if (autoPagination) {
+            console.log("Auto-pagination enabled. Starting...");
+
+            if (provider.key === 'ridewithgps') {
+                // Scroll to bottom logic
+                const maxScrolls = 5;
+                let lastHeight = document.body.scrollHeight;
+
+                for (let i = 0; i < maxScrolls; i++) {
+                    window.scrollTo(0, document.body.scrollHeight);
+                    await new Promise(r => setTimeout(r, 1500)); // Wait for load
+
+                    const newHeight = document.body.scrollHeight;
+                    addRoutesFromContext(document, window.location.href); // Rescan
+
+                    if (newHeight === lastHeight) break; // No new content
+                    lastHeight = newHeight;
+                }
+            } else if (provider.key === 'strava') {
+                // Pagination fetching logic
+                const maxPages = 5;
+                let currentPageDoc = document;
+                let currentPageUrl = window.location.href;
+
+                for (let i = 0; i < maxPages; i++) {
+                    // Find next link
+                    // Strava usually uses .pagination .next_page a or similar
+                    // Adjust selector as needed based on Strava's current DOM
+                    const nextLink = currentPageDoc.querySelector('[rel="next"]');
+
+                    if (!nextLink) break;
+
+                    const nextUrl = new URL(nextLink.getAttribute('href'), currentPageUrl).href;
+                    console.log("Fetching next page:", nextUrl);
+
+                    try {
+                        const res = await fetch(nextUrl);
+                        const html = await res.text();
+                        const parser = new DOMParser();
+                        currentPageDoc = parser.parseFromString(html, "text/html");
+                        currentPageUrl = nextUrl;
+
+                        addRoutesFromContext(currentPageDoc, currentPageUrl);
+                    } catch (e) {
+                        console.warn("Failed to fetch next page:", e);
+                        break;
+                    }
                 }
             }
-        });
+        }
 
         const results = Array.from(uniqueRoutes.values());
         if (results.length === 0) throw new Error("No routes found on this page.");

@@ -38,16 +38,55 @@ function getLocalThumbnail(id: string, thumbnails: Record<string, string>): stri
   return key ? thumbnails[key] : undefined;
 }
 
-function substituteSlippyTemplates(url: string | undefined, _config: OverlayConfig | BasemapConfig) {
+function long2tile(lon: number, zoom: number) {
+  return (Math.floor((lon + 180) / 360 * Math.pow(2, zoom)));
+}
+
+function lat2tile(lat: number, zoom: number) {
+  return (Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom)));
+}
+
+function substituteSlippyTemplates(url: string | undefined, config: OverlayConfig | BasemapConfig) {
   if (!url) {
     return undefined;
   }
 
-  // Bellevue neighborhood level coordinates
-  // TODO: If there are bounds, set x and y to the center of the bounds
-  // TODO: If there is a minzoom, ensure z is at least that value, while maintaining lat/long center
-  // TODO: If there is a maxzoom, ensure z is at most that value, while maintaining lat/long center
-  return url.replace('{z}', '13').replace('{x}', '1315').replace('{y}', '2860');
+  let lat = 47.6101; // Default Bellevue
+  let lon = -122.2015;
+  let zoom = 13;
+
+  // Check for center in config
+  if (config.center) {
+    [lon, lat] = config.center;
+  }
+
+  // Check for zoom in config
+  if (config.zoom !== undefined) {
+    zoom = config.zoom;
+  }
+
+  // Check sources for bounds or minzoom/maxzoom
+  if (config.sources) {
+    const rasterSource = Object.values(config.sources).find((s: any) => s.type === 'raster' || s.type === 'raster-dem') as RasterSourceSpecification | undefined;
+    if (rasterSource) {
+      if (rasterSource.bounds) {
+        const [minLon, minLat, maxLon, maxLat] = rasterSource.bounds;
+        lon = (minLon + maxLon) / 2;
+        lat = (minLat + maxLat) / 2;
+      }
+      if (rasterSource.minzoom !== undefined) {
+        zoom = Math.max(zoom, rasterSource.minzoom);
+      }
+      if (rasterSource.maxzoom !== undefined) {
+        zoom = Math.min(zoom, rasterSource.maxzoom);
+      }
+    }
+  }
+
+  const x = long2tile(lon, zoom);
+  const y = lat2tile(lat, zoom);
+
+  return url.replace('{z}', zoom.toString()).replace('{x}', x.toString()).replace('{y}', y.toString());
 }
 
 /**

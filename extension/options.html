@@ -32,7 +32,13 @@
     <div class="help-text">Optional JSON object of headers to include in the request.</div>
   </div>
 
-  <!-- TODO: a new option, to automatically step through paginated collections (on strava, using page steppers; on ridewithgps using lazy loading/infinite scroll) -->
+  <div class="form-group">
+    <label class="checkbox-label">
+      <input type="checkbox" id="autoPagination">
+      Automatically step through paginated collections
+    </label>
+    <div class="help-text">Automatically load more items on Strava (page steppers) and RideWithGPS (infinite scroll).</div>
+  </div>
 
   <button id="save" class="btn-primary">Save Settings</button>
   <div id="status" class="status"></div>

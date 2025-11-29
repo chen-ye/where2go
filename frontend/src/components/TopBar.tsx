@@ -1,13 +1,13 @@
 import { Search, RefreshCw } from 'lucide-react';
 import './TopBar.css';
-import { useState, forwardRef } from 'react';
+import { forwardRef } from 'react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from './ui/DropdownMenu';
-import { TagFilter } from './TagFilter';
+import { FilterPanel } from './FilterPanel';
 
 interface TopBarProps {
   searchQuery: string;
@@ -18,10 +18,14 @@ interface TopBarProps {
   selectedTags: string[];
   onToggleTag: (tag: string) => void;
   onClearTags: () => void;
+  availableDomains: string[];
+  selectedDomains: string[];
+  onToggleDomain: (domain: string) => void;
+  onClearDomains: () => void;
 }
 
 export const TopBar = forwardRef<HTMLDivElement, TopBarProps>(
-  ({ searchQuery, onSearchChange, onRecomputeAll, recomputing, availableTags, selectedTags, onToggleTag, onClearTags }, ref) => {
+  ({ searchQuery, onSearchChange, onRecomputeAll, recomputing, availableTags, selectedTags, onToggleTag, onClearTags, availableDomains, selectedDomains, onToggleDomain, onClearDomains }, ref) => {
 
     return (
       <div className="top-bar" ref={ref}>
@@ -53,11 +57,15 @@ export const TopBar = forwardRef<HTMLDivElement, TopBarProps>(
           />
           <Search className="search-icon" size={18} />
         </div>
-        <TagFilter
+        <FilterPanel
           availableTags={availableTags}
           selectedTags={selectedTags}
           onToggleTag={onToggleTag}
           onClearTags={onClearTags}
+          availableDomains={availableDomains}
+          selectedDomains={selectedDomains}
+          onToggleDomain={onToggleDomain}
+          onClearDomains={onClearDomains}
         />
       </div>
     );

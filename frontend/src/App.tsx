@@ -33,7 +33,7 @@ function App() {
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(initialSearchParams.get(SEARCH_PARAM_ROUTE) ? parseInt(initialSearchParams.get(SEARCH_PARAM_ROUTE) || "") : null);
   const [selectionSource, setSelectionSource] = useState<'map' | 'search' | null>(null);
   const [searchQuery, setSearchQuery] = useState(initialSearchParams.get(SEARCH_PARAM_QUERY) || "");
-  const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [displayGradeOnMap, setDisplayGradeOnMap] = useState(initialSearchParams.get(SEARCH_PARAM_SHOW_GRADE) === "true");
   const [viewState, setViewState] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -80,22 +80,32 @@ function App() {
 
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
+  const [availableDomains, setAvailableDomains] = useState<string[]>([]);
 
-  // Fetch available tags
+  // Fetch available tags and sources
   useEffect(() => {
-    const fetchTags = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch("/api/tags");
-        if (response.ok) {
-          const tags = await response.json();
+        const [tagsRes, sourcesRes] = await Promise.all([
+          fetch("/api/tags"),
+          fetch("/api/sources")
+        ]);
+
+        if (tagsRes.ok) {
+          const tags = await tagsRes.json();
           setAvailableTags(tags);
         }
+        if (sourcesRes.ok) {
+          const sources = await sourcesRes.json();
+          setAvailableDomains(sources);
+        }
       } catch (error) {
-        console.error("Error fetching tags:", error);
+        console.error("Error fetching tags/sources:", error);
       }
     };
-    fetchTags();
-  }, [routes]); // Re-fetch tags when routes change (e.g. adding/removing tags)
+    fetchData();
+  }, [routes]); // Re-fetch when routes change
 
   // Update URL query parameters
   useEffect(() => {
@@ -147,7 +157,7 @@ function App() {
     return () => {
       abortControllerRef.current?.abort();
     };
-  }, [debouncedSearchQuery]); // Refetch when query changes
+  }, [debouncedSearchQuery, selectedDomains, selectedTags]); // Refetch when query, domains, or tags change
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -173,6 +183,12 @@ function App() {
       // it works because by the time debouncedSearchQuery updates, searchQuery is already updated.
       if (searchQuery) {
         url.searchParams.set("search-regex", searchQuery);
+      }
+      if (selectedDomains.length > 0) {
+        url.searchParams.set("sources", selectedDomains.join(','));
+      }
+      if (selectedTags.length > 0) {
+        url.searchParams.set("tags", selectedTags.join(','));
       }
 
       const res = await fetch(url, { signal: controller.signal });
@@ -262,6 +278,12 @@ function App() {
 
   const [recomputing, setRecomputing] = useState(false);
 
+  interface RecomputeResponse {
+    successCount: number;
+    errorCount: number;
+    total: number;
+  }
+
   const handleRecomputeAll = async () => {
     setRecomputing(true);
 
@@ -271,10 +293,10 @@ function App() {
       });
 
       if (response.ok) {
-        const result = await response.json();
+        const result: RecomputeResponse = await response.json();
         toast({
           title: "Recompute Complete",
-          description: `Success: ${result.successCount}, Errors: ${result.errorCount}, Total: ${result.total}`,
+          description: `Successfully recomputed ${result.successCount} out of ${result.total} routes. ${result.errorCount > 0 ? `(${result.errorCount} errors)` : ''}`,
         });
         // Optionally reload the page or refresh route data
         fetchRoutes();
@@ -282,6 +304,7 @@ function App() {
         toast({
           title: "Error",
           description: "Failed to recompute routes",
+          variant: "destructive",
         });
       }
     } catch (error) {
@@ -289,6 +312,7 @@ function App() {
       toast({
         title: "Error",
         description: "Error recomputing routes",
+        variant: "destructive",
       });
     } finally {
       setRecomputing(false);
@@ -303,12 +327,10 @@ function App() {
       });
 
       if (response.ok) {
-        // TODO: type this and fix the success message
-        const result = await response.json();
+        const result: RecomputeResponse = await response.json();
         toast({
-          // TODO: allow closing a toast using the toast button
           title: "Recompute Complete",
-          description: `Success: ${result.successCount}, Errors: ${result.errorCount}, Total: ${result.total}`,
+          description: `Successfully recomputed route. (Success: ${result.successCount}, Errors: ${result.errorCount})`,
         });
         // Fetch only the updated route
         const routeResponse = await fetch(`/api/routes/${id}`);
@@ -322,6 +344,7 @@ function App() {
         toast({
           title: "Error",
           description: "Failed to recompute route",
+          variant: "destructive",
         });
       }
     } catch (error) {
@@ -329,6 +352,7 @@ function App() {
       toast({
         title: "Error",
         description: "Error recomputing route",
+        variant: "destructive",
       });
     } finally {
       setRecomputing(false);
@@ -340,30 +364,25 @@ function App() {
     setSelectedRouteId(id);
   };
 
-  const filteredRoutes = useMemo(() => {
-    let filtered = routes;
 
-    // Filter by search query
-    if (debouncedSearchQuery) {
-      const lowerQuery = debouncedSearchQuery.toLowerCase();
-      filtered = filtered.filter((route) =>
-        route.title?.toLowerCase().includes(lowerQuery)
-      );
-    }
 
-    // Filter by tags (AND logic)
-    if (selectedTags.length > 0) {
-      filtered = filtered.filter((route) =>
-        selectedTags.every((tag) => route.tags?.includes(tag))
-      );
-    }
+  const handleToggleDomain = (domain: string) => {
+    setSelectedDomains((prev) =>
+      prev.includes(domain)
+        ? prev.filter((d) => d !== domain)
+        : [...prev, domain]
+    );
+  };
 
-    return filtered;
-  }, [routes, debouncedSearchQuery, selectedTags]);
+  const handleClearDomains = () => {
+    setSelectedDomains([]);
+  };
+
+
 
   const selectedRoute = useMemo(
-    () => filteredRoutes.find((r) => r.id === selectedRouteId),
-    [filteredRoutes, selectedRouteId]
+    () => routes.find((r) => r.id === selectedRouteId),
+    [routes, selectedRouteId]
   );
 
   const routeData = useMemo(() => {
@@ -487,9 +506,13 @@ function App() {
         selectedTags={selectedTags}
         onToggleTag={handleToggleTag}
         onClearTags={handleClearTags}
+        availableDomains={availableDomains}
+        selectedDomains={selectedDomains}
+        onToggleDomain={handleToggleDomain}
+        onClearDomains={handleClearDomains}
       />
       <MapView
-        routes={filteredRoutes}
+        routes={routes}
         selectedRouteId={selectedRouteId}
         selectionSource={selectionSource}
         onSelectRoute={handleSelectRoute}
@@ -540,14 +563,17 @@ function App() {
             displayGradeOnMap={displayGradeOnMap}
             onToggleDisplayGradeOnMap={setDisplayGradeOnMap}
           />
-        ) : searchQuery || selectedTags.length > 0 ? (
+        ) : searchQuery || selectedTags.length > 0 || selectedDomains.length > 0 ? (
           <SearchResultsView
-            results={filteredRoutes}
-            selectedRouteId={selectedRouteId}
+            searchQuery={debouncedSearchQuery}
+            selectedTags={selectedTags}
+            selectedDomains={selectedDomains}
+            results={routes}
             onSelectRoute={handleSelectRoute}
             onClose={() => {
               setSearchQuery("");
               setSelectedTags([]);
+              setSelectedDomains([]);
             }}
             onHoverRoute={setHoveredSearchRouteId}
           />
