@@ -51,7 +51,7 @@ function App() {
     return params.get(SEARCH_PARAM_BASEMAP) ?? "carto-dark";
   });
   const [customStyleUrl, setCustomStyleUrl] = useState("");
-  const [activeOverlays, setActiveOverlays] = useState<Set<string>>(() => {
+  const [activeOverlayIds, setActiveOverlayIds] = useState<Set<string>>(() => {
     const params = new URLSearchParams(window.location.search);
     const overlays = params.getAll(SEARCH_PARAM_OVERLAY);
     return new Set(overlays);
@@ -100,7 +100,7 @@ function App() {
     for (const overlay of params.getAll(SEARCH_PARAM_OVERLAY)) {
       params.delete(SEARCH_PARAM_OVERLAY, overlay);
     }
-    for (const overlay of activeOverlays) {
+    for (const overlay of activeOverlayIds) {
       params.append(SEARCH_PARAM_OVERLAY, overlay);
     }
 
@@ -108,7 +108,7 @@ function App() {
       window.location.pathname +
       (params.toString() ? "?" + params.toString() : "");
     window.history.replaceState({}, "", newUrl);
-  }, [searchQuery, selectedRouteId, displayGradeOnMap, debouncedViewState, baseStyle, activeOverlays]);
+  }, [searchQuery, selectedRouteId, displayGradeOnMap, debouncedViewState, baseStyle, activeOverlayIds]);
 
   useEffect(() => {
     fetchRoutes();
@@ -383,9 +383,9 @@ function App() {
         onBaseStyleChange={setBaseStyle}
         customStyleUrl={customStyleUrl}
         onCustomStyleUrlChange={setCustomStyleUrl}
-        activeOverlays={activeOverlays}
+        activeOverlayIds={activeOverlayIds}
         onToggleOverlay={(id, active) => {
-          setActiveOverlays((prev) => {
+          setActiveOverlayIds((prev) => {
             const next = new Set(prev);
             if (active) {
               next.add(id);

@@ -82,9 +82,17 @@ function OverlayRenderer({ config, beforeId }: { config: any; beforeId?: string 
       {Object.entries(style.sources || {}).map(([id, source]) => (
         <Source key={id} id={id} {...(source as SourceSpecification)} />
       ))}
-      {style.layers?.map((layer) => (
+      {
+      // Reverse the order of layers. The layer array is arranged top-last.
+      // Since each layer is rendered with a beforeId set to the previous overlay,
+      // we need to reverse the order to ensure the correct layer order:
+      // [prevOverlayLayer, 3, nextOverlayLayer]
+      // [prevOverlayLayer, 2, 3, nextOverlayLayer]
+      // [prevOverlayLayer, 1, 2, 3, nextOverlayLayer]
+      style.layers?.toReversed().map((layer) => (
         <Layer key={layer.id} {...(layer as LayerSpecification)} beforeId={beforeId} />
-      ))}
+      ))
+      }
     </>
   );
 }
@@ -108,7 +116,7 @@ interface MapViewProps {
   onBaseStyleChange: (style: string) => void;
   customStyleUrl: string;
   onCustomStyleUrlChange: (url: string) => void;
-  activeOverlays: Set<string>;
+  activeOverlayIds: Set<string>;
   onToggleOverlay: (id: string, active: boolean) => void;
   routeOpacity: { selected: number; completed: number; incomplete: number };
   onOpacityChange: (opacity: { selected: number; completed: number; incomplete: number }) => void;
@@ -130,7 +138,7 @@ export function MapView({
   onBaseStyleChange,
   customStyleUrl,
   onCustomStyleUrlChange,
-  activeOverlays,
+  activeOverlayIds,
   onToggleOverlay,
   routeOpacity,
   onOpacityChange,
@@ -158,6 +166,14 @@ export function MapView({
       duration: 1000,
     });
   }, [selectedRouteId, routes, selectionSource]);
+
+  const activeOverlaysConfigs = useMemo(() => {
+    return OVERLAYS.filter((o) => activeOverlayIds.has(o.id));
+  }, [activeOverlayIds]);
+
+  const orderedActiveOverlayBottomIds = useMemo(() => {
+    return activeOverlaysConfigs.map((o) => o.layers?.[1]?.id).filter((id) => id !== undefined)
+  }, [activeOverlaysConfigs]);
 
   // const [hoverInfo, setHoverInfo] = useState<PickingInfo<Feature<Geometry, {}>>>();
 
@@ -333,16 +349,11 @@ export function MapView({
           onStyleChange={onBaseStyleChange}
           customStyleUrl={customStyleUrl}
           onCustomStyleUrlChange={onCustomStyleUrlChange}
-          activeOverlays={activeOverlays}
+          activeOverlays={activeOverlayIds}
           onToggleOverlay={onToggleOverlay}
           routeOpacity={routeOpacity}
           onOpacityChange={onOpacityChange}
         />
-
-        {OVERLAYS.filter((o) => activeOverlays.has(o.id)).map((config) => (
-          <OverlayRenderer key={config.id} config={config} />
-        ))}
-
         <Source
           id="terrain"
           type="raster-dem"
@@ -351,20 +362,36 @@ export function MapView({
           encoding="terrarium"
           maxzoom={15}
         />
-        <Source id="routes-data" type="geojson" data={routesGeoJson}>
-          <DeckGLOverlay
-            layers={deckGLLayers}
-            pickingRadius={10}
-            getTooltip={useCallback(
-              ({
-                object,
-              }: PickingInfo<
-                Feature<Geometry, { id: number; title: string }>
-              >) => object?.properties.title ?? null,
-              []
-            )}
-          />
+        <Source
+          id="empty"
+          type="geojson"
+          data={{ type: "FeatureCollection", features: [] }}>
         </Source>
+        <Layer
+          id="bottom"
+          type="fill"
+          source="empty"
+          paint={{
+            "fill-color": "#000",
+            "fill-opacity": 0,
+          }}
+        />
+        {OVERLAYS.filter((o) => activeOverlayIds.has(o.id)).map((config) => (
+          <OverlayRenderer key={config.id} config={config} beforeId={orderedActiveOverlayBottomIds[orderedActiveOverlayBottomIds.indexOf(config.id) - 1] ?? 'bottom'}/>
+        ))}
+        <Source id="routes-data" type="geojson" data={routesGeoJson}/>
+        <DeckGLOverlay
+          layers={deckGLLayers}
+          pickingRadius={10}
+          getTooltip={useCallback(
+            ({
+              object,
+            }: PickingInfo<
+              Feature<Geometry, { id: number; title: string }>
+            >) => object?.properties.title ?? null,
+            []
+          )}
+          />
       </Map>
     </div>
   );

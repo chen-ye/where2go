@@ -91,18 +91,18 @@ function getRasterThumbnail(config: OverlayConfig | BasemapConfig) {
  * @param config The basemap or overlay configuration.
  * @returns The thumbnail URL or undefined if no thumbnail is found.
  */
-function getThumbnail(config: OverlayConfig | BasemapConfig) {
-  return substituteSlippyTemplates(config.thumbnail, config) || getLocalThumbnail(config.id, basemapThumbnails) || getRasterThumbnail(config);
+function getThumbnail(config: OverlayConfig | BasemapConfig, thumbnails: Record<string, string>) {
+  return substituteSlippyTemplates(config.thumbnail, config) || getLocalThumbnail(config.id, thumbnails) || getRasterThumbnail(config);
 }
 
 export const BASEMAPS: BasemapConfig[] = Object.values(basemapModules).map(config => ({
   ...config,
-  thumbnail: getThumbnail(config),
+  thumbnail: getThumbnail(config, basemapThumbnails),
 }));
 
 export const OVERLAYS: OverlayConfig[] = Object.values(overlayModules).map(config => ({
   ...config,
-  thumbnail: getThumbnail(config),
+  thumbnail: getThumbnail(config, overlayThumbnails),
 })).sort(
   (a, b) => a.order - b.order
 );
