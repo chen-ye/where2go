@@ -199,8 +199,8 @@ const ElevationChart = memo(
                 if (d) {
                   showTooltip({
                     tooltipData: d,
-                    tooltipLeft: xScale(getX(d)) + margin.left,
-                    tooltipTop: yScale(getY(d)) + margin.top,
+                    tooltipLeft: tooltipLeft,
+                    tooltipTop: tooltipTop,
                   });
                   onHover({ lat: d.lat, lon: d.lon });
                 }
