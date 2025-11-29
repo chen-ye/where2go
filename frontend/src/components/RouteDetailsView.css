@@ -2,6 +2,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--size-3);
+  padding: var(--size-4);
+  padding-bottom: 0;
 }
 
 .bottom-panel-header {

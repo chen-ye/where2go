@@ -2,7 +2,9 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: clip;
+  padding: var(--size-4);
+  padding-bottom: 0;
 }
 
 .search-results-header {
@@ -51,12 +53,19 @@
 }
 
 .col-title {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2);
   font-family: var(--font-monospace-code);
   font-weight: var(--font-weight-5);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--text-1);
+
+  &[data-completed="true"] {
+    color: var(--text-3);
+  }
 }
 
 .col-stat {

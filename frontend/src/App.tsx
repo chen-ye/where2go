@@ -17,12 +17,15 @@ import { toast } from "./components/ui/use-toast";
 
 const SEARCH_PARAM_ROUTE = "route";
 const SEARCH_PARAM_QUERY = "q";
-const SEARCH_PARAM_SHOW_GRADE = "show-grade";
+const SEARCH_PARAM_SHOW_GRADE = "grade";
 const SEARCH_PARAM_LAT = "lat";
 const SEARCH_PARAM_LNG = "lng";
-const SEARCH_PARAM_ZOOM = "zoom";
-const SEARCH_PARAM_BASEMAP = "basemap";
+const SEARCH_PARAM_ZOOM = "z";
+const SEARCH_PARAM_BASEMAP = "base";
 const SEARCH_PARAM_OVERLAY = "overlay";
+const SEARCH_PARAM_OPACITY_SELECTED = "opa-selected";
+const SEARCH_PARAM_OPACITY_COMPLETED = "opa-complete";
+const SEARCH_PARAM_OPACITY_INCOMPLETE = "opa-incomplete";
 
 function App() {
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -57,10 +60,13 @@ function App() {
     return new Set(overlays);
   });
 
-  const [routeOpacity, setRouteOpacity] = useState({
-    selected: 100,
-    completed: 40,
-    incomplete: 60,
+  const [routeOpacity, setRouteOpacity] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      selected: params.has(SEARCH_PARAM_OPACITY_SELECTED) ? parseInt(params.get(SEARCH_PARAM_OPACITY_SELECTED) as string) : 100,
+      completed: params.has(SEARCH_PARAM_OPACITY_COMPLETED) ? parseInt(params.get(SEARCH_PARAM_OPACITY_COMPLETED) as string) : 40,
+      incomplete: params.has(SEARCH_PARAM_OPACITY_INCOMPLETE) ? parseInt(params.get(SEARCH_PARAM_OPACITY_INCOMPLETE) as string) : 60,
+    };
   });
 
   const [hoveredLocation, setHoveredLocation] = useState<{
@@ -104,11 +110,16 @@ function App() {
       params.append(SEARCH_PARAM_OVERLAY, overlay);
     }
 
+    // Add route opacity
+    params.set(SEARCH_PARAM_OPACITY_SELECTED, routeOpacity.selected.toString());
+    params.set(SEARCH_PARAM_OPACITY_COMPLETED, routeOpacity.completed.toString());
+    params.set(SEARCH_PARAM_OPACITY_INCOMPLETE, routeOpacity.incomplete.toString());
+
     const newUrl =
       window.location.pathname +
       (params.toString() ? "?" + params.toString() : "");
     window.history.replaceState({}, "", newUrl);
-  }, [searchQuery, selectedRouteId, displayGradeOnMap, debouncedViewState, baseStyle, activeOverlayIds]);
+  }, [searchQuery, selectedRouteId, displayGradeOnMap, debouncedViewState, baseStyle, activeOverlayIds, routeOpacity]);
 
   useEffect(() => {
     fetchRoutes();
@@ -358,6 +369,46 @@ function App() {
     }),
     [topBarHeight, bottomPanelHeight]
   );
+
+  // Track previous padding to detect changes
+  // const prevPaddingRef = useRef(mapPadding);
+
+  // // Adjust map center when padding changes to prevent camera jump
+  // useEffect(() => {
+  //   const prevPadding = prevPaddingRef.current;
+  //   const paddingChanged =
+  //     prevPadding.top !== mapPadding.top ||
+  //     prevPadding.bottom !== mapPadding.bottom ||
+  //     prevPadding.left !== mapPadding.left ||
+  //     prevPadding.right !== mapPadding.right;
+
+  //   if (paddingChanged) {
+  //     // Calculate the offset needed to keep the visual center in place
+  //     const deltaY = (mapPadding.bottom - prevPadding.bottom - (mapPadding.top - prevPadding.top)) / 2;
+  //     const deltaX = (mapPadding.right - prevPadding.right - (mapPadding.left - prevPadding.left)) / 2;
+
+  //     if (deltaY !== 0 || deltaX !== 0) {
+  //       // Get current map container size
+  //       const mapContainer = document.querySelector('.map-container') as HTMLElement;
+  //       if (mapContainer) {
+
+  //         // Convert pixel offset to lat/lng offset
+  //         // This is an approximation; exact conversion depends on zoom level
+  //         const metersPerPixel = (40075016.686 * Math.abs(Math.cos(viewState.latitude * Math.PI / 180))) / (256 * Math.pow(2, viewState.zoom));
+  //         const latOffset = -(deltaY * metersPerPixel) / 111320; // 1 degree latitude ≈ 111320 meters
+  //         const lngOffset = (deltaX * metersPerPixel) / (111320 * Math.cos(viewState.latitude * Math.PI / 180));
+
+  //         setViewState(prev => ({
+  //           ...prev,
+  //           latitude: prev.latitude + latOffset,
+  //           longitude: prev.longitude + lngOffset,
+  //         }));
+  //       }
+  //     }
+
+  //     prevPaddingRef.current = mapPadding;
+  //   }
+  // }, [mapPadding, viewState.latitude, viewState.zoom]);
 
   return (
     <>

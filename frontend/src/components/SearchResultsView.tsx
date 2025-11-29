@@ -1,7 +1,7 @@
 import type { Route } from "../types";
 import { METERS_TO_MILES, METERS_TO_FEET } from "../utils/geo";
 import "./SearchResultsView.css";
-import { X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { RouteStat } from "./RouteStat";
 
 interface SearchResultsViewProps {
@@ -30,8 +30,8 @@ export function SearchResultsView({
             className="search-result-row"
             onClick={() => onSelectRoute(route.id, 'search')}
           >
-            <div className="col-title" title={route.title}>
-              {route.title}
+            <div className="col-title" title={route.title} data-completed={route.is_completed}>
+              {route.title} {route.is_completed && <Check size={16}/>}
             </div>
             <RouteStat
               value={

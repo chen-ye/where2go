@@ -1,5 +1,7 @@
 /* Bottom Panel */
 .bottom-panel {
+  display: flex;
+  flex-direction: column;
   position: absolute;
   bottom: 0;
   left: 0;
@@ -7,7 +9,6 @@
   background-color: var(--surface-2-translucent);
   backdrop-filter: var(--blur-3);
   z-index: 20;
-  padding: var(--size-4);
   border-top-left-radius: var(--radius-3);
   border-top-right-radius: var(--radius-3);
   box-shadow: var(--shadow-4);
