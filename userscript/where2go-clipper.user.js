@@ -9,6 +9,8 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @updateURL    https://raw.githubusercontent.com/cye/where2go/main/userscript/where2go-clipper.user.js
+// @downloadURL  https://raw.githubusercontent.com/cye/where2go/main/userscript/where2go-clipper.user.js
 // ==/UserScript==
 
 (function() {

@@ -52,6 +52,19 @@ You'll also want to install the Chrome extension:
 7. Click the extension icon, and hit import. Routes will be imported and added
    to your where2go instance.
 
+## Userscript Alternative
+
+Alternatively, you can use the userscript with a manager like Tampermonkey or
+ScriptCat:
+
+1. Install [Tampermonkey](https://www.tampermonkey.net/) or
+   [ScriptCat](https://scriptcat.js.org/)
+2. Click
+   [here](https://raw.githubusercontent.com/cye/where2go/main/userscript/where2go-clipper.user.js)
+   to install the userscript
+3. A floating button will appear on supported sites (Strava, RideWithGPS)
+4. Click the button to configure your endpoint and import routes
+
 ## Customizing Map Layers
 
 The map supports configurable basemaps and overlay layers through JSON
