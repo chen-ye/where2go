@@ -1,8 +1,8 @@
 {
-  "name": "where2go-extension",
+  "name": "where2go-userscript",
   "version": "1.0.0",
   "description": "",
-  "main": "content.js",
+  "main": "where2go-clipper.user.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

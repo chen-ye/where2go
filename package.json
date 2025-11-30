@@ -17,6 +17,8 @@
     "ts-json-schema-generator": "^2.4.0"
   },
   "workspaces": [
-    "frontend"
+    "frontend",
+    "extension",
+    "userscript"
   ]
 }
