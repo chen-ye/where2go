@@ -1,5 +1,6 @@
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { GeoJsonLayer, ScatterplotLayer, PathLayer } from "@deck.gl/layers";
+import { ScatterplotLayer, PathLayer } from "@deck.gl/layers";
+import { MVTLayer } from "@deck.gl/geo-layers";
 import { Layer as DeckLayer, type DeckProps, type PickingInfo } from "@deck.gl/core";
 
 import Map, {
@@ -122,6 +123,8 @@ interface MapViewProps {
   onOpacityChange: (opacity: { selected: number; completed: number; incomplete: number }) => void;
   hoveredSearchRouteId: number | null;
   padding?: { top: number; bottom: number; left: number; right: number };
+  filterParams: string;
+  selectedRoute?: Route;
 }
 
 export function MapView({
@@ -145,6 +148,8 @@ export function MapView({
   onOpacityChange,
   hoveredSearchRouteId,
   padding,
+  filterParams,
+  selectedRoute,
 }: MapViewProps) {
   const mapRef = useRef<MapRef>(null);
 
@@ -152,12 +157,14 @@ export function MapView({
   useEffect(() => {
     if (!selectedRouteId || !mapRef.current || selectionSource !== 'search') return;
 
-    const selectedRoute = routes.find((r) => r.id === selectedRouteId);
-    if (!selectedRoute?.bbox) return;
+    // Use selectedRoute passed from App if available and matches ID
+    // Otherwise try to find in routes (though routes list might lack bbox if it was removed? No, list has bbox)
+    const route = (selectedRoute && selectedRoute.id === selectedRouteId) ? selectedRoute : routes.find((r) => r.id === selectedRouteId);
+
+    if (!route?.bbox) return;
 
     // Extract bounds from the bbox LineString
-    // ST_BoundingDiagonal returns a LineString with two points: [southwest, northeast]
-    const coords = selectedRoute.bbox.coordinates as number[][];
+    const coords = route.bbox.coordinates as number[][];
     const bounds: [[number, number], [number, number]] = [
       [coords[0][0], coords[0][1]], // [minLng, minLat]
       [coords[1][0], coords[1][1]], // [maxLng, maxLat]
@@ -167,7 +174,7 @@ export function MapView({
       padding: { top: 100, bottom: 100, left: 100, right: 100 },
       duration: 1000,
     });
-  }, [selectedRouteId, routes, selectionSource]);
+  }, [selectedRouteId, routes, selectionSource, selectedRoute]);
 
   const activeOverlaysConfigs = useMemo(() => {
     return OVERLAYS.filter((o) => activeOverlayIds.has(o.id));
@@ -176,24 +183,6 @@ export function MapView({
   const orderedActiveOverlayBottomIds = useMemo(() => {
     return activeOverlaysConfigs.map((o) => o.layers?.[1]?.id).filter((id) => id !== undefined)
   }, [activeOverlaysConfigs]);
-
-  // const [hoverInfo, setHoverInfo] = useState<PickingInfo<Feature<Geometry, {}>>>();
-
-  const routesGeoJson: FeatureCollection = useMemo(() => {
-    return {
-      type: "FeatureCollection",
-      features: routes.map((r) => ({
-        type: "Feature",
-        properties: {
-          id: r.id,
-          title: r.title,
-          is_completed: r.is_completed,
-          grades: r.grades,
-        },
-        geometry: r.geojson,
-      })),
-    };
-  }, [routes]);
 
   const selectedRouteData = useMemo(() => {
     return [routeData];
@@ -206,7 +195,8 @@ export function MapView({
     if (
       selectedRouteId &&
       routeData &&
-      routeData.length > 1
+      routeData.length > 1 &&
+      selectedRoute?.geojson // Ensure we have the full geometry
     ) {
       layers.push(
         new PathLayer<RouteDataPoint[]>({
@@ -231,50 +221,53 @@ export function MapView({
       );
     }
 
-    // Main routes layer
+    // MVT Layer
     layers.push(
-      new GeoJsonLayer({
-        id: "routes",
-        data: routesGeoJson,
-        getLineColor: (object) => {
-          const selectedRoute = object.properties.id === selectedRouteId;
-          const isHovered = object.properties.id === hoveredSearchRouteId;
-          const isCompleted = object.properties.is_completed;
+      new MVTLayer({
+        id: "routes-mvt",
+        data: `/api/routes/tiles/{z}/{x}/{y}?${filterParams}`,
+        minZoom: 0,
+        maxZoom: 23,
+        getLineColor: (f: Feature) => {
+          const props = f.properties as any;
+          const id = props.id;
+          const isCompleted = props.is_completed;
+          const isSelected = id === selectedRouteId;
+          const isHovered = id === hoveredSearchRouteId;
 
-          if (selectedRoute) {
+          // If selected and we have the high-res layer ready, hide it in MVT
+          if (isSelected && selectedRoute?.geojson) {
             return [0, 0, 0, 0];
-            // return displayGradeOnMap ? [0, 0, 0, 0] : [217, 119, 6, 255];
           }
 
-          // Hovered routes are fully opaque
           return isCompleted
             ? [...getOpenPropsRgb("--purple-6"), isHovered ? 255 : Math.floor(routeOpacity.completed * 2.55)]
             : [...getOpenPropsRgb("--blue-7"), isHovered ? 255 : Math.floor(routeOpacity.incomplete * 2.55)];
         },
-        getLineWidth: (object) =>
-          object.properties.id === selectedRouteId ? 60 : 20,
+        getLineWidth: (f: Feature) => {
+          const props = f.properties as any;
+          return props.id === selectedRouteId ? 60 : 20;
+        },
         lineWidthUnits: "meters",
         pickable: true,
-        stroked: true,
         onHover: (info) => {
-          // Only emit hover events when actually hovering over the selected route
-          if (
-            info.object?.properties.id === selectedRouteId &&
-            info.coordinate
-          ) {
-            onHover({ lat: info.coordinate[1], lon: info.coordinate[0] });
-          } else {
-            onHover(null);
+           if (info.object?.properties?.id && info.coordinate) {
+             // MVT feature properties only have id, is_completed
+             // We want to pass lat/lon
+             onHover({ lat: info.coordinate[1], lon: info.coordinate[0] });
+           } else {
+             onHover(null);
+           }
+        },
+        onClick: (info) => {
+          if (info.object?.properties?.id) {
+            onSelectRoute(info.object.properties.id, 'map');
           }
         },
-        lineWidthMinPixels: 1,
-        onClick: (info) => {
-          onSelectRoute(info.object.properties.id, 'map');
-        },
         updateTriggers: {
-          getLineColor: [selectedRouteId, displayGradeOnMap, routeOpacity, hoveredSearchRouteId],
-          getLineWidth: selectedRouteId,
-        },
+          getLineColor: [selectedRouteId, displayGradeOnMap, routeOpacity, hoveredSearchRouteId, selectedRoute?.geojson],
+          getLineWidth: [selectedRouteId],
+        }
       })
     );
 
@@ -296,15 +289,16 @@ export function MapView({
 
     return layers;
   }, [
-    routesGeoJson,
     selectedRouteId,
     hoveredSearchRouteId,
     hoveredLocation,
     onHover,
     displayGradeOnMap,
-    routes,
+    routes, // Included for dependency completeness though used less
     routeOpacity,
     selectedRouteData,
+    filterParams,
+    selectedRoute
   ]);
 
   const currentBaseConfig = useMemo(() => {
@@ -338,17 +332,6 @@ export function MapView({
           source: "terrain",
           exaggeration: 1,
         }}
-        onClick={useCallback(
-          (e: MapLayerMouseEvent) => {
-            const feature = e.features?.[0];
-            if (feature) {
-              onSelectRoute(feature.properties?.id, 'map');
-            } else {
-              onSelectRoute(null, 'map');
-            }
-          },
-          [onSelectRoute]
-        )}
         interactiveLayerIds={["route-line-hitbox"]}
       >
         <GeolocateControl position="top-right" />
@@ -393,7 +376,7 @@ export function MapView({
         {OVERLAYS.filter((o) => activeOverlayIds.has(o.id)).map((config) => (
           <OverlayRenderer key={config.id} config={config} beforeId={orderedActiveOverlayBottomIds[orderedActiveOverlayBottomIds.indexOf(config.id) - 1] ?? 'bottom'}/>
         ))}
-        <Source id="routes-data" type="geojson" data={routesGeoJson}/>
+        {/* Removed routes-data Source as we don't have routesGeoJson anymore */}
         <DeckGLOverlay
           layers={deckGLLayers}
           pickingRadius={10}
@@ -402,25 +385,16 @@ export function MapView({
               object,
             }: PickingInfo<
               Feature<Geometry, { id: number; title: string }>
-            >) => object?.properties.title ?? null,
-            []
+            >) => {
+              if (!object?.properties?.id) return null;
+              // Look up title from routes list using ID from MVT feature
+              const r = routes.find(route => route.id === object.properties.id);
+              return r?.title ?? null;
+            },
+            [routes]
           )}
           />
       </Map>
     </div>
   );
 }
-
-// <DeckGL layers={deckGLLayers}
-//   initialViewState={{
-//     latitude: 38,
-//     longitude: -100,
-//     zoom: 4,
-//     minZoom: 2,
-//     maxZoom: 18
-//   }}
-//   pickingRadius={10}
-//   getTooltip={({object}: PickingInfo<Feature<Geometry, {id: number, title: string}>>) => (object?.properties.title ?? '')}
-//   controller={true}>
-//   <Map reuseMaps mapStyle={'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json'} />
-// </DeckGL>

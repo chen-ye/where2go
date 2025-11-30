@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useMeasure, useDebounce } from "@uidotdev/usehooks";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import "./App.css";
 import { TopBar } from "./components/TopBar.tsx";
 import { MapView } from "./components/MapView.tsx";
@@ -28,7 +29,7 @@ const SEARCH_PARAM_OPACITY_COMPLETED = "opa-complete";
 const SEARCH_PARAM_OPACITY_INCOMPLETE = "opa-incomplete";
 
 function App() {
-  const [routes, setRoutes] = useState<Route[]>([]);
+  const queryClient = useQueryClient();
   const [initialSearchParams] = useState(() => new URLSearchParams(window.location.search));
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(initialSearchParams.get(SEARCH_PARAM_ROUTE) ? parseInt(initialSearchParams.get(SEARCH_PARAM_ROUTE) || "") : null);
   const [selectionSource, setSelectionSource] = useState<'map' | 'search' | null>(null);
@@ -84,9 +85,41 @@ function App() {
   const [availableDomains, setAvailableDomains] = useState<string[]>([]);
   const [distanceRange, setDistanceRange] = useState<[number, number] | null>(null);
   const debouncedDistanceRange = useDebounce(distanceRange, 300);
-  const [fetchingRoutes, setFetchingRoutes] = useState(false);
 
-  // Fetch available tags and sources
+  const filterParams = useMemo(() => {
+    const params = new URLSearchParams();
+    if (debouncedSearchQuery) params.set("search-regex", debouncedSearchQuery);
+    if (selectedDomains.length > 0) params.set("sources", selectedDomains.join(','));
+    if (selectedTags.length > 0) params.set("tags", selectedTags.join(','));
+    if (debouncedDistanceRange) {
+      params.set("minDistance", debouncedDistanceRange[0].toString());
+      params.set("maxDistance", debouncedDistanceRange[1].toString());
+    }
+    return params.toString();
+  }, [debouncedSearchQuery, selectedDomains, selectedTags, debouncedDistanceRange]);
+
+  const { data: routes = [], isFetching: fetchingRoutes } = useQuery({
+    queryKey: ['routes', filterParams],
+    queryFn: async ({ signal }) => {
+      const res = await fetch(`/api/routes?${filterParams}`, { signal });
+      if (!res.ok) throw new Error('Failed to fetch routes');
+      return res.json() as Promise<Route[]>;
+    },
+    placeholderData: (prev) => prev
+  });
+
+  const { data: selectedRouteFull } = useQuery({
+    queryKey: ['route', selectedRouteId],
+    queryFn: async ({ signal }) => {
+      if (!selectedRouteId) return null;
+      const res = await fetch(`/api/routes/${selectedRouteId}`, { signal });
+      if (!res.ok) throw new Error('Failed to fetch route details');
+      return res.json() as Promise<Route>;
+    },
+    enabled: !!selectedRouteId
+  });
+
+  // Fetch available tags and sources (Keeping this simple for now, could be useQuery too)
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -108,7 +141,7 @@ function App() {
       }
     };
     fetchData();
-  }, [routes]); // Re-fetch when routes change
+  }, [routes]); // Re-fetch when routes change (e.g. after add/delete/update)
 
   // Update URL query parameters
   useEffect(() => {
@@ -155,64 +188,6 @@ function App() {
     window.history.replaceState({}, "", newUrl);
   }, [searchQuery, selectedRouteId, displayGradeOnMap, debouncedViewState, baseStyle, activeOverlayIds, routeOpacity]);
 
-  useEffect(() => {
-    fetchRoutes();
-    return () => {
-      abortControllerRef.current?.abort();
-    };
-  }, [debouncedSearchQuery, selectedDomains, selectedTags, debouncedDistanceRange]); // Refetch when query, domains, tags, or distance change
-
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const fetchRoutes = async () => {
-    // Cancel any pending request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    // Create new controller
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    setFetchingRoutes(true);
-    try {
-      const url = new URL("/api/routes", window.location.origin);
-      // Use the current value of debouncedSearchQuery (or pass it as arg if needed, but here it's fine)
-      // Note: If called from outside useEffect, we might want to use the latest state.
-      // However, searchQuery updates before debouncedSearchQuery.
-      // If we use searchQuery here, we might fetch based on non-debounced value if called directly.
-      // But fetchRoutes is mainly called by useEffect on debounced change.
-      // When called by handleUpdateCompleted, we probably want the current debounced search query context?
-      // Actually, if we use searchQuery here, and fetchRoutes is called by useEffect(debouncedSearchQuery),
-      // it works because by the time debouncedSearchQuery updates, searchQuery is already updated.
-      if (searchQuery) {
-        url.searchParams.set("search-regex", searchQuery);
-      }
-      if (selectedDomains.length > 0) {
-        url.searchParams.set("sources", selectedDomains.join(','));
-      }
-      if (selectedTags.length > 0) {
-        url.searchParams.set("tags", selectedTags.join(','));
-      }
-      if (debouncedDistanceRange) {
-        url.searchParams.set("minDistance", debouncedDistanceRange[0].toString());
-        url.searchParams.set("maxDistance", debouncedDistanceRange[1].toString());
-      }
-
-      const res = await fetch(url, { signal: controller.signal });
-      const data = await res.json();
-      setRoutes(data);
-    } catch (e) {
-      if (e instanceof Error && e.name === 'AbortError') {
-        // Request was aborted, ignore
-        return;
-      }
-      console.error("Failed to fetch routes", e);
-    } finally {
-      setFetchingRoutes(false);
-    }
-  };
-
   const handleUpdateCompleted = async (id: number, isCompleted: boolean) => {
     setUpdatingRouteId(id);
     try {
@@ -224,10 +199,8 @@ function App() {
         body: JSON.stringify({ is_completed: isCompleted }),
       });
       if (response.ok) {
-        const updatedRoute = await response.json();
-        setRoutes((prev) =>
-          prev.map((r) => (r.id === updatedRoute.id ? updatedRoute : r))
-        );
+        queryClient.invalidateQueries({ queryKey: ['routes'] });
+        queryClient.invalidateQueries({ queryKey: ['route', id] });
       } else {
         console.error("Failed to update completed status");
       }
@@ -247,10 +220,8 @@ function App() {
         headers: { "Content-Type": "application/json" },
       });
       if (response.ok) {
-        const updatedRoute = await response.json();
-        setRoutes((prev) =>
-          prev.map((r) => (r.id === updatedRoute.id ? updatedRoute : r))
-        );
+        queryClient.invalidateQueries({ queryKey: ['routes'] });
+        queryClient.invalidateQueries({ queryKey: ['route', id] });
       } else {
         console.error("Failed to update tags");
       }
@@ -280,7 +251,7 @@ function App() {
     if (routeToDelete !== null) {
       await fetch(`/api/routes/${routeToDelete}`, { method: "DELETE" });
       setSelectedRouteId(null);
-      fetchRoutes();
+      queryClient.invalidateQueries({ queryKey: ['routes'] });
       setRouteToDelete(null);
     }
     setDeleteConfirmOpen(false);
@@ -308,8 +279,7 @@ function App() {
           title: "Recompute Complete",
           description: `Successfully recomputed ${result.successCount} out of ${result.total} routes. ${result.errorCount > 0 ? `(${result.errorCount} errors)` : ''}`,
         });
-        // Optionally reload the page or refresh route data
-        fetchRoutes();
+        queryClient.invalidateQueries({ queryKey: ['routes'] });
       } else {
         toast({
           title: "Error",
@@ -342,14 +312,8 @@ function App() {
           title: "Recompute Complete",
           description: `Successfully recomputed route. (Success: ${result.successCount}, Errors: ${result.errorCount})`,
         });
-        // Fetch only the updated route
-        const routeResponse = await fetch(`/api/routes/${id}`);
-        if (routeResponse.ok) {
-          const updatedRoute = await routeResponse.json();
-          setRoutes((prev) =>
-            prev.map((r) => (r.id === updatedRoute.id ? updatedRoute : r))
-          );
-        }
+        queryClient.invalidateQueries({ queryKey: ['routes'] });
+        queryClient.invalidateQueries({ queryKey: ['route', id] });
       } else {
         toast({
           title: "Error",
@@ -374,8 +338,6 @@ function App() {
     setSelectedRouteId(id);
   };
 
-
-
   const handleToggleDomain = (domain: string) => {
     setSelectedDomains((prev) =>
       prev.includes(domain)
@@ -398,12 +360,12 @@ function App() {
     setDistanceRange(null);
   };
 
-
-
-  const selectedRoute = useMemo(
-    () => routes.find((r) => r.id === selectedRouteId),
-    [routes, selectedRouteId]
-  );
+  const selectedRoute = useMemo(() => {
+    if (selectedRouteFull && selectedRouteFull.id === selectedRouteId) {
+      return selectedRouteFull;
+    }
+    return routes.find((r) => r.id === selectedRouteId);
+  }, [selectedRouteFull, routes, selectedRouteId]);
 
   const routeData = useMemo(() => {
     if (!selectedRoute || !selectedRoute.geojson) return [];
@@ -436,16 +398,11 @@ function App() {
         );
         totalDist += distMeters;
 
-        // If precomputed grades exist, use them.
-        // Note: precomputedGrades[i-1] corresponds to the segment from point i-1 to i.
-        // The array calculated in backend has N-1 elements for N points.
         if (precomputedGrades && precomputedGrades.length > 0) {
-          // Check bounds just in case
           if (i - 1 < precomputedGrades.length) {
             grade = precomputedGrades[i - 1];
           }
         } else {
-          // Fallback to on-the-fly calculation
           grade = calculateGrade(coords[i - 1], coords[i]);
         }
       }
@@ -473,46 +430,6 @@ function App() {
     }),
     [topBarHeight, bottomPanelHeight]
   );
-
-  // Track previous padding to detect changes
-  // const prevPaddingRef = useRef(mapPadding);
-
-  // // Adjust map center when padding changes to prevent camera jump
-  // useEffect(() => {
-  //   const prevPadding = prevPaddingRef.current;
-  //   const paddingChanged =
-  //     prevPadding.top !== mapPadding.top ||
-  //     prevPadding.bottom !== mapPadding.bottom ||
-  //     prevPadding.left !== mapPadding.left ||
-  //     prevPadding.right !== mapPadding.right;
-
-  //   if (paddingChanged) {
-  //     // Calculate the offset needed to keep the visual center in place
-  //     const deltaY = (mapPadding.bottom - prevPadding.bottom - (mapPadding.top - prevPadding.top)) / 2;
-  //     const deltaX = (mapPadding.right - prevPadding.right - (mapPadding.left - prevPadding.left)) / 2;
-
-  //     if (deltaY !== 0 || deltaX !== 0) {
-  //       // Get current map container size
-  //       const mapContainer = document.querySelector('.map-container') as HTMLElement;
-  //       if (mapContainer) {
-
-  //         // Convert pixel offset to lat/lng offset
-  //         // This is an approximation; exact conversion depends on zoom level
-  //         const metersPerPixel = (40075016.686 * Math.abs(Math.cos(viewState.latitude * Math.PI / 180))) / (256 * Math.pow(2, viewState.zoom));
-  //         const latOffset = -(deltaY * metersPerPixel) / 111320; // 1 degree latitude ≈ 111320 meters
-  //         const lngOffset = (deltaX * metersPerPixel) / (111320 * Math.cos(viewState.latitude * Math.PI / 180));
-
-  //         setViewState(prev => ({
-  //           ...prev,
-  //           latitude: prev.latitude + latOffset,
-  //           longitude: prev.longitude + lngOffset,
-  //         }));
-  //       }
-  //     }
-
-  //     prevPaddingRef.current = mapPadding;
-  //   }
-  // }, [mapPadding, viewState.latitude, viewState.zoom]);
 
   return (
     <>
@@ -568,6 +485,8 @@ function App() {
         onOpacityChange={setRouteOpacity}
         hoveredSearchRouteId={hoveredSearchRouteId}
         padding={mapPadding}
+        filterParams={filterParams}
+        selectedRoute={selectedRoute}
       />
       <BottomPanel ref={bottomPanelRef}>
         {selectedRoute ? (

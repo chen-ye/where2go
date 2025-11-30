@@ -5,7 +5,7 @@ import { Document, DOMParser } from '@b-fuze/deno-dom';
 import toGeoJSON from '@mapbox/togeojson';
 import type { LineString, MultiLineString } from 'geojson';
 import { routes } from './schema.ts';
-import { desc, eq, sql } from 'drizzle-orm';
+import { desc, eq, sql, and, type SQL } from 'drizzle-orm';
 import { getRouteAttributes, type ValhallaSegment } from './valhalla.ts';
 
 const app = new Application();
@@ -105,11 +105,117 @@ async function processRouteGPX(
   };
 }
 
+function getRouteFilters(searchParams: URLSearchParams): SQL[] {
+  const conditions: SQL[] = [];
+
+  const searchRegex = searchParams.get('search-regex');
+  if (searchRegex) {
+    conditions.push(sql`${routes.title} ~* ${searchRegex}`);
+  }
+
+  const sourcesParam = searchParams.get('sources');
+  if (sourcesParam) {
+    const sources = sourcesParam.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    if (sources.length > 0) {
+      // Create a regex pattern to match any of the selected domains
+      const domainsPattern = sources.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+      conditions.push(sql`${routes.sourceUrl} ~* ${`^https?://(www\\.)?(${domainsPattern})`}`);
+    }
+  }
+
+  const tagsParam = searchParams.get('tags');
+  if (tagsParam) {
+    const tags = tagsParam.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    if (tags.length > 0) {
+      // Use Postgres array containment operator @> to find routes that have ALL the selected tags
+      conditions.push(sql`${routes.tags} @> ${tags}`);
+    }
+  }
+
+  const minDistanceParam = searchParams.get('minDistance');
+  const maxDistanceParam = searchParams.get('maxDistance');
+  if (minDistanceParam || maxDistanceParam) {
+    const minDistance = minDistanceParam ? parseFloat(minDistanceParam) : 0;
+    const maxDistance = maxDistanceParam ? parseFloat(maxDistanceParam) : Number.MAX_SAFE_INTEGER;
+
+    conditions.push(
+      sql`ST_Length(${routes.geom}::geography) >= ${minDistance} AND ST_Length(${routes.geom}::geography) <= ${maxDistance}`
+    );
+  }
+
+  return conditions;
+}
+
 // Routes
 router.get('/api/routes', async (ctx: RouterContext<string>) => {
-  const searchRegex = ctx.request.url.searchParams.get('search-regex');
+  const filters = getRouteFilters(ctx.request.url.searchParams);
 
   let query = db
+    .select({
+      id: routes.id,
+      source_url: routes.sourceUrl,
+      title: routes.title,
+      tags: routes.tags,
+      is_completed: routes.isCompleted,
+      created_at: routes.createdAt,
+      distance: sql<number>`ST_Length(${routes.geom}::geography)`,
+      total_ascent: routes.totalAscent,
+      total_descent: routes.totalDescent,
+      bbox: sql<string>`ST_AsGeoJSON(ST_BoundingDiagonal(${routes.geom}))`,
+    })
+    .from(routes)
+    .$dynamic();
+
+  if (filters.length > 0) {
+    query = query.where(and(...filters));
+  }
+
+  const result = await query.orderBy(desc(routes.title));
+
+  const mappedRoutes = result.map((row) => ({
+    ...row,
+    bbox: JSON.parse(row.bbox ?? '{}'),
+  }));
+
+  ctx.response.body = mappedRoutes;
+});
+
+router.get('/api/routes/tiles/:z/:x/:y', async (ctx: RouterContext<string>) => {
+  const { z, x, y } = ctx.params;
+  const zInt = parseInt(z);
+  const xInt = parseInt(x);
+  const yInt = parseInt(y);
+
+  const filters = getRouteFilters(ctx.request.url.searchParams);
+  const whereClause = filters.length > 0 ? sql`AND ${and(...filters)}` : sql``;
+
+  const result = await db.execute(sql`
+    SELECT ST_AsMVT(tile, 'default', 4096, 'geom')
+    FROM (
+      SELECT
+        ${routes.id},
+        ${routes.isCompleted},
+        ST_AsMVTGeom(
+          ${routes.geom},
+          ST_TileEnvelope(${zInt}, ${xInt}, ${yInt}),
+          4096,
+          256,
+          true
+        ) AS geom
+      FROM ${routes}
+      WHERE
+        ${routes.geom} && ST_TileEnvelope(${zInt}, ${xInt}, ${yInt})
+        ${whereClause}
+    ) AS tile
+  `);
+
+  ctx.response.headers.set('Content-Type', 'application/x-protobuf');
+  ctx.response.body = result[0].st_asmvt as Uint8Array;
+});
+
+router.get('/api/routes/:id', async (ctx: RouterContext<string>) => {
+  const id = ctx.params.id;
+  const result = await db
     .select({
       id: routes.id,
       source_url: routes.sourceUrl,
@@ -126,53 +232,21 @@ router.get('/api/routes', async (ctx: RouterContext<string>) => {
       bbox: sql<string>`ST_AsGeoJSON(ST_BoundingDiagonal(${routes.geom}))`,
     })
     .from(routes)
-    .$dynamic();
+    .where(eq(routes.id, parseInt(id)));
 
-  if (searchRegex) {
-    query = query.where(sql`${routes.title} ~* ${searchRegex}`);
+  if (result.length === 0) {
+    ctx.response.status = 404;
+    return;
   }
 
-  const sourcesParam = ctx.request.url.searchParams.get('sources');
-  if (sourcesParam) {
-    const sources = sourcesParam.split(',').map(s => s.trim()).filter(s => s.length > 0);
-    if (sources.length > 0) {
-      // Create a regex pattern to match any of the selected domains
-      // The pattern will be like: https?://(www\.)?(domain1|domain2|...)
-      const domainsPattern = sources.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-      query = query.where(sql`${routes.sourceUrl} ~* ${`^https?://(www\\.)?(${domainsPattern})`}`);
-    }
-  }
-
-  const tagsParam = ctx.request.url.searchParams.get('tags');
-  if (tagsParam) {
-    const tags = tagsParam.split(',').map(t => t.trim()).filter(t => t.length > 0);
-    if (tags.length > 0) {
-      // Use Postgres array containment operator @> to find routes that have ALL the selected tags
-      query = query.where(sql`${routes.tags} @> ${tags}`);
-    }
-  }
-
-  const minDistanceParam = ctx.request.url.searchParams.get('minDistance');
-  const maxDistanceParam = ctx.request.url.searchParams.get('maxDistance');
-  if (minDistanceParam || maxDistanceParam) {
-    const minDistance = minDistanceParam ? parseFloat(minDistanceParam) : 0;
-    const maxDistance = maxDistanceParam ? parseFloat(maxDistanceParam) : Number.MAX_SAFE_INTEGER;
-
-    query = query.where(
-      sql`ST_Length(${routes.geom}::geography) >= ${minDistance} AND ST_Length(${routes.geom}::geography) <= ${maxDistance}`
-    );
-  }
-
-  const result = await query.orderBy(desc(routes.title));
-
-  const mappedRoutes = result.map((row) => ({
+  const row = result[0];
+  const mappedRoute = {
     ...row,
     geojson: JSON.parse(row.geojson ?? '[]'),
     bbox: JSON.parse(row.bbox ?? '{}'),
-    // Extract domain for frontend convenience if needed, though frontend does this too
-  }));
+  };
 
-  ctx.response.body = mappedRoutes;
+  ctx.response.body = mappedRoute;
 });
 
 router.get('/api/sources', async (ctx: RouterContext<string>) => {
