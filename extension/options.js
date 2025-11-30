@@ -1,8 +1,12 @@
 // Saves options to chrome.storage
 const saveOptions = () => {
-  const baseUrl = document.getElementById('baseUrl').value;
-  const headersStr = document.getElementById('headers').value;
-  const autoPagination = document.getElementById('autoPagination').checked;
+  const baseUrlInput = /** @type {HTMLInputElement} */ (document.getElementById('baseUrl'));
+  const headersInput = /** @type {HTMLTextAreaElement} */ (document.getElementById('headers'));
+  const autoPaginationInput = /** @type {HTMLInputElement} */ (document.getElementById('autoPagination'));
+
+  const baseUrl = baseUrlInput.value;
+  const headersStr = headersInput.value;
+  const autoPagination = autoPaginationInput.checked;
 
   let headers = {};
   try {
@@ -11,8 +15,10 @@ const saveOptions = () => {
     }
   } catch (e) {
     const status = document.getElementById('status');
-    status.textContent = 'Error: Invalid JSON in headers.';
-    status.style.color = 'red';
+    if (status) {
+        status.textContent = 'Error: Invalid JSON in headers.';
+        status.style.color = 'red';
+    }
     return;
   }
 
@@ -21,11 +27,13 @@ const saveOptions = () => {
     () => {
       // Update status to let user know options were saved.
       const status = document.getElementById('status');
-      status.textContent = 'Options saved.';
-      status.style.color = 'green';
-      setTimeout(() => {
-        status.textContent = '';
-      }, 2000);
+      if (status) {
+          status.textContent = 'Options saved.';
+          status.style.color = 'green';
+          setTimeout(() => {
+            status.textContent = '';
+          }, 2000);
+      }
     }
   );
 };
@@ -35,13 +43,19 @@ const saveOptions = () => {
 const restoreOptions = () => {
   chrome.storage.sync.get(
     { baseUrl: '', headers: {}, autoPagination: false },
+    /** @param {{baseUrl: string, headers: Object, autoPagination: boolean}} items */
     (items) => {
-      document.getElementById('baseUrl').value = items.baseUrl;
-      document.getElementById('headers').value = JSON.stringify(items.headers, null, 2);
-      document.getElementById('autoPagination').checked = items.autoPagination;
+      const baseUrlInput = /** @type {HTMLInputElement} */ (document.getElementById('baseUrl'));
+      const headersInput = /** @type {HTMLTextAreaElement} */ (document.getElementById('headers'));
+      const autoPaginationInput = /** @type {HTMLInputElement} */ (document.getElementById('autoPagination'));
+
+      if (baseUrlInput) baseUrlInput.value = items.baseUrl;
+      if (headersInput) headersInput.value = JSON.stringify(items.headers, null, 2);
+      if (autoPaginationInput) autoPaginationInput.checked = items.autoPagination;
     }
   );
 };
 
 document.addEventListener('DOMContentLoaded', restoreOptions);
-document.getElementById('save').addEventListener('click', saveOptions);
+const saveBtn = document.getElementById('save');
+if (saveBtn) saveBtn.addEventListener('click', saveOptions);

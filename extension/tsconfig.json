@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["chrome"],
+    "lib": ["dom", "esnext"]
+  },
+  "include": ["**/*.js"],
+  "exclude": ["node_modules"]
+}

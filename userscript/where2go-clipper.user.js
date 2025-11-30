@@ -15,7 +15,20 @@
     'use strict';
 
     /**
+     * @typedef {Object} ClipperState
+     * @property {boolean} isRunning
+     * @property {boolean} isCancelled
+     * @property {number} total
+     * @property {number} current
+     * @property {number} success
+     * @property {number} errors
+     * @property {string} statusMessage
+     * @property {string|null} currentRouteId
+     */
+
+    /**
      * Configuration & State
+     * @type {ClipperState}
      */
     let state = {
         isRunning: false,
@@ -28,6 +41,15 @@
         currentRouteId: null
     };
 
+    /**
+     * @typedef {Object} Provider
+     * @property {string} key
+     * @property {string} hostname
+     * @property {RegExp} regex
+     * @property {function(string, URL): URL} getGpxUrl
+     */
+
+    /** @type {Provider[]} */
     const PROVIDERS = [
         {
             key: 'ridewithgps',
@@ -64,10 +86,16 @@
     /**
      * UI Implementation (Shadow DOM)
      */
+    /** @type {HTMLElement|null} */
     let uiRoot = null;
+    /** @type {ShadowRoot|null} */
     let uiShadow = null;
+    /** @type {HTMLElement|null} */
     let uiContainer = null;
 
+    /**
+     * Initializes the UI.
+     */
     function initUI() {
         // Create Host
         const host = document.createElement('div');
@@ -289,14 +317,16 @@
         uiShadow.getElementById('toggle-headers').onclick = (e) => {
             e.preventDefault();
             const area = uiShadow.getElementById('headers-area');
-            area.style.display = area.style.display === 'none' ? 'block' : 'none';
+            if (area) {
+                area.style.display = area.style.display === 'none' ? 'block' : 'none';
+            }
         };
         uiShadow.getElementById('btn-scan').onclick = startBatch;
         uiShadow.getElementById('btn-cancel').onclick = cancelBatch;
 
         // Input Persistence
-        const baseUrlInput = uiShadow.getElementById('base-url');
-        const headersInput = uiShadow.getElementById('headers');
+        const baseUrlInput = /** @type {HTMLInputElement} */ (uiShadow.getElementById('base-url'));
+        const headersInput = /** @type {HTMLTextAreaElement} */ (uiShadow.getElementById('headers'));
 
         baseUrlInput.value = getValue('baseUrl', '');
         headersInput.value = getValue('headers', '{}');
@@ -305,10 +335,18 @@
         headersInput.onchange = () => setValue('headers', headersInput.value);
     }
 
+    /**
+     * Toggles the UI visibility.
+     */
     function toggleUI() {
-        uiContainer.classList.toggle('visible');
+        if (uiContainer) {
+            uiContainer.classList.toggle('visible');
+        }
     }
 
+    /**
+     * Updates the UI based on the current state.
+     */
     function updateUI() {
         if (!uiShadow) return;
 
@@ -317,6 +355,8 @@
         const statusText = uiShadow.getElementById('status-text');
         const progressFill = uiShadow.getElementById('progress-fill');
         const logText = uiShadow.getElementById('log-text');
+
+        if (!btnScan || !btnCancel || !statusText || !progressFill || !logText) return;
 
         if (state.isRunning) {
             btnScan.style.display = 'none';
@@ -348,6 +388,9 @@
      * Logic
      */
 
+    /**
+     * Starts the batch processing.
+     */
     async function startBatch() {
         if (state.isRunning) return;
 
@@ -424,12 +467,26 @@
         }
     }
 
+    /**
+     * Cancels the batch processing.
+     */
     function cancelBatch() {
         state.isCancelled = true;
         state.statusMessage = "Cancelling...";
         updateUI();
     }
 
+    /**
+     * @typedef {Object} RouteInfo
+     * @property {string} id
+     * @property {URL} gpxUrl
+     * @property {URL} pageUrl
+     */
+
+    /**
+     * Scans the current page for routes.
+     * @returns {RouteInfo[]}
+     */
     function scanRoutes() {
         const provider = PROVIDERS.find(p => window.location.hostname.includes(p.hostname));
         if (!provider) throw new Error("Current site is not supported.");
@@ -468,6 +525,20 @@
         return results;
     }
 
+    /**
+     * @typedef {Object} ProcessedGpx
+     * @property {string} source_url
+     * @property {string} title
+     * @property {string} gpx_content
+     * @property {string[]} tags
+     */
+
+    /**
+     * Fetches GPX data and extracts metadata.
+     * @param {URL} gpxUrl
+     * @param {URL} sourceUrl
+     * @returns {Promise<ProcessedGpx>}
+     */
     async function processGpxUrl(gpxUrl, sourceUrl) {
         console.log("Fetching GPX from:", gpxUrl);
         const res = await fetchWithBackoff(gpxUrl);
@@ -492,6 +563,12 @@
         };
     }
 
+    /**
+     * Fetches a URL with exponential backoff for 429 errors.
+     * @param {URL} url
+     * @param {number} [retries=3]
+     * @returns {Promise<Response>}
+     */
     async function fetchWithBackoff(url, retries = 3) {
         let delay = 30000;
         for (let i = 0; i <= retries; i++) {
@@ -517,6 +594,13 @@
         throw new Error("Max retries exceeded");
     }
 
+    /**
+     * Saves the route to the backend.
+     * @param {string} baseUrl
+     * @param {Object} headers
+     * @param {ProcessedGpx} data
+     * @returns {Promise<Object>}
+     */
     function saveRouteToBackend(baseUrl, headers, data) {
         return new Promise((resolve, reject) => {
             const endpoint = new URL('/api/routes', baseUrl).href;
@@ -546,11 +630,23 @@
     /**
      * Storage Helpers
      */
+
+    /**
+     * Gets a value from storage.
+     * @param {string} key
+     * @param {any} def
+     * @returns {any}
+     */
     function getValue(key, def) {
         if (typeof GM_getValue !== 'undefined') return GM_getValue(key, def);
         return localStorage.getItem('w2g_' + key) || def;
     }
 
+    /**
+     * Sets a value in storage.
+     * @param {string} key
+     * @param {any} val
+     */
     function setValue(key, val) {
         if (typeof GM_setValue !== 'undefined') return GM_setValue(key, val);
         return localStorage.setItem('w2g_' + key, val);

@@ -9,6 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const logText = document.getElementById('log-text');
     const errorMsg = document.getElementById('error-msg');
 
+    if (!scrapeBtn || !settingsBtn || !cancelBtn || !statusArea || !statusText || !counter || !progressFill || !logText || !errorMsg) {
+        return;
+    }
+
     // 0. Check configuration
     chrome.storage.sync.get({ baseUrl: '' }, (items) => {
         if (!items.baseUrl) {
@@ -44,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Get Active Tab
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (!tab) throw new Error("No active tab.");
+            if (!tab || !tab.id) throw new Error("No active tab.");
 
             // Send Start Signal to Background
             await chrome.runtime.sendMessage({
@@ -54,7 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (err) {
             console.error(err);
-            errorMsg.textContent = err.message;
+            const error = /** @type {Error} */ (err);
+            errorMsg.textContent = error.message;
         }
     });
 
@@ -62,6 +67,20 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.runtime.sendMessage({ action: "cancel_batch" });
     });
 
+    /**
+     * @typedef {Object} ScraperState
+     * @property {boolean} isRunning
+     * @property {number} total
+     * @property {number} current
+     * @property {number} success
+     * @property {number} errors
+     * @property {string} statusMessage
+     * @property {boolean} isCancelled
+     */
+
+    /**
+     * @param {ScraperState} state
+     */
     function renderState(state) {
         document.body.dataset.state = state.isRunning ? "running" : (state.total > 0 ? "completed" : "idle");
         if (state.isRunning) {
@@ -92,7 +111,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function checkAndRequestPermission() {
-        const items = await chrome.storage.sync.get({ baseUrl: '' });
+        /** @type {{baseUrl: string}} */
+        const items = /** @type {{baseUrl: string}} */ (await chrome.storage.sync.get({ baseUrl: '' }));
         if (!items.baseUrl) throw new Error("Base URL not configured.");
 
         let url;
