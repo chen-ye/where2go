@@ -2,8 +2,17 @@
     console.log("Where2Go Content Script Ready");
 
     /**
+     * @typedef {Object} Provider
+     * @property {string} key
+     * @property {string} hostname
+     * @property {RegExp} regex
+     * @property {function(string, URL=): URL} getGpxUrl
+     */
+
+    /**
      * Provider Configuration
      * Encapsulates site-specific logic for identifying and fetching routes.
+     * @type {Provider[]}
      */
     const PROVIDERS = [
         {
@@ -17,10 +26,12 @@
 
                 // Check for privacy_code in the source URL (e.g. ?privacy_code=...)
                 try {
-                    const sourceUrlObj = new URL(pageUrl);
-                    const privacyCode = sourceUrlObj.searchParams.get('privacy_code');
-                    if (privacyCode) {
-                        u.searchParams.set('privacy_code', privacyCode);
+                    if (pageUrl) {
+                        const sourceUrlObj = new URL(pageUrl);
+                        const privacyCode = sourceUrlObj.searchParams.get('privacy_code');
+                        if (privacyCode) {
+                            u.searchParams.set('privacy_code', privacyCode);
+                        }
                     }
                 } catch (e) {
                     // Fallback if pageUrl is somehow invalid
@@ -38,10 +49,6 @@
         }
     ];
 
-    /**
-     * Message Event Listener
-     * Handles coordination between the popup/background script and this content script.
-     */
     /**
      * Message Event Listener
      * Handles coordination between the popup/background script and this content script.
@@ -68,9 +75,17 @@
     });
 
     /**
+     * @typedef {Object} RouteInfo
+     * @property {string} id
+     * @property {URL} gpxUrl
+     * @property {URL} pageUrl
+     */
+
+    /**
      * Scans the current page context (URL and Anchors) for route patterns.
      * Uses a Map to deduplicate routes by ID.
      * Supports auto-pagination if enabled.
+     * @returns {Promise<RouteInfo[]>}
      */
     async function scanRoutes() {
         // Determine the current provider based on hostname
@@ -177,6 +192,9 @@
 
     /**
      * Fetches URL with 429 Rate Limit handling and Exponential Backoff.
+     * @param {URL|string} url
+     * @param {number} [retries=3]
+     * @returns {Promise<Response>}
      */
     async function fetchWithBackoff(url, retries = 3) {
         let delay = 30000;
@@ -210,7 +228,18 @@
     }
 
     /**
+     * @typedef {Object} ProcessedGpx
+     * @property {URL|string} source_url
+     * @property {string} title
+     * @property {string} gpx_content
+     * @property {string[]} tags
+     */
+
+    /**
      * Fetches the GPX file and extracts metadata (title).
+     * @param {URL|string} gpxUrl
+     * @param {URL|string} sourceUrl
+     * @returns {Promise<ProcessedGpx>}
      */
     async function processGpxUrl(gpxUrl, sourceUrl) {
         console.log("Fetching GPX from:", gpxUrl);

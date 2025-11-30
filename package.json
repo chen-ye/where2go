@@ -14,7 +14,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
-    "ts-json-schema-generator": "^2.4.0"
+    "@types/chrome": "^0.1.31",
+    "@types/tampermonkey": "^5.0.5",
+    "ts-json-schema-generator": "^2.4.0",
+    "typescript": "^5.9.3"
   },
   "workspaces": [
     "frontend",
