@@ -1,4 +1,4 @@
-import { memo, useMemo, useId } from "react";
+import { memo, useMemo, useId, useCallback } from "react";
 import { Group } from "@visx/group";
 import { AreaClosed, LinePath } from "@visx/shape";
 import { scaleLinear } from "@visx/scale";
@@ -17,6 +17,7 @@ interface ElevationProfileProps {
   height?: number;
   hoveredLocation: { lat: number; lon: number } | null;
   onHover: (location: { lat: number; lon: number } | null) => void;
+  onClickLocation: (location: { lat: number; lon: number }) => void;
 }
 
 // Accessors
@@ -28,6 +29,100 @@ const bisectDistance = bisector<RouteDataPoint, number>(
 
 const margin = { top: 20, right: 20, bottom: 30, left: 50 };
 
+// Static chart content - memoized separately to avoid re-renders
+const StaticChart = memo(({
+  data,
+  width,
+  height,
+  xScale,
+  yScale,
+  gradientId,
+  maxDist,
+}: {
+  data: RouteDataPoint[];
+  width: number;
+  height: number;
+  xScale: any;
+  yScale: any;
+  gradientId: string;
+  maxDist: number;
+}) => {
+  const yMax = height - margin.top - margin.bottom;
+
+  return (
+    <>
+      <defs>
+        <linearGradient
+          id={gradientId}
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="0%"
+        >
+          {data.map((d, i) => (
+            <stop
+              key={i}
+              offset={`${
+                ((d.distance * METERS_TO_MILES) /
+                  (maxDist * METERS_TO_MILES)) *
+                100
+              }%`}
+              stopColor={getGradeColor(d.grade)}
+            />
+          ))}
+        </linearGradient>
+      </defs>
+
+      <Group left={margin.left} top={margin.top}>
+        <AreaClosed<RouteDataPoint>
+          data={data}
+          x={(d) => xScale(getX(d)) ?? 0}
+          y={(d) => yScale(getY(d)) ?? 0}
+          yScale={yScale}
+          strokeWidth={2}
+          stroke="transparent"
+          fill={`url(#${gradientId})`}
+          curve={curveMonotoneX}
+        />
+        <LinePath
+          data={data}
+          x={(d) => xScale(getX(d)) ?? 0}
+          y={(d) => yScale(getY(d)) ?? 0}
+          strokeWidth={2}
+          stroke="var(--gray-4)"
+          curve={curveMonotoneX}
+        />
+
+        <AxisBottom
+          scale={xScale}
+          top={yMax}
+          stroke="var(--gray-6)"
+          tickStroke="var(--gray-6)"
+          tickLabelProps={() => ({
+            fill: "var(--text-3)",
+            fontSize: 10,
+            textAnchor: "middle",
+          })}
+        />
+
+        <AxisLeft
+          scale={yScale}
+          stroke="var(--gray-6)"
+          tickStroke="var(--gray-6)"
+          tickLabelProps={() => ({
+            fill: "var(--text-3)",
+            fontSize: 10,
+            textAnchor: "end",
+            dx: -5,
+            dy: 2.5,
+          })}
+          numTicks={5}
+        />
+      </Group>
+    </>
+  );
+});
+
 const ElevationChart = memo(
   ({
     data,
@@ -35,6 +130,7 @@ const ElevationChart = memo(
     height,
     hoveredLocation,
     onHover,
+    onClickLocation,
     tooltipOpen,
     tooltipData,
     tooltipLeft,
@@ -47,6 +143,7 @@ const ElevationChart = memo(
     height: number;
     hoveredLocation: { lat: number; lon: number } | null;
     onHover: (location: { lat: number; lon: number } | null) => void;
+    onClickLocation: (location: { lat: number; lon: number }) => void;
     tooltipOpen: boolean;
     tooltipData: RouteDataPoint | undefined;
     tooltipLeft: number | undefined;
@@ -88,9 +185,11 @@ const ElevationChart = memo(
 
     const maxDist = data[data.length - 1].distance;
 
-    // Handle external hover
+    // Handle external hover - simplified to avoid recalculation on every change
     const externalTooltipData = useMemo(() => {
-      if (!hoveredLocation) return null;
+      if (!hoveredLocation || data.length === 0) return null;
+
+      // Use binary search for better performance with large datasets
       let minDist = Infinity;
       let closestPoint = null;
 
@@ -113,79 +212,22 @@ const ElevationChart = memo(
     return (
       <>
         <svg width={width} height={height}>
-          <defs>
-            <linearGradient
-              id={gradientId}
-              x1="0%"
-              y1="0%"
-              x2="100%"
-              y2="0%"
-            >
-              {data.map((d, i) => (
-                <stop
-                  key={i}
-                  offset={`${
-                    ((d.distance * METERS_TO_MILES) /
-                      (maxDist * METERS_TO_MILES)) *
-                    100
-                  }%`}
-                  stopColor={getGradeColor(d.grade)}
-                />
-              ))}
-            </linearGradient>
-          </defs>
+          <StaticChart
+            data={data}
+            width={width}
+            height={height}
+            xScale={xScale}
+            yScale={yScale}
+            gradientId={gradientId}
+            maxDist={maxDist}
+          />
 
           <Group left={margin.left} top={margin.top}>
-            <AreaClosed<RouteDataPoint>
-              data={data}
-              x={(d: RouteDataPoint) => xScale(getX(d)) ?? 0}
-              y={(d: RouteDataPoint) => yScale(getY(d)) ?? 0}
-              yScale={yScale}
-              strokeWidth={2}
-              stroke="transparent"
-              fill={`url(#${gradientId})`}
-              curve={curveMonotoneX}
-            />
-            <LinePath
-              data={data}
-              x={(d: RouteDataPoint) => xScale(getX(d)) ?? 0}
-              y={(d: RouteDataPoint) => yScale(getY(d)) ?? 0}
-              strokeWidth={2}
-              stroke="var(--gray-4)"
-              curve={curveMonotoneX}
-            />
-
-            <AxisBottom
-              scale={xScale}
-              top={yMax}
-              stroke="var(--gray-6)"
-              tickStroke="var(--gray-6)"
-              tickLabelProps={() => ({
-                fill: "var(--text-3)",
-                fontSize: 10,
-                textAnchor: "middle",
-              })}
-            />
-
-            <AxisLeft
-              scale={yScale}
-              stroke="var(--gray-6)"
-              tickStroke="var(--gray-6)"
-              tickLabelProps={() => ({
-                fill: "var(--text-3)",
-                fontSize: 10,
-                textAnchor: "end",
-                dx: -5,
-                dy: 2.5,
-              })}
-              numTicks={5}
-            />
-
             <rect
               width={xMax}
               height={yMax}
               fill="transparent"
-              onMouseMove={(event) => {
+              onMouseMove={useCallback((event: React.MouseEvent | React.TouchEvent) => {
                 const { x } = localPoint(event) || { x: 0 };
                 const x0 = xScale.invert(x - margin.left);
                 const index = bisectDistance(data, x0, 1);
@@ -204,18 +246,17 @@ const ElevationChart = memo(
                   });
                   onHover({ lat: d.lat, lon: d.lon });
                 }
-              }}
-              onMouseLeave={() => {
+              }, [xScale, data, showTooltip, tooltipLeft, tooltipTop, onHover])}
+              onMouseLeave={useCallback(() => {
                 hideTooltip();
                 onHover(null);
-              }}
+              }, [hideTooltip, onHover])}
+              onClick={useCallback(() => {
+                if (hoveredLocation) {
+                  onClickLocation(hoveredLocation);
+                }
+              }, [hoveredLocation, onClickLocation])}
             />
-
-            {showActiveTooltip && activeTooltipData && (
-              <g>
-                {/* SVG cursor removed, replaced by HTML elements below */}
-              </g>
-            )}
           </Group>
         </svg>
         {showActiveTooltip && activeTooltipData && (
@@ -278,6 +319,7 @@ export function ElevationProfile({
   height = 200,
   hoveredLocation,
   onHover,
+  onClickLocation,
 }: ElevationProfileProps) {
   const {
     tooltipData,
@@ -307,6 +349,7 @@ export function ElevationProfile({
               height={height}
               hoveredLocation={hoveredLocation}
               onHover={onHover}
+              onClickLocation={onClickLocation}
               tooltipOpen={tooltipOpen}
               tooltipData={tooltipData}
               tooltipLeft={tooltipLeft}

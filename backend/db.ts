@@ -5,12 +5,63 @@ import * as schema from './schema.ts';
 const connectionString = 'postgres://username:password@host:1234/database';
 
 // Create postgres connection
-const queryClient = postgres(connectionString, {
+const pgClient = postgres(connectionString, {
   host: Deno.env.get('POSTGRES_HOST') || 'localhost',
   port: parseInt(Deno.env.get('POSTGRES_PORT') || '5432'),
   username: Deno.env.get('POSTGRES_USER') || 'where2go',
   password: Deno.env.get('POSTGRES_PASSWORD') || 'password',
   database: Deno.env.get('POSTGRES_DB') || 'where2go',
+});
+
+// Proxy to log query execution time
+const queryClient = new Proxy(pgClient, {
+  get(target, prop, receiver) {
+    const originalValue = Reflect.get(target, prop, receiver);
+
+    if (prop === 'unsafe') {
+      return (query: string, params?: unknown[], options?: unknown) => {
+        const start = performance.now();
+        // eslint-disable-next-line @typescript-eslint/ban-types
+        const result = (originalValue as typeof pgClient.unsafe).apply(target, [query, params, options]);
+
+        // Monkey-patch .then to log execution time while preserving the object structure
+        // (so methods like .values() still work)
+        const originalThen = result.then;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // deno-lint-ignore no-explicit-any
+        result.then = function <TResult1 = any, TResult2 = never>(
+          // deno-lint-ignore no-explicit-any
+          onFulfilled?: ((value: any) => TResult1 | PromiseLike<TResult1>) | null,
+          // deno-lint-ignore no-explicit-any
+          onRejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
+        ): Promise<TResult1 | TResult2> {
+          return originalThen.call(
+            this,
+            // deno-lint-ignore no-explicit-any
+            (data: any) => {
+              const duration = performance.now() - start;
+              const timestamp = new Date().toISOString();
+              console.log(`[${timestamp}] [SQL] ${query} -- [${duration.toFixed(2)}ms]`);
+              if (onFulfilled) return onFulfilled(data);
+              return data;
+            },
+            // deno-lint-ignore no-explicit-any
+            (err: any) => {
+              const duration = performance.now() - start;
+              const timestamp = new Date().toISOString();
+              console.error(`[${timestamp}] [SQL ERROR] ${query} -- [${duration.toFixed(2)}ms]`, err);
+              if (onRejected) return onRejected(err);
+              throw err;
+            }
+          ) as Promise<TResult1 | TResult2>;
+        };
+
+        return result;
+      };
+    }
+
+    return originalValue;
+  }
 });
 
 // Create drizzle instance
@@ -56,6 +107,36 @@ export async function initDb() {
     `;
   } catch (e) {
     console.log('Column geom likely exists or error adding it', e);
+  }
+
+  // Add cached GeoJSON column (generated from geom)
+  try {
+    await queryClient`
+      ALTER TABLE routes ADD COLUMN IF NOT EXISTS geojson_cache JSONB
+      GENERATED ALWAYS AS (ST_AsGeoJSON(geom)::jsonb) STORED;
+    `;
+  } catch (e) {
+    console.log('Column geojson_cache likely exists or error adding it', e);
+  }
+
+  // Add cached distance column (generated from geom)
+  try {
+    await queryClient`
+      ALTER TABLE routes ADD COLUMN IF NOT EXISTS distance_meters REAL
+      GENERATED ALWAYS AS (ST_Length(geom::geography)) STORED;
+    `;
+  } catch (e) {
+    console.log('Column distance_meters likely exists or error adding it', e);
+  }
+
+  // Add cached bbox column (generated from geom)
+  try {
+    await queryClient`
+      ALTER TABLE routes ADD COLUMN IF NOT EXISTS bbox_cache JSONB
+      GENERATED ALWAYS AS (ST_AsGeoJSON(ST_BoundingDiagonal(geom))::jsonb) STORED;
+    `;
+  } catch (e) {
+    console.log('Column bbox_cache likely exists or error adding it', e);
   }
 
   // Add grades column if not exists
@@ -138,6 +219,12 @@ export async function initDb() {
     await queryClient`
       CREATE INDEX IF NOT EXISTS idx_routes_source_url_pattern
       ON routes USING btree (source_url text_pattern_ops);
+    `;
+
+    // Index for sorting by title (case-insensitive)
+    await queryClient`
+      CREATE INDEX IF NOT EXISTS idx_routes_title_lower
+      ON routes (lower(title) DESC);
     `;
 
     // GIN index for tags array operations (containment queries)

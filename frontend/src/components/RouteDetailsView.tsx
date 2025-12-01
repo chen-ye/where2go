@@ -29,6 +29,7 @@ interface RouteDetailsViewProps {
   updatingRouteId: number | null;
   hoveredLocation: { lat: number; lon: number } | null;
   onHover: (location: { lat: number; lon: number } | null) => void;
+  onClickLocation: (location: { lat: number; lon: number }) => void;
   displayGradeOnMap: boolean;
   onToggleDisplayGradeOnMap: (value: boolean) => void;
   routeData?: RouteDataPoint[];
@@ -45,6 +46,7 @@ export function RouteDetailsView({
   updatingRouteId,
   hoveredLocation,
   onHover,
+  onClickLocation,
   displayGradeOnMap,
   onToggleDisplayGradeOnMap,
   routeData,
@@ -203,6 +205,7 @@ export function RouteDetailsView({
               data={routeData || []}
               hoveredLocation={hoveredLocation}
               onHover={onHover}
+              onClickLocation={onClickLocation}
             />
           </AccordionContent>
         </AccordionItem>
@@ -221,6 +224,7 @@ export function RouteDetailsView({
                   width={width}
                   hoveredLocation={hoveredLocation}
                   onHover={onHover}
+                  onClickLocation={onClickLocation}
                 />
               )}
             </ParentSize>

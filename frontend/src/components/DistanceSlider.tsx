@@ -13,11 +13,18 @@ interface DistanceSliderProps {
 export function DistanceSlider({ min, max, value, onChange }: DistanceSliderProps) {
   const [localMin, setLocalMin] = useState(Math.round(value[0] * METERS_TO_MILES));
   const [localMax, setLocalMax] = useState(Math.round(value[1] * METERS_TO_MILES));
+  const [inputMin, setInputMin] = useState<string>(Math.round(value[0] * METERS_TO_MILES).toString());
+  const [inputMax, setInputMax] = useState<string>(Math.round(value[1] * METERS_TO_MILES).toString());
 
   // Sync with prop changes
+  // Sync with prop changes
   useEffect(() => {
-    setLocalMin(Math.round(value[0] * METERS_TO_MILES));
-    setLocalMax(Math.round(value[1] * METERS_TO_MILES));
+    const newMin = Math.round(value[0] * METERS_TO_MILES);
+    const newMax = Math.round(value[1] * METERS_TO_MILES);
+    setLocalMin(newMin);
+    setLocalMax(newMax);
+    setInputMin(newMin.toString());
+    setInputMax(newMax.toString());
   }, [value]);
 
   const minMiles = Math.round(min * METERS_TO_MILES);
@@ -26,20 +33,51 @@ export function DistanceSlider({ min, max, value, onChange }: DistanceSliderProp
   const handleSliderChange = (values: number[]) => {
     setLocalMin(values[0]);
     setLocalMax(values[1]);
+    setInputMin(values[0].toString());
+    setInputMax(values[1].toString());
     onChange([values[0] / METERS_TO_MILES, values[1] / METERS_TO_MILES]);
   };
 
-  const handleMinInputChange = (miles: number) => {
-    const cappedMiles = Math.min(miles, localMax);
-    setLocalMin(cappedMiles);
-    onChange([cappedMiles / METERS_TO_MILES, value[1]]);
+  const commitMinChange = () => {
+    let val = parseInt(inputMin);
+    if (isNaN(val)) val = minMiles;
+    // Clamp to global bounds
+    val = Math.max(minMiles, Math.min(val, maxMiles));
+
+    // Push max if needed
+    const newMax = Math.max(val, localMax);
+
+    setLocalMin(val);
+    setLocalMax(newMax);
+    setInputMin(val.toString());
+    setInputMax(newMax.toString());
+    onChange([val / METERS_TO_MILES, newMax / METERS_TO_MILES]);
   };
 
-  const handleMaxInputChange = (miles: number) => {
-    const cappedMiles = Math.max(miles, localMin);
-    setLocalMax(cappedMiles);
-    onChange([value[0], cappedMiles / METERS_TO_MILES]);
+  const commitMaxChange = () => {
+    let val = parseInt(inputMax);
+    if (isNaN(val)) val = maxMiles;
+    // Clamp to global bounds
+    val = Math.max(minMiles, Math.min(val, maxMiles));
+
+    // Push min if needed
+    const newMin = Math.min(val, localMin);
+
+    setLocalMin(newMin);
+    setLocalMax(val);
+    setInputMin(newMin.toString());
+    setInputMax(val.toString());
+    onChange([newMin / METERS_TO_MILES, val / METERS_TO_MILES]);
   };
+
+  const handleKeyDown = (e: React.KeyboardEvent, type: 'min' | 'max') => {
+    if (e.key === 'Enter') {
+      if (type === 'min') commitMinChange();
+      else commitMaxChange();
+    }
+  };
+
+
 
   return (
     <div className="distance-slider">
@@ -50,9 +88,11 @@ export function DistanceSlider({ min, max, value, onChange }: DistanceSliderProp
             id="distance-min"
             type="number"
             min={minMiles}
-            max={localMax}
-            value={localMin}
-            onChange={(e) => handleMinInputChange(parseInt(e.target.value) || minMiles)}
+            max={maxMiles}
+            value={inputMin}
+            onChange={(e) => setInputMin(e.target.value)}
+            onBlur={commitMinChange}
+            onKeyDown={(e) => handleKeyDown(e, 'min')}
           />
           <span className="distance-unit">mi</span>
         </div>
@@ -61,10 +101,12 @@ export function DistanceSlider({ min, max, value, onChange }: DistanceSliderProp
           <input
             id="distance-max"
             type="number"
-            min={localMin}
+            min={minMiles}
             max={maxMiles}
-            value={localMax}
-            onChange={(e) => handleMaxInputChange(parseInt(e.target.value) || maxMiles)}
+            value={inputMax}
+            onChange={(e) => setInputMax(e.target.value)}
+            onBlur={commitMaxChange}
+            onKeyDown={(e) => handleKeyDown(e, 'max')}
           />
           <span className="distance-unit">mi</span>
         </div>

@@ -78,6 +78,7 @@ export function SearchResultsView({
             <div className="col-title" title={route.title} data-completed={route.is_completed}>
               {route.title} {route.is_completed && <Check size={16}/>}
             </div>
+            {/* TODO: we need to include the distance metric in the GET routes endpoint in order to display distance in search results. maybe we can cache the computation in the db, like we do with the bbox?*/}
             <RouteStat
               value={
                 route.distance

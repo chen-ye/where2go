@@ -1,5 +1,5 @@
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { GeoJsonLayer, ScatterplotLayer, PathLayer } from "@deck.gl/layers";
+import { PathLayer, ScatterplotLayer } from "@deck.gl/layers";
 import { Layer as DeckLayer, type DeckProps, type PickingInfo } from "@deck.gl/core";
 
 import Map, {
@@ -13,16 +13,16 @@ import Map, {
 } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./MapView.css";
-import { useCallback, useMemo, useRef, useEffect, useState } from "react";
+import { useCallback, useMemo, useEffect, useState, forwardRef } from "react";
 import { LayerSelector } from "./LayerSelector";
 import { BASEMAPS, OVERLAYS } from "../utils/layerConfig";
 import { getGradeColor } from "../utils/geo";
 import { hexToRgb } from "../utils/colors";
 import { getOpenPropsRgb } from "../utils/colors";
 import type { Route, RouteDataPoint } from "../types.ts";
-import type { Feature, FeatureCollection, Geometry } from "geojson";
+import type { Feature, Geometry } from "geojson";
 import type { MapRef } from "react-map-gl/maplibre";
-
+import { MVTLayer } from "@deck.gl/geo-layers";
 import type { StyleSpecification, LayerSpecification, SourceSpecification } from "maplibre-gl";
 
 function DeckGLOverlay(props: DeckProps) {
@@ -32,7 +32,7 @@ function DeckGLOverlay(props: DeckProps) {
 }
 
 // Offset elevation to avoid z-fighting
-const elvOffset = 5;
+const elvOffset = 0;
 
 function useResolvedStyle(config: any): StyleSpecification | null {
   const [style, setStyle] = useState<StyleSpecification | null>(null);
@@ -120,11 +120,13 @@ interface MapViewProps {
   onToggleOverlay: (id: string, active: boolean) => void;
   routeOpacity: { selected: number; completed: number; incomplete: number };
   onOpacityChange: (opacity: { selected: number; completed: number; incomplete: number }) => void;
-  hoveredSearchRouteId: number | null;
+  hoveredRouteId: number | null;
+  onHoverRoute: (id: number | null) => void;
   padding?: { top: number; bottom: number; left: number; right: number };
+  filterParams: string;
 }
 
-export function MapView({
+export const MapView = forwardRef<MapRef, MapViewProps>(({
   routes,
   selectedRouteId,
   selectionSource,
@@ -143,14 +145,17 @@ export function MapView({
   onToggleOverlay,
   routeOpacity,
   onOpacityChange,
-  hoveredSearchRouteId,
+  hoveredRouteId,
+  onHoverRoute,
   padding,
-}: MapViewProps) {
-  const mapRef = useRef<MapRef>(null);
+  filterParams,
+}, ref) => {
+  // Use the forwarded ref directly for the Map component
 
   // Fly to selected route's bounding box only when selected from search
   useEffect(() => {
-    if (!selectedRouteId || !mapRef.current || selectionSource !== 'search') return;
+    if (!selectedRouteId || selectionSource !== 'search') return;
+    if (!ref || typeof ref === 'function' || !ref.current) return;
 
     const selectedRoute = routes.find((r) => r.id === selectedRouteId);
     if (!selectedRoute?.bbox) return;
@@ -163,11 +168,11 @@ export function MapView({
       [coords[1][0], coords[1][1]], // [maxLng, maxLat]
     ];
 
-    mapRef.current.fitBounds(bounds, {
+    ref.current.fitBounds(bounds, {
       padding: { top: 100, bottom: 100, left: 100, right: 100 },
       duration: 1000,
     });
-  }, [selectedRouteId, routes, selectionSource]);
+  }, [selectedRouteId, routes, selectionSource, ref]);
 
   const activeOverlaysConfigs = useMemo(() => {
     return OVERLAYS.filter((o) => activeOverlayIds.has(o.id));
@@ -179,21 +184,7 @@ export function MapView({
 
   // const [hoverInfo, setHoverInfo] = useState<PickingInfo<Feature<Geometry, {}>>>();
 
-  const routesGeoJson: FeatureCollection = useMemo(() => {
-    return {
-      type: "FeatureCollection",
-      features: routes.map((r) => ({
-        type: "Feature",
-        properties: {
-          id: r.id,
-          title: r.title,
-          is_completed: r.is_completed,
-          grades: r.grades,
-        },
-        geometry: r.geojson,
-      })),
-    };
-  }, [routes]);
+
 
   const selectedRouteData = useMemo(() => {
     return [routeData];
@@ -202,7 +193,7 @@ export function MapView({
   const deckGLLayers: DeckProps["layers"] = useMemo(() => {
     const layers: DeckLayer[] = [];
 
-    // If displayGradeOnMap is enabled and a route is selected, we render the selected route as segments
+    // Selected route layer (PathLayer)
     if (
       selectedRouteId &&
       routeData &&
@@ -231,80 +222,94 @@ export function MapView({
       );
     }
 
-    // Main routes layer
+    // Main routes layer (MVT)
     layers.push(
-      new GeoJsonLayer({
-        id: "routes",
-        data: routesGeoJson,
-        getLineColor: (object) => {
-          const selectedRoute = object.properties.id === selectedRouteId;
-          const isHovered = object.properties.id === hoveredSearchRouteId;
-          const isCompleted = object.properties.is_completed;
+      new MVTLayer({
+        id: "routes-mvt",
+        data: `/api/routes/tiles/{z}/{x}/{y}?${filterParams}`,
+        minZoom: 0,
+        maxZoom: 23,
+        getLineColor: (f: Feature) => {
+          const props = f.properties as any;
+          const isSelected = props.id === selectedRouteId;
+          const isHovered = props.id === hoveredRouteId;
+          const isCompleted = props.is_completed;
 
-          if (selectedRoute) {
+          if (isSelected) {
             return [0, 0, 0, 0];
-            // return displayGradeOnMap ? [0, 0, 0, 0] : [217, 119, 6, 255];
           }
 
-          // Hovered routes are fully opaque
           return isCompleted
             ? [...getOpenPropsRgb("--purple-6"), isHovered ? 255 : Math.floor(routeOpacity.completed * 2.55)]
             : [...getOpenPropsRgb("--blue-7"), isHovered ? 255 : Math.floor(routeOpacity.incomplete * 2.55)];
         },
-        getLineWidth: (object) =>
-          object.properties.id === selectedRouteId ? 60 : 20,
+        getLineWidth: (f: Feature) => {
+           const props = f.properties as any;
+           return props.id === selectedRouteId ? 60 : 20;
+        },
         lineWidthUnits: "meters",
+        lineWidthMinPixels: 1,
         pickable: true,
-        stroked: true,
+        binary: false,
+        onClick: (info) => {
+          if (info.object) {
+            onSelectRoute(info.object.properties.id, 'map');
+          }
+        },
         onHover: (info) => {
-          // Only emit hover events when actually hovering over the selected route
-          if (
-            info.object?.properties.id === selectedRouteId &&
-            info.coordinate
-          ) {
-            onHover({ lat: info.coordinate[1], lon: info.coordinate[0] });
-          } else {
+          const hoveredId = info.object?.properties?.id ?? null;
+          if (hoveredId !== hoveredRouteId) {
+             onHoverRoute(hoveredId);
+          }
+
+          // Only update hoveredLocation if hovering over the selected route
+          if (info.object && info.coordinate && hoveredId === selectedRouteId) {
+             onHover({ lat: info.coordinate[1], lon: info.coordinate[0] });
+          } else if (hoveredId !== selectedRouteId) {
             onHover(null);
           }
         },
-        lineWidthMinPixels: 1,
-        onClick: (info) => {
-          onSelectRoute(info.object.properties.id, 'map');
-        },
         updateTriggers: {
-          getLineColor: [selectedRouteId, displayGradeOnMap, routeOpacity, hoveredSearchRouteId],
-          getLineWidth: selectedRouteId,
+          getLineColor: [selectedRouteId, routeOpacity, hoveredRouteId],
+          getLineWidth: [selectedRouteId],
+        },
+        loadersOptions: {
+          mvt: {
+            workerUrl: null,
+            shape: 'geojson',
+          },
         },
       })
     );
 
-    if (hoveredLocation) {
-      layers.push(
-        new ScatterplotLayer({
-          id: "hover-marker",
-          data: [{ position: [hoveredLocation.lon, hoveredLocation.lat] }],
-          getPosition: (d: { position: [number, number] }) => d.position,
-          getFillColor: getOpenPropsRgb("--gray-0"),
-          getLineColor: getOpenPropsRgb("--gray-12"),
-          getLineWidth: 2,
-          getRadius: 10,
-          radiusMinPixels: 5,
-          radiusMaxPixels: 10,
-        })
-      );
-    }
+    layers.push(
+      new ScatterplotLayer({
+        id: 'hovered-location',
+        data: hoveredLocation ? [hoveredLocation] : [],
+        getPosition: (d: { lat: number; lon: number }) => [d.lon, d.lat, 0],
+
+        getFillColor: getOpenPropsRgb("--gray-0"),
+        getLineColor: getOpenPropsRgb("--gray-12"),
+        getRadius: 50,
+        radiusUnits: 'meters',
+        radiusMinPixels: 4,
+        stroked: true,
+        filled: true,
+        pickable: false,
+      })
+    );
 
     return layers;
   }, [
-    routesGeoJson,
+    filterParams, // Add filterParams dependency
     selectedRouteId,
-    hoveredSearchRouteId,
+    hoveredRouteId,
     hoveredLocation,
     onHover,
     displayGradeOnMap,
-    routes,
     routeOpacity,
     selectedRouteData,
+    onSelectRoute // Add onSelectRoute dependency
   ]);
 
   const currentBaseConfig = useMemo(() => {
@@ -329,7 +334,7 @@ export function MapView({
       }
     >
       <Map
-        ref={mapRef}
+        ref={ref}
         {...viewState}
         padding={padding}
         onMove={(evt) => onMove(evt.viewState)}
@@ -393,7 +398,7 @@ export function MapView({
         {OVERLAYS.filter((o) => activeOverlayIds.has(o.id)).map((config) => (
           <OverlayRenderer key={config.id} config={config} beforeId={orderedActiveOverlayBottomIds[orderedActiveOverlayBottomIds.indexOf(config.id) - 1] ?? 'bottom'}/>
         ))}
-        <Source id="routes-data" type="geojson" data={routesGeoJson}/>
+
         <DeckGLOverlay
           layers={deckGLLayers}
           pickingRadius={10}
@@ -409,7 +414,7 @@ export function MapView({
       </Map>
     </div>
   );
-}
+});
 
 // <DeckGL layers={deckGLLayers}
 //   initialViewState={{

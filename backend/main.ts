@@ -5,7 +5,7 @@ import { Document, DOMParser } from '@b-fuze/deno-dom';
 import toGeoJSON from '@mapbox/togeojson';
 import type { LineString, MultiLineString } from 'geojson';
 import { routes } from './schema.ts';
-import { desc, eq, sql } from 'drizzle-orm';
+import { eq, sql, and, type SQL } from 'drizzle-orm';
 import { getRouteAttributes, type ValhallaSegment } from './valhalla.ts';
 
 const app = new Application();
@@ -105,9 +105,88 @@ async function processRouteGPX(
   };
 }
 
-// Routes
+// Helper to build SQL filters from search params
+function getRouteFilters(searchParams: URLSearchParams): SQL[] {
+  const filters: SQL[] = [];
+  const searchRegex = searchParams.get('search-regex');
+  if (searchRegex) {
+    filters.push(sql`${routes.title} ~* ${searchRegex}`);
+  }
+
+  const sourcesParam = searchParams.get('sources');
+  if (sourcesParam) {
+    const sources = sourcesParam.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+    if (sources.length > 0) {
+      const domainsPattern = sources.map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+      filters.push(sql`${routes.sourceUrl} ~* ${`^https?://(www\\.)?(${domainsPattern})`}`);
+    }
+  }
+
+  const tagsParam = searchParams.get('tags');
+  if (tagsParam) {
+    const tags = tagsParam.split(',').map((t) => t.trim()).filter((t) => t.length > 0);
+    if (tags.length > 0) {
+      filters.push(sql`${routes.tags} @> ${tags}`);
+    }
+  }
+
+  const minDistanceParam = searchParams.get('minDistance');
+  const maxDistanceParam = searchParams.get('maxDistance');
+  if (minDistanceParam || maxDistanceParam) {
+    const minDistance = minDistanceParam ? parseFloat(minDistanceParam) : 0;
+    const maxDistance = maxDistanceParam ? parseFloat(maxDistanceParam) : Number.MAX_SAFE_INTEGER;
+    filters.push(
+      sql`ST_Length(${routes.geom}::geography) >= ${minDistance} AND ST_Length(${routes.geom}::geography) <= ${maxDistance}`
+    );
+  }
+
+  return filters;
+}
+
+// MVT Tile Endpoint
+router.get('/api/routes/tiles/:z/:x/:y', async (ctx: RouterContext<string>) => {
+  const { z, x, y } = ctx.params;
+  const filters = getRouteFilters(ctx.request.url.searchParams);
+
+  // Calculate tile envelope
+  // ST_TileEnvelope(z, x, y)
+  const envelope = sql`ST_TileEnvelope(${parseInt(z)}, ${parseInt(x)}, ${parseInt(y)})`;
+
+  // MVT query
+  const mvtQuery = db
+    .select({
+      mvt: sql`ST_AsMVT(tile, 'routes', 4096, 'geom')`,
+    })
+    .from(
+      sql`
+      (
+        SELECT
+          ${routes.id},
+          ${routes.title},
+          ${routes.isCompleted},
+          ST_AsMVTGeom(
+            ST_Transform(ST_Force2D(${routes.geom}), 3857),
+            ${envelope},
+            4096,
+            256,
+            true
+          ) AS geom
+        FROM ${routes}
+        WHERE ST_Intersects(${routes.geom}, ST_Transform(${envelope}, 4326))
+        ${filters.length > 0 ? sql`AND ${and(...filters)}` : sql``}
+      ) AS tile
+    `
+    );
+
+  const result = await mvtQuery;
+
+  ctx.response.headers.set('Content-Type', 'application/vnd.mapbox-vector-tile');
+  ctx.response.body = result[0].mvt;
+});
+
+// Optimized List Endpoint
 router.get('/api/routes', async (ctx: RouterContext<string>) => {
-  const searchRegex = ctx.request.url.searchParams.get('search-regex');
+  const filters = getRouteFilters(ctx.request.url.searchParams);
 
   let query = db
     .select({
@@ -117,62 +196,20 @@ router.get('/api/routes', async (ctx: RouterContext<string>) => {
       tags: routes.tags,
       is_completed: routes.isCompleted,
       created_at: routes.createdAt,
-      geojson: sql<string>`ST_AsGeoJSON(${routes.geom})`,
-      distance: sql<number>`ST_Length(${routes.geom}::geography)`,
       total_ascent: routes.totalAscent,
       total_descent: routes.totalDescent,
-      valhalla_segments: routes.valhallaSegments,
-      grades: routes.grades,
-      bbox: sql<string>`ST_AsGeoJSON(ST_BoundingDiagonal(${routes.geom}))`,
+      bbox: routes.bboxCache,
+      // Exclude heavy fields: geojson, valhalla_segments, grades, distance
     })
     .from(routes)
     .$dynamic();
 
-  if (searchRegex) {
-    query = query.where(sql`${routes.title} ~* ${searchRegex}`);
+  if (filters.length > 0) {
+    query = query.where(and(...filters));
   }
 
-  const sourcesParam = ctx.request.url.searchParams.get('sources');
-  if (sourcesParam) {
-    const sources = sourcesParam.split(',').map(s => s.trim()).filter(s => s.length > 0);
-    if (sources.length > 0) {
-      // Create a regex pattern to match any of the selected domains
-      // The pattern will be like: https?://(www\.)?(domain1|domain2|...)
-      const domainsPattern = sources.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-      query = query.where(sql`${routes.sourceUrl} ~* ${`^https?://(www\\.)?(${domainsPattern})`}`);
-    }
-  }
-
-  const tagsParam = ctx.request.url.searchParams.get('tags');
-  if (tagsParam) {
-    const tags = tagsParam.split(',').map(t => t.trim()).filter(t => t.length > 0);
-    if (tags.length > 0) {
-      // Use Postgres array containment operator @> to find routes that have ALL the selected tags
-      query = query.where(sql`${routes.tags} @> ${tags}`);
-    }
-  }
-
-  const minDistanceParam = ctx.request.url.searchParams.get('minDistance');
-  const maxDistanceParam = ctx.request.url.searchParams.get('maxDistance');
-  if (minDistanceParam || maxDistanceParam) {
-    const minDistance = minDistanceParam ? parseFloat(minDistanceParam) : 0;
-    const maxDistance = maxDistanceParam ? parseFloat(maxDistanceParam) : Number.MAX_SAFE_INTEGER;
-
-    query = query.where(
-      sql`ST_Length(${routes.geom}::geography) >= ${minDistance} AND ST_Length(${routes.geom}::geography) <= ${maxDistance}`
-    );
-  }
-
-  const result = await query.orderBy(desc(routes.title));
-
-  const mappedRoutes = result.map((row) => ({
-    ...row,
-    geojson: JSON.parse(row.geojson ?? '[]'),
-    bbox: JSON.parse(row.bbox ?? '{}'),
-    // Extract domain for frontend convenience if needed, though frontend does this too
-  }));
-
-  ctx.response.body = mappedRoutes;
+  const result = await query.orderBy(sql`lower(${routes.title}) desc`);
+  ctx.response.body = result;
 });
 
 router.get('/api/sources', async (ctx: RouterContext<string>) => {
@@ -293,6 +330,36 @@ router.get('/api/routes/:id/download', async (ctx: RouterContext<string>) => {
   ctx.response.body = route.gpx_content;
 });
 
+router.get('/api/routes/:id', async (ctx: RouterContext<string>) => {
+  const id = ctx.params.id;
+  const result = await db
+    .select({
+      id: routes.id,
+      source_url: routes.sourceUrl,
+      title: routes.title,
+      tags: routes.tags,
+      is_completed: routes.isCompleted,
+      created_at: routes.createdAt,
+      geojson: routes.geojsonCache,
+      distance: routes.distanceMeters,
+      total_ascent: routes.totalAscent,
+      total_descent: routes.totalDescent,
+      valhalla_segments: routes.valhallaSegments,
+      grades: routes.grades,
+      bbox: routes.bboxCache,
+    })
+    .from(routes)
+    .where(eq(routes.id, parseInt(id)));
+
+  if (result.length === 0) {
+    ctx.response.status = 404;
+    return;
+  }
+
+  ctx.response.status = 200;
+  ctx.response.body = result[0];
+});
+
 router.put('/api/routes/:id', async (ctx: RouterContext<string>) => {
   const id = ctx.params.id;
   const body = ctx.request.body;
@@ -315,13 +382,13 @@ router.put('/api/routes/:id', async (ctx: RouterContext<string>) => {
       tags: routes.tags,
       is_completed: routes.isCompleted,
       created_at: routes.createdAt,
-      geojson: sql<string>`ST_AsGeoJSON(${routes.geom})`,
-      distance: sql<number>`ST_Length(${routes.geom}::geography)`,
+      geojson: routes.geojsonCache,
+      distance: routes.distanceMeters,
       total_ascent: routes.totalAscent,
       total_descent: routes.totalDescent,
       valhalla_segments: routes.valhallaSegments,
       grades: routes.grades,
-      bbox: sql<string>`ST_AsGeoJSON(ST_BoundingDiagonal(${routes.geom}))`,
+      bbox: routes.bboxCache,
     })
     .from(routes)
     .where(eq(routes.id, parseInt(id)));
@@ -331,15 +398,8 @@ router.put('/api/routes/:id', async (ctx: RouterContext<string>) => {
     return;
   }
 
-  const row = result[0];
-  const mappedRoute = {
-    ...row,
-    geojson: JSON.parse(row.geojson ?? '[]'),
-    bbox: JSON.parse(row.bbox ?? '{}'),
-  };
-
   ctx.response.status = 200;
-  ctx.response.body = mappedRoute;
+  ctx.response.body = result[0];
 });
 
 // Recompute stats for a single route

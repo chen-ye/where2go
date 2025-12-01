@@ -20,6 +20,10 @@ export const routes = pgTable('routes', {
   // PostGIS geometry column - LineStringZ with SRID 4326
   geom: geometry('geom', { type: 'linestring', mode: 'xy', srid: 4326 }),
   grades: real('grades').array(),
+  // Cached/generated columns for performance
+  geojsonCache: jsonb('geojson_cache'),
+  distanceMeters: real('distance_meters'),
+  bboxCache: jsonb('bbox_cache'),
 });
 
 export type Route = typeof routes.$inferSelect;

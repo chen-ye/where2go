@@ -1,4 +1,4 @@
-import { useMemo, useId } from "react";
+import { useMemo, useId, useCallback, memo } from "react";
 import { Group } from "@visx/group";
 import { scaleLinear } from "@visx/scale";
 import { Bar } from "@visx/shape";
@@ -16,6 +16,7 @@ interface SurfaceChartProps {
   height?: number;
   hoveredLocation: { lat: number; lon: number } | null;
   onHover: (location: { lat: number; lon: number } | null) => void;
+  onClickLocation: (location: { lat: number; lon: number }) => void;
 }
 
 // Accessors
@@ -39,6 +40,68 @@ const getSurfaceColor = (surface: string) => {
   return SURFACE_COLORS[surface] || SURFACE_COLORS.unknown;
 };
 
+// Static chart content - memoized separately to avoid re-renders
+const StaticSurfaceChart = memo(({
+  chartSegments,
+  xScale,
+}: {
+  chartSegments: any[];
+  xScale: any;
+}) => {
+  return (
+    <Group left={margin.left} top={margin.top}>
+      {chartSegments.map((seg, i) => {
+        const x = xScale(seg.x);
+        const w = xScale(seg.width + seg.x) - x; // Calculate width in pixels based on scale
+
+        // Comfort Indicator
+        let bottomBorderFill = "transparent";
+
+        // Priority 1: Dedicated Cycleway
+        if (seg.cycle_lane && seg.cycle_lane !== "none" && seg.cycle_lane !== "shared") {
+           bottomBorderFill = "var(--teal-8)";
+        }
+        // Priority 2: Marked Bicycle Network
+        else if (seg.cycle_lane === "shared" || seg.bicycle_network && seg.bicycle_network !== "0") {
+           bottomBorderFill = "url(#shared-bicycle-pattern)";
+        }
+        // Priority 3: Major Roads
+        else if (
+          ["motorway", "trunk", "primary", "secondary"].includes(
+            seg.road_class || ""
+          )
+        ) {
+          bottomBorderFill = "var(--yellow-8)";
+        } else {
+            // Fallback to surface color if no priority
+            bottomBorderFill = getSurfaceColor(seg.surface);
+        }
+
+        return (
+          <g key={i}>
+            {/* Main Surface Bar (Top 12px) */}
+            <Bar
+              x={x}
+              y={0}
+              width={w}
+              height={12}
+              fill={getSurfaceColor(seg.surface)}
+            />
+            {/* Bottom Border (Bottom 4px) */}
+            <Bar
+              x={x}
+              y={12}
+              width={w}
+              height={4}
+              fill={bottomBorderFill}
+            />
+          </g>
+        );
+      })}
+    </Group>
+  );
+});
+
 export function SurfaceChart({
   data,
   segments,
@@ -46,6 +109,7 @@ export function SurfaceChart({
   height = 16,
   hoveredLocation,
   onHover,
+  onClickLocation,
 }: SurfaceChartProps) {
   const anchorId = useId();
   const anchorName = `--surface-cursor-datum-${anchorId.replace(/:/g, "")}`;
@@ -152,74 +216,54 @@ export function SurfaceChart({
             <rect width="4" height="4" fill="var(--teal-8)" />
           </pattern>
         </defs>
+
+        <StaticSurfaceChart
+          chartSegments={chartSegments}
+          xScale={xScale}
+        />
+
         <Group left={margin.left} top={margin.top}>
-          {chartSegments.map((seg, i) => {
-            const x = xScale(seg.x);
-            const w = xScale(seg.width + seg.x) - x; // Calculate width in pixels based on scale
+          <Bar
+            width={xMax}
+            height={height}
+            fill="transparent"
+            onMouseMove={useCallback((event) => {
+              const { x: mouseX } = localPoint(event) || { x: 0 };
 
-            // Comfort Indicator
-            let bottomBorderFill = "transparent";
+              // Find approximate location for map hover
+              const x0 = xScale.invert(mouseX - margin.left);
 
-            // Priority 1: Dedicated Cycleway
-            if (seg.cycle_lane && seg.cycle_lane !== "none" && seg.cycle_lane !== "shared") {
-               bottomBorderFill = "var(--teal-8)";
-            }
-            // Priority 2: Marked Bicycle Network
-            else if (seg.cycle_lane === "shared" || seg.bicycle_network && seg.bicycle_network !== "0") {
-               bottomBorderFill = "url(#shared-bicycle-pattern)";
-            }
-            // Priority 3: Major Roads
-            else if (
-              ["motorway", "trunk", "primary", "secondary"].includes(
-                seg.road_class || ""
-              )
-            ) {
-              bottomBorderFill = "var(--yellow-8)";
-            } else {
-                // Fallback to surface color if no priority
-                bottomBorderFill = getSurfaceColor(seg.surface);
-            }
+              // Find closest data point
+              const closest = data.reduce((prev, curr) =>
+                  Math.abs(getX(curr) - x0) < Math.abs(getX(prev) - x0) ? curr : prev
+              );
 
-            return (
-              <g key={i}>
-                {/* Main Surface Bar (Top 12px) */}
-                <Bar
-                  x={x}
-                  y={0}
-                  width={w}
-                  height={12}
-                  fill={getSurfaceColor(seg.surface)}
-                  onMouseMove={(event) => {
-                    const { x: mouseX } = localPoint(event) || { x: 0 };
-                    showTooltip({
-                      tooltipData: seg,
-                      tooltipLeft: mouseX,
-                      tooltipTop: 0,
-                    });
-                    // Find approximate location for map hover
-                    const x0 = xScale.invert(mouseX - margin.left);
-                    const closest = data.reduce((prev, curr) =>
-                        Math.abs(getX(curr) - x0) < Math.abs(getX(prev) - x0) ? curr : prev
-                    );
-                    onHover({ lat: closest.lat, lon: closest.lon });
-                  }}
-                  onMouseLeave={() => {
-                    hideTooltip();
-                    onHover(null);
-                  }}
-                />
-                {/* Bottom Border (Bottom 4px) */}
-                <Bar
-                  x={x}
-                  y={12}
-                  width={w}
-                  height={4}
-                  fill={bottomBorderFill}
-                  pointerEvents="none"
-                />
-              </g>
-            );
-          })}
+              // Find segment for tooltip
+              const closestIndex = data.indexOf(closest);
+              const segment = segments.find(
+                (s) => s.start <= closestIndex && s.end >= closestIndex
+              );
+
+              if (segment) {
+                showTooltip({
+                  tooltipData: segment,
+                  tooltipLeft: mouseX,
+                  tooltipTop: 0,
+                });
+              }
+
+              onHover({ lat: closest.lat, lon: closest.lon });
+            }, [xScale, data, segments, showTooltip, onHover])}
+            onMouseLeave={useCallback(() => {
+              hideTooltip();
+              onHover(null);
+            }, [hideTooltip, onHover])}
+            onClick={useCallback(() => {
+              if (hoveredLocation) {
+                onClickLocation(hoveredLocation);
+              }
+            }, [hoveredLocation, onClickLocation])}
+          />
         </Group>
       </svg>
 

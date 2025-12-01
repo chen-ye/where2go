@@ -18,7 +18,7 @@ export function RouteStat({
       ? decimals > 0
         ? value.toFixed(decimals)
         : Math.round(value).toString()
-      : `–– ${units}`;
+      : `––`;
 
   return (
     <div className={`stat-item ${className}`}>

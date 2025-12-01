@@ -7,7 +7,7 @@ export interface Route {
   title: string;
   tags: string[];
   is_completed: boolean;
-  geojson: LineString | MultiLineString;
+  geojson?: LineString | MultiLineString;
   bbox?: LineString;
   grades?: number[];
   distance?: number;
