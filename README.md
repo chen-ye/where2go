@@ -174,8 +174,8 @@ The project consists of three main components:
 
 ### Backend (`/backend`)
 
-- **Runtime**: Deno
-- **Framework**: Oak (HTTP server)
+- **Runtime**: Node.js
+- **Framework**: Koa (HTTP server)
 - **Database**: PostgreSQL with PostGIS extension
 - **ORM**: Drizzle ORM
 - **Features**:
@@ -229,7 +229,8 @@ To run locally without Docker:
 
 ```bash
 cd backend
-deno run --allow-net --allow-read --allow-env --watch main.ts
+yarn install
+yarn dev
 ```
 
 #### Code Quality
@@ -328,6 +329,5 @@ Recompute elevation statistics for all routes.
 - This is a personal project! But happy to accept contributions—we should
   probably chat before you start working on anything (or just fork it). Hope
   it's useful to you as well.
-- Yes, the stack is kind of weird. See above.
 - Big disclaimer: much of this is co-written with one LLM or another. No
   promises on stability/safety, but _I’m_ using it.
