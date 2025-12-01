@@ -144,6 +144,15 @@ export function SurfaceChart({
       const startIndex = Math.min(seg.start, data.length - 1);
       const endIndex = Math.min(seg.end, data.length - 1);
 
+      if (seg.start >= data.length || seg.end >= data.length) {
+        console.warn('SurfaceChart: segment indices out of bounds', {
+          seg,
+          dataLength: data.length,
+          startIndex,
+          endIndex
+        });
+      }
+
       const startDist = getX(data[startIndex]);
       const endDist = getX(data[endIndex]);
 
@@ -227,7 +236,7 @@ export function SurfaceChart({
             width={xMax}
             height={height}
             fill="transparent"
-            onMouseMove={useCallback((event) => {
+            onMouseMove={useCallback((event: React.MouseEvent | React.TouchEvent) => {
               const { x: mouseX } = localPoint(event) || { x: 0 };
 
               // Find approximate location for map hover

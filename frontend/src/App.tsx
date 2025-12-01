@@ -23,6 +23,13 @@ import {
   useRecomputeRoute,
   useRecomputeAllRoutes,
 } from "./hooks/useMutations";
+import {
+  API_PARAM_SEARCH_REGEX,
+  API_PARAM_SOURCES,
+  API_PARAM_TAGS,
+  API_PARAM_MIN_DISTANCE,
+  API_PARAM_MAX_DISTANCE,
+} from "@shared/api-constants";
 
 
 const SEARCH_PARAM_ROUTE = "route";
@@ -99,12 +106,12 @@ function App() {
   // Derived filter params for queries
   const filterParams = useMemo(() => {
     const params = new URLSearchParams();
-    if (debouncedSearchQuery) params.set("search-regex", debouncedSearchQuery);
-    if (selectedDomains.length > 0) params.set("sources", selectedDomains.join(','));
-    if (selectedTags.length > 0) params.set("tags", selectedTags.join(','));
+    if (debouncedSearchQuery) params.set(API_PARAM_SEARCH_REGEX, debouncedSearchQuery);
+    if (selectedDomains.length > 0) params.set(API_PARAM_SOURCES, selectedDomains.join(','));
+    if (selectedTags.length > 0) params.set(API_PARAM_TAGS, selectedTags.join(','));
     if (debouncedDistanceRange) {
-      params.set("minDistance", debouncedDistanceRange[0].toString());
-      params.set("maxDistance", debouncedDistanceRange[1].toString());
+      params.set(API_PARAM_MIN_DISTANCE, debouncedDistanceRange[0].toString());
+      params.set(API_PARAM_MAX_DISTANCE, debouncedDistanceRange[1].toString());
     }
     return params.toString();
   }, [debouncedSearchQuery, selectedDomains, selectedTags, debouncedDistanceRange]);
@@ -341,7 +348,7 @@ function App() {
   const selectedRoute = useMemo(
     () => {
       if (selectedRouteDetails) return selectedRouteDetails;
-      return routes.find((r) => r.id === selectedRouteId);
+      return routes.find((r: Route) => r.id === selectedRouteId);
     },
     [routes, selectedRouteId, selectedRouteDetails]
   );

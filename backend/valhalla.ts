@@ -1,4 +1,4 @@
-import type { ValhallaSegment } from '../shared/types/valhalla.ts';
+import type { ValhallaSegment } from 'where2go-shared/types/valhalla.ts';
 export type { ValhallaSegment };
 
 
@@ -23,7 +23,7 @@ interface ValhallaResponse {
 export async function getRouteAttributes(
   coordinates: number[][],
 ): Promise<ValhallaSegment[] | null> {
-  const endpoint = Deno.env.get('VALHALLA_ENDPOINT') ||
+  const endpoint = process.env.VALHALLA_ENDPOINT ||
     'https://valhalla1.openstreetmap.de/trace_attributes';
 
   const body = {

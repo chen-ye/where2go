@@ -1,5 +1,4 @@
-import { boolean, geometry, jsonb, real, serial, text, timestamp } from 'drizzle-orm/pg-core';
-import { pgTable, customType } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, boolean, timestamp, real, jsonb, geometry } from 'drizzle-orm/pg-core';
 
 // Define a custom type for real array since 'real[]' isn't directly supported in drizzle-orm/pg-core yet or needs specific handling
 // Actually, drizzle has .array() support for some types, but real[] might be tricky.

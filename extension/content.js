@@ -132,7 +132,6 @@
         // Initial scan
         addRoutesFromContext(document, window.location.href);
 
-        // TODO: fix auto pagination
         if (autoPagination) {
             console.log("Auto-pagination enabled. Starting...");
 
@@ -143,7 +142,7 @@
 
                 for (let i = 0; i < maxScrolls; i++) {
                     window.scrollTo(0, document.body.scrollHeight);
-                    await new Promise(r => setTimeout(r, 1500)); // Wait for load
+                    await new Promise(r => setTimeout(r, 2000)); // Wait for load
 
                     const newHeight = document.body.scrollHeight;
                     addRoutesFromContext(document, window.location.href); // Rescan
@@ -161,7 +160,7 @@
                     // Find next link
                     // Strava usually uses .pagination .next_page a or similar
                     // Adjust selector as needed based on Strava's current DOM
-                    const nextLink = currentPageDoc.querySelector('[rel="next"]');
+                    const nextLink = currentPageDoc.querySelector('[rel="next"]') || currentPageDoc.querySelector('.next_page a');
 
                     if (!nextLink) break;
 

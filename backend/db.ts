@@ -1,16 +1,17 @@
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import * as schema from './schema.ts';
+import process from 'process';
 
 const connectionString = 'postgres://username:password@host:1234/database';
 
 // Create postgres connection
 const pgClient = postgres(connectionString, {
-  host: Deno.env.get('POSTGRES_HOST') || 'localhost',
-  port: parseInt(Deno.env.get('POSTGRES_PORT') || '5432'),
-  username: Deno.env.get('POSTGRES_USER') || 'where2go',
-  password: Deno.env.get('POSTGRES_PASSWORD') || 'password',
-  database: Deno.env.get('POSTGRES_DB') || 'where2go',
+  host: process.env.POSTGRES_HOST || 'localhost',
+  port: parseInt(process.env.POSTGRES_PORT || '5432'),
+  username: process.env.POSTGRES_USER || 'where2go',
+  password: process.env.POSTGRES_PASSWORD || 'password',
+  database: process.env.POSTGRES_DB || 'where2go',
 });
 
 // Proxy to log query execution time
@@ -27,17 +28,13 @@ const queryClient = new Proxy(pgClient, {
         // Monkey-patch .then to log execution time while preserving the object structure
         // (so methods like .values() still work)
         const originalThen = result.then;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        // deno-lint-ignore no-explicit-any
         result.then = function <TResult1 = any, TResult2 = never>(
-          // deno-lint-ignore no-explicit-any
           onFulfilled?: ((value: any) => TResult1 | PromiseLike<TResult1>) | null,
-          // deno-lint-ignore no-explicit-any
           onRejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
         ): Promise<TResult1 | TResult2> {
           return originalThen.call(
             this,
-            // deno-lint-ignore no-explicit-any
+
             (data: any) => {
               const duration = performance.now() - start;
               const timestamp = new Date().toISOString();
@@ -45,7 +42,7 @@ const queryClient = new Proxy(pgClient, {
               if (onFulfilled) return onFulfilled(data);
               return data;
             },
-            // deno-lint-ignore no-explicit-any
+
             (err: any) => {
               const duration = performance.now() - start;
               const timestamp = new Date().toISOString();

@@ -1,0 +1,31 @@
+{
+  "name": "where2go-backend",
+  "version": "1.0.0",
+  "main": "main.ts",
+  "type": "module",
+  "scripts": {
+    "start": "tsx main.ts",
+    "dev": "tsx watch main.ts"
+  },
+  "dependencies": {
+    "@koa/cors": "^5.0.0",
+    "@koa/router": "^14.0.0",
+    "@mapbox/togeojson": "^0.16.2",
+    "drizzle-orm": "^0.44.7",
+    "jsdom": "^27.2.0",
+    "koa": "^3.1.1",
+    "koa-bodyparser": "^4.4.1",
+    "postgres": "^3.4.7",
+    "where2go-shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^27.0.0",
+    "@types/koa": "^3.0.1",
+    "@types/koa-bodyparser": "^4.3.13",
+    "@types/koa__cors": "^5.0.1",
+    "@types/koa__router": "^12.0.5",
+    "@types/node": "^24.10.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

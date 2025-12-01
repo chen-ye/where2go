@@ -13,11 +13,10 @@ services:
       - db-data:/var/lib/postgresql/data
 
   app:
-    image: denoland/deno:latest
+    image: node:24-alpine
     working_dir: /app
     volumes:
-      - ./backend:/app
-      - ./frontend:/app/frontend
+      - ./:/app
     ports:
       - "8070:8070"
     environment:
@@ -26,7 +25,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_PORT: 5432
-    command: deno run --allow-net --allow-read --allow-env --watch main.ts
+    command: sh -c "corepack enable && yarn install && yarn workspace where2go-backend dev"
     depends_on:
       - db
 

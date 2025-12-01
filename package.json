@@ -22,6 +22,8 @@
   "workspaces": [
     "frontend",
     "extension",
-    "userscript"
+    "userscript",
+    "shared",
+    "backend"
   ]
 }

@@ -1,23 +1,33 @@
-import { Application, Router, RouterContext } from '@oak/oak';
-import { oakCors } from '@tajpouria/cors';
-import { db, initDb } from './db.ts';
-import { Document, DOMParser } from '@b-fuze/deno-dom';
+import Koa from 'koa';
+import Router from '@koa/router';
+import cors from '@koa/cors';
+import bodyParser from 'koa-bodyparser';
+import { db, initDb } from './db.js';
+import { JSDOM } from 'jsdom';
 import toGeoJSON from '@mapbox/togeojson';
 import type { LineString, MultiLineString } from 'geojson';
-import { routes } from './schema.ts';
+import { routes } from './schema.js';
 import { eq, sql, and, type SQL } from 'drizzle-orm';
 import { getRouteAttributes, type ValhallaSegment } from './valhalla.ts';
+import {
+  API_PARAM_SEARCH_REGEX,
+  API_PARAM_SOURCES,
+  API_PARAM_TAGS,
+  API_PARAM_MIN_DISTANCE,
+  API_PARAM_MAX_DISTANCE,
+} from 'where2go-shared/api-constants.ts';
 
-const app = new Application();
-app.use(oakCors({ origin: '*' })); // Enable CORS for all routes
-
+const app = new Koa();
 const router = new Router();
+
+app.use(cors({ origin: '*' }));
+app.use(bodyParser());
 
 // Helper to parse GPX to GeoJSON LineString
 function gpxToGeoJSON(gpxContent: string): LineString | null {
   try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(gpxContent, 'text/html');
+    const dom = new JSDOM(gpxContent, { contentType: 'text/xml' });
+    const doc = dom.window.document;
 
     if (!doc) {
       console.error('Failed to parse XML');
@@ -25,7 +35,7 @@ function gpxToGeoJSON(gpxContent: string): LineString | null {
     }
 
     // Convert GPX to GeoJSON using @mapbox/togeojson
-    const geoJSON = toGeoJSON.gpx(doc as unknown as Document);
+    const geoJSON = toGeoJSON.gpx(doc);
 
     // Extract the first LineString from the GeoJSON
     // toGeoJSON returns a FeatureCollection
@@ -108,12 +118,12 @@ async function processRouteGPX(
 // Helper to build SQL filters from search params
 function getRouteFilters(searchParams: URLSearchParams): SQL[] {
   const filters: SQL[] = [];
-  const searchRegex = searchParams.get('search-regex');
+  const searchRegex = searchParams.get(API_PARAM_SEARCH_REGEX);
   if (searchRegex) {
     filters.push(sql`${routes.title} ~* ${searchRegex}`);
   }
 
-  const sourcesParam = searchParams.get('sources');
+  const sourcesParam = searchParams.get(API_PARAM_SOURCES);
   if (sourcesParam) {
     const sources = sourcesParam.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
     if (sources.length > 0) {
@@ -122,7 +132,7 @@ function getRouteFilters(searchParams: URLSearchParams): SQL[] {
     }
   }
 
-  const tagsParam = searchParams.get('tags');
+  const tagsParam = searchParams.get(API_PARAM_TAGS);
   if (tagsParam) {
     const tags = tagsParam.split(',').map((t) => t.trim()).filter((t) => t.length > 0);
     if (tags.length > 0) {
@@ -130,8 +140,8 @@ function getRouteFilters(searchParams: URLSearchParams): SQL[] {
     }
   }
 
-  const minDistanceParam = searchParams.get('minDistance');
-  const maxDistanceParam = searchParams.get('maxDistance');
+  const minDistanceParam = searchParams.get(API_PARAM_MIN_DISTANCE);
+  const maxDistanceParam = searchParams.get(API_PARAM_MAX_DISTANCE);
   if (minDistanceParam || maxDistanceParam) {
     const minDistance = minDistanceParam ? parseFloat(minDistanceParam) : 0;
     const maxDistance = maxDistanceParam ? parseFloat(maxDistanceParam) : Number.MAX_SAFE_INTEGER;
@@ -144,9 +154,9 @@ function getRouteFilters(searchParams: URLSearchParams): SQL[] {
 }
 
 // MVT Tile Endpoint
-router.get('/api/routes/tiles/:z/:x/:y', async (ctx: RouterContext<string>) => {
+router.get('/api/routes/tiles/:z/:x/:y', async (ctx) => {
   const { z, x, y } = ctx.params;
-  const filters = getRouteFilters(ctx.request.url.searchParams);
+  const filters = getRouteFilters(new URLSearchParams(ctx.querystring));
 
   // Calculate tile envelope
   // ST_TileEnvelope(z, x, y)
@@ -180,13 +190,13 @@ router.get('/api/routes/tiles/:z/:x/:y', async (ctx: RouterContext<string>) => {
 
   const result = await mvtQuery;
 
-  ctx.response.headers.set('Content-Type', 'application/vnd.mapbox-vector-tile');
-  ctx.response.body = result[0].mvt;
+  ctx.set('Content-Type', 'application/vnd.mapbox-vector-tile');
+  ctx.body = result[0].mvt;
 });
 
 // Optimized List Endpoint
-router.get('/api/routes', async (ctx: RouterContext<string>) => {
-  const filters = getRouteFilters(ctx.request.url.searchParams);
+router.get('/api/routes', async (ctx) => {
+  const filters = getRouteFilters(new URLSearchParams(ctx.querystring));
 
   let query = db
     .select({
@@ -199,7 +209,8 @@ router.get('/api/routes', async (ctx: RouterContext<string>) => {
       total_ascent: routes.totalAscent,
       total_descent: routes.totalDescent,
       bbox: routes.bboxCache,
-      // Exclude heavy fields: geojson, valhalla_segments, grades, distance
+      distance: routes.distanceMeters,
+      // Exclude heavy fields: geojson, valhalla_segments, grades
     })
     .from(routes)
     .$dynamic();
@@ -209,10 +220,10 @@ router.get('/api/routes', async (ctx: RouterContext<string>) => {
   }
 
   const result = await query.orderBy(sql`lower(${routes.title}) desc`);
-  ctx.response.body = result;
+  ctx.body = result;
 });
 
-router.get('/api/sources', async (ctx: RouterContext<string>) => {
+router.get('/api/sources', async (ctx) => {
   // Extract unique domains from source_url
   // Using regex to capture the domain part: https?://(www\.)?([^/]+)
   const result = await db.execute(
@@ -226,36 +237,31 @@ router.get('/api/sources', async (ctx: RouterContext<string>) => {
   );
 
   const sources = result.map((row) => row.source).filter((source) => source !== null);
-  ctx.response.body = sources;
+  ctx.body = sources;
 });
 
-router.get('/api/tags', async (ctx: RouterContext<string>) => {
+router.get('/api/tags', async (ctx) => {
   const result = await db.execute(
     sql`SELECT DISTINCT unnest(${routes.tags}) as tag FROM ${routes} ORDER BY tag`
   );
 
   const tags = result.map((row) => row.tag).filter((tag) => tag !== null);
-  ctx.response.body = tags;
+  ctx.body = tags;
 });
 
-router.post('/api/routes', async (ctx: RouterContext<string>) => {
-  const body = ctx.request.body;
-  if (body.type() !== 'json') {
-    ctx.response.status = 400;
-    return;
-  }
-  const { source_url, gpx_content, title, tags } = await body.json();
+router.post('/api/routes', async (ctx) => {
+  const { source_url, gpx_content, title, tags } = ctx.request.body as any;
 
   if (!source_url || !gpx_content) {
-    ctx.response.status = 400;
-    ctx.response.body = { error: 'Missing source_url or gpx_content' };
+    ctx.status = 400;
+    ctx.body = { error: 'Missing source_url or gpx_content' };
     return;
   }
 
   const processed = await processRouteGPX(gpx_content);
   if (!processed) {
-    ctx.response.status = 400;
-    ctx.response.body = { error: 'Invalid GPX content' };
+    ctx.status = 400;
+    ctx.body = { error: 'Invalid GPX content' };
     return;
   }
 
@@ -274,6 +280,7 @@ router.post('/api/routes', async (ctx: RouterContext<string>) => {
         totalAscent: processed.totalAscent,
         totalDescent: processed.totalDescent,
         valhallaSegments: processed.valhallaSegments,
+        distanceMeters: sql`ST_Length(ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)::geography)`,
       })
       .onConflictDoUpdate({
         target: routes.sourceUrl,
@@ -286,27 +293,28 @@ router.post('/api/routes', async (ctx: RouterContext<string>) => {
           totalAscent: sql`EXCLUDED.total_ascent`,
           totalDescent: sql`EXCLUDED.total_descent`,
           valhallaSegments: sql`EXCLUDED.valhalla_segments`,
+          distanceMeters: sql`ST_Length(EXCLUDED.geom::geography)`,
           createdAt: sql`CURRENT_TIMESTAMP`,
         },
       });
 
-    ctx.response.status = 200;
-    ctx.response.body = { success: true };
+    ctx.status = 200;
+    ctx.body = { success: true };
   } catch (e) {
     console.error(e);
-    ctx.response.status = 500;
-    ctx.response.body = { error: (e as Error).message };
+    ctx.status = 500;
+    ctx.body = { error: (e as Error).message };
   }
 });
 
-router.delete('/api/routes/:id', async (ctx: RouterContext<string>) => {
+router.delete('/api/routes/:id', async (ctx) => {
   const id = ctx.params.id;
   await db.delete(routes).where(eq(routes.id, parseInt(id)));
-  ctx.response.status = 200;
-  ctx.response.body = { success: true };
+  ctx.status = 200;
+  ctx.body = { success: true };
 });
 
-router.get('/api/routes/:id/download', async (ctx: RouterContext<string>) => {
+router.get('/api/routes/:id/download', async (ctx) => {
   const id = ctx.params.id;
   const result = await db
     .select({
@@ -318,19 +326,19 @@ router.get('/api/routes/:id/download', async (ctx: RouterContext<string>) => {
     .limit(1);
 
   if (result.length === 0) {
-    ctx.response.status = 404;
+    ctx.status = 404;
     return;
   }
 
   const route = result[0];
   const filename = (route.title || 'route').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.gpx';
 
-  ctx.response.headers.set('Content-Disposition', `attachment; filename="${filename}"`);
-  ctx.response.headers.set('Content-Type', 'application/gpx+xml');
-  ctx.response.body = route.gpx_content;
+  ctx.set('Content-Disposition', `attachment; filename="${filename}"`);
+  ctx.set('Content-Type', 'application/gpx+xml');
+  ctx.body = route.gpx_content;
 });
 
-router.get('/api/routes/:id', async (ctx: RouterContext<string>) => {
+router.get('/api/routes/:id', async (ctx) => {
   const id = ctx.params.id;
   const result = await db
     .select({
@@ -352,18 +360,17 @@ router.get('/api/routes/:id', async (ctx: RouterContext<string>) => {
     .where(eq(routes.id, parseInt(id)));
 
   if (result.length === 0) {
-    ctx.response.status = 404;
+    ctx.status = 404;
     return;
   }
 
-  ctx.response.status = 200;
-  ctx.response.body = result[0];
+  ctx.status = 200;
+  ctx.body = result[0];
 });
 
-router.put('/api/routes/:id', async (ctx: RouterContext<string>) => {
+router.put('/api/routes/:id', async (ctx) => {
   const id = ctx.params.id;
-  const body = ctx.request.body;
-  const { tags, is_completed } = await body.json();
+  const { tags, is_completed } = ctx.request.body as any;
 
   const updateData: Partial<typeof routes.$inferInsert> = {};
   if (tags !== undefined) updateData.tags = tags;
@@ -394,16 +401,16 @@ router.put('/api/routes/:id', async (ctx: RouterContext<string>) => {
     .where(eq(routes.id, parseInt(id)));
 
   if (result.length === 0) {
-    ctx.response.status = 404;
+    ctx.status = 404;
     return;
   }
 
-  ctx.response.status = 200;
-  ctx.response.body = result[0];
+  ctx.status = 200;
+  ctx.body = result[0];
 });
 
 // Recompute stats for a single route
-router.post('/api/routes/:id/recompute', async (ctx: RouterContext<string>) => {
+router.post('/api/routes/:id/recompute', async (ctx) => {
   const id = ctx.params.id;
 
   try {
@@ -415,23 +422,23 @@ router.post('/api/routes/:id/recompute', async (ctx: RouterContext<string>) => {
       .limit(1);
 
     if (result.length === 0) {
-      ctx.response.status = 404;
-      ctx.response.body = { error: 'Route not found' };
+      ctx.status = 404;
+      ctx.body = { error: 'Route not found' };
       return;
     }
 
     const gpx_content = result[0].gpx_content;
     if (!gpx_content) {
-      ctx.response.status = 400;
-      ctx.response.body = { error: 'No GPX content found' };
+      ctx.status = 400;
+      ctx.body = { error: 'No GPX content found' };
       return;
     }
 
     const processed = await processRouteGPX(gpx_content);
 
     if (!processed) {
-      ctx.response.status = 400;
-      ctx.response.body = { error: 'Failed to process GPX content' };
+      ctx.status = 400;
+      ctx.body = { error: 'Failed to process GPX content' };
       return;
     }
 
@@ -449,20 +456,21 @@ router.post('/api/routes/:id/recompute', async (ctx: RouterContext<string>) => {
         totalAscent: processed.totalAscent,
         totalDescent: processed.totalDescent,
         valhallaSegments: processed.valhallaSegments,
+        distanceMeters: sql`ST_Length(${geomSql}::geography)`,
       })
       .where(eq(routes.id, parseInt(id)));
 
-    ctx.response.status = 200;
-    ctx.response.body = { success: true };
+    ctx.status = 200;
+    ctx.body = { success: true };
   } catch (e) {
     console.error(e);
-    ctx.response.status = 500;
-    ctx.response.body = { error: (e as Error).message };
+    ctx.status = 500;
+    ctx.body = { error: (e as Error).message };
   }
 });
 
 // Recompute stats for all routes
-router.post('/api/routes/recompute', async (ctx: RouterContext<string>) => {
+router.post('/api/routes/recompute', async (ctx) => {
   try {
     // Fetch all routes with their GPX content
     const allRoutes = await db
@@ -498,6 +506,7 @@ router.post('/api/routes/recompute', async (ctx: RouterContext<string>) => {
             totalAscent: processed.totalAscent,
             totalDescent: processed.totalDescent,
             valhallaSegments: processed.valhallaSegments,
+            distanceMeters: sql`ST_Length(${geomSql}::geography)`,
           })
           .where(eq(routes.id, row.id));
 
@@ -508,8 +517,8 @@ router.post('/api/routes/recompute', async (ctx: RouterContext<string>) => {
       }
     }
 
-    ctx.response.status = 200;
-    ctx.response.body = {
+    ctx.status = 200;
+    ctx.body = {
       success: true,
       successCount,
       errorCount,
@@ -517,8 +526,8 @@ router.post('/api/routes/recompute', async (ctx: RouterContext<string>) => {
     };
   } catch (e) {
     console.error(e);
-    ctx.response.status = 500;
-    ctx.response.body = { error: (e as Error).message };
+    ctx.status = 500;
+    ctx.body = { error: (e as Error).message };
   }
 });
 
@@ -527,25 +536,13 @@ app.use(async (ctx, next) => {
     await next();
   } catch (err) {
     console.error(err);
-    ctx.response.status = 500;
-    ctx.response.body = { msg: (err as Error).message };
+    ctx.status = 500;
+    ctx.body = { msg: (err as Error).message };
   }
 });
 
 app.use(router.routes());
 app.use(router.allowedMethods());
-
-// Serve static frontend files
-app.use(async (ctx, next) => {
-  try {
-    await ctx.send({
-      root: `${Deno.cwd()}/frontend/dist`,
-      index: 'index.html',
-    });
-  } catch {
-    await next();
-  }
-});
 
 console.log('Connecting to DB...');
 // Retry logic for DB connection
@@ -562,4 +559,4 @@ while (!connected) {
 }
 
 console.log('Server running on http://localhost:8070');
-await app.listen({ port: 8070, hostname: '0.0.0.0' });
+app.listen(8070, '0.0.0.0');
