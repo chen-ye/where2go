@@ -165,13 +165,13 @@ router.get('/api/routes/tiles/:z/:x/:y', async (ctx) => {
   // MVT query
   const mvtQuery = db
     .select({
-      mvt: sql`ST_AsMVT(tile, 'routes', 4096, 'geom')`,
+      mvt: sql`ST_AsMVT(tile, 'routes', 4096, 'geom', 'id')`,
     })
     .from(
       sql`
       (
         SELECT
-          ${routes.id},
+          ${routes.id} as id,
           ${routes.title},
           ${routes.isCompleted},
           ST_AsMVTGeom(
@@ -190,6 +190,8 @@ router.get('/api/routes/tiles/:z/:x/:y', async (ctx) => {
 
   const result = await mvtQuery;
 
+  // Cache for 1 hour
+  ctx.set('Cache-Control', 'public, max-age=3600');
   ctx.set('Content-Type', 'application/vnd.mapbox-vector-tile');
   ctx.body = result[0].mvt;
 });

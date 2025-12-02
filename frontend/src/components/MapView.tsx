@@ -24,6 +24,9 @@ import type { Feature, Geometry } from "geojson";
 import type { MapRef } from "react-map-gl/maplibre";
 import { MVTLayer } from "@deck.gl/geo-layers";
 import type { StyleSpecification, LayerSpecification, SourceSpecification } from "maplibre-gl";
+import { MapLibreRouteResults } from "./MapLibreRouteResults";
+
+const USE_DECK_MVT = false;
 
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
@@ -174,6 +177,51 @@ export const MapView = forwardRef<MapRef, MapViewProps>(({
     });
   }, [selectedRouteId, routes, selectionSource, ref]);
 
+  // Manage feature states for MapLibre layer
+
+  // Ref to track previous IDs for clearing feature state
+  const prevIds = useMemo(() => ({ selected: null as number | null, hovered: null as number | null }), []);
+
+  useEffect(() => {
+    if (USE_DECK_MVT) return;
+    if (!ref || typeof ref === 'function' || !ref.current) return;
+    const map = ref.current;
+
+    // Update selected state
+    if (prevIds.selected !== selectedRouteId) {
+      if (prevIds.selected) {
+        map.setFeatureState(
+          { source: 'routes-source', sourceLayer: 'routes', id: prevIds.selected },
+          { selected: false }
+        );
+      }
+      if (selectedRouteId) {
+        map.setFeatureState(
+          { source: 'routes-source', sourceLayer: 'routes', id: selectedRouteId },
+          { selected: true }
+        );
+      }
+      prevIds.selected = selectedRouteId;
+    }
+
+    // Update hovered state
+    if (prevIds.hovered !== hoveredRouteId) {
+      if (prevIds.hovered) {
+        map.setFeatureState(
+          { source: 'routes-source', sourceLayer: 'routes', id: prevIds.hovered },
+          { hover: false }
+        );
+      }
+      if (hoveredRouteId) {
+        map.setFeatureState(
+          { source: 'routes-source', sourceLayer: 'routes', id: hoveredRouteId },
+          { hover: true }
+        );
+      }
+      prevIds.hovered = hoveredRouteId;
+    }
+  }, [selectedRouteId, hoveredRouteId, ref, prevIds]);
+
   const activeOverlaysConfigs = useMemo(() => {
     return OVERLAYS.filter((o) => activeOverlayIds.has(o.id));
   }, [activeOverlayIds]);
@@ -185,6 +233,8 @@ export const MapView = forwardRef<MapRef, MapViewProps>(({
   // const [hoverInfo, setHoverInfo] = useState<PickingInfo<Feature<Geometry, {}>>>();
 
 
+
+  const [tooltipInfo, setTooltipInfo] = useState<{ x: number; y: number; content: string } | null>(null);
 
   const selectedRouteData = useMemo(() => {
     return [routeData];
@@ -223,64 +273,69 @@ export const MapView = forwardRef<MapRef, MapViewProps>(({
     }
 
     // Main routes layer (MVT)
-    layers.push(
-      new MVTLayer({
-        id: "routes-mvt",
-        data: `/api/routes/tiles/{z}/{x}/{y}?${filterParams}`,
-        minZoom: 0,
-        maxZoom: 23,
-        getLineColor: (f: Feature) => {
-          const props = f.properties as any;
-          const isSelected = props.id === selectedRouteId;
-          const isHovered = props.id === hoveredRouteId;
-          const isCompleted = props.is_completed;
+    if (USE_DECK_MVT) {
+      layers.push(
+        new MVTLayer({
+          id: "routes-mvt",
+          data: `/api/routes/tiles/{z}/{x}/{y}?${filterParams}`,
+          minZoom: 0,
+          maxZoom: 23,
+          getLineColor: (f: Feature) => {
+            const props = f.properties as any;
+            const routeId = f.id ?? props.id;
+            const isSelected = routeId === selectedRouteId;
+            const isHovered = routeId === hoveredRouteId;
+            const isCompleted = props.is_completed;
 
-          if (isSelected) {
-            return [0, 0, 0, 0];
-          }
+            if (isSelected) {
+              return [0, 0, 0, 0];
+            }
 
-          return isCompleted
-            ? [...getOpenPropsRgb("--purple-6"), isHovered ? 255 : Math.floor(routeOpacity.completed * 2.55)]
-            : [...getOpenPropsRgb("--blue-7"), isHovered ? 255 : Math.floor(routeOpacity.incomplete * 2.55)];
-        },
-        getLineWidth: (f: Feature) => {
-           const props = f.properties as any;
-           return props.id === selectedRouteId ? 60 : 20;
-        },
-        lineWidthUnits: "meters",
-        lineWidthMinPixels: 1,
-        pickable: true,
-        binary: false,
-        onClick: (info) => {
-          if (info.object) {
-            onSelectRoute(info.object.properties.id, 'map');
-          }
-        },
-        onHover: (info) => {
-          const hoveredId = info.object?.properties?.id ?? null;
-          if (hoveredId !== hoveredRouteId) {
-             onHoverRoute(hoveredId);
-          }
-
-          // Only update hoveredLocation if hovering over the selected route
-          if (info.object && info.coordinate && hoveredId === selectedRouteId) {
-             onHover({ lat: info.coordinate[1], lon: info.coordinate[0] });
-          } else if (hoveredId !== selectedRouteId) {
-            onHover(null);
-          }
-        },
-        updateTriggers: {
-          getLineColor: [selectedRouteId, routeOpacity, hoveredRouteId],
-          getLineWidth: [selectedRouteId],
-        },
-        loadersOptions: {
-          mvt: {
-            workerUrl: null,
-            shape: 'geojson',
+            return isCompleted
+              ? [...getOpenPropsRgb("--purple-6"), isHovered ? 255 : Math.floor(routeOpacity.completed * 2.55)]
+              : [...getOpenPropsRgb("--blue-7"), isHovered ? 255 : Math.floor(routeOpacity.incomplete * 2.55)];
           },
-        },
-      })
-    );
+          getLineWidth: (f: Feature) => {
+             const props = f.properties as any;
+             const routeId = f.id ?? props.id;
+             return routeId === selectedRouteId ? 60 : 20;
+          },
+          lineWidthUnits: "meters",
+          lineWidthMinPixels: 1,
+          pickable: true,
+          binary: false,
+          onClick: (info) => {
+            if (info.object) {
+              const routeId = info.object.id ?? info.object.properties.id;
+              onSelectRoute(routeId as number, 'map');
+            }
+          },
+          onHover: (info) => {
+            const routeId = info.object?.id ?? info.object?.properties?.id ?? null;
+            if (routeId !== hoveredRouteId) {
+               onHoverRoute(routeId as number);
+            }
+
+            // Only update hoveredLocation if hovering over the selected route
+            if (info.object && info.coordinate && routeId === selectedRouteId) {
+               onHover({ lat: info.coordinate[1], lon: info.coordinate[0] });
+            } else if (routeId !== selectedRouteId) {
+              onHover(null);
+            }
+          },
+          updateTriggers: {
+            getLineColor: [selectedRouteId, routeOpacity, hoveredRouteId],
+            getLineWidth: [selectedRouteId],
+          },
+          loadersOptions: {
+            mvt: {
+              workerUrl: null,
+              shape: 'geojson',
+            },
+          },
+        })
+      );
+    }
 
     layers.push(
       new ScatterplotLayer({
@@ -309,7 +364,8 @@ export const MapView = forwardRef<MapRef, MapViewProps>(({
     displayGradeOnMap,
     routeOpacity,
     selectedRouteData,
-    onSelectRoute // Add onSelectRoute dependency
+    onSelectRoute, // Add onSelectRoute dependency
+    USE_DECK_MVT // Add USE_DECK_MVT dependency
   ]);
 
   const currentBaseConfig = useMemo(() => {
@@ -345,16 +401,51 @@ export const MapView = forwardRef<MapRef, MapViewProps>(({
         }}
         onClick={useCallback(
           (e: MapLayerMouseEvent) => {
+            if (USE_DECK_MVT) return;
             const feature = e.features?.[0];
             if (feature) {
-              onSelectRoute(feature.properties?.id, 'map');
+              const routeId = feature.id ?? feature.properties?.id;
+              onSelectRoute(routeId as number, 'map');
             } else {
               onSelectRoute(null, 'map');
             }
           },
           [onSelectRoute]
         )}
-        interactiveLayerIds={["route-line-hitbox"]}
+        onMouseMove={useCallback(
+          (e: MapLayerMouseEvent) => {
+            if (USE_DECK_MVT) return;
+            const feature = e.features?.[0];
+            if (feature) {
+              const routeId = feature.id ?? feature.properties?.id;
+              onHoverRoute(routeId as number);
+
+              // Set tooltip info
+              if (feature.properties?.title) {
+                setTooltipInfo({
+                  x: e.point.x,
+                  y: e.point.y,
+                  content: feature.properties.title
+                });
+              } else {
+                setTooltipInfo(null);
+              }
+
+              // Update hovered location if needed, similar to Deck.gl logic
+              if (routeId === selectedRouteId) {
+                onHover({ lat: e.lngLat.lat, lon: e.lngLat.lng });
+              } else {
+                onHover(null);
+              }
+            } else {
+              onHoverRoute(null);
+              onHover(null);
+              setTooltipInfo(null);
+            }
+          },
+          [onHoverRoute, onHover, selectedRouteId]
+        )}
+        interactiveLayerIds={["route-line-hitbox", "routes-line", "routes-hitbox"]}
       >
         <GeolocateControl position="top-right" />
         <NavigationControl
@@ -399,6 +490,13 @@ export const MapView = forwardRef<MapRef, MapViewProps>(({
           <OverlayRenderer key={config.id} config={config} beforeId={orderedActiveOverlayBottomIds[orderedActiveOverlayBottomIds.indexOf(config.id) - 1] ?? 'bottom'}/>
         ))}
 
+        {!USE_DECK_MVT && (
+          <MapLibreRouteResults
+            filterParams={filterParams}
+            routeOpacity={routeOpacity}
+          />
+        )}
+
         <DeckGLOverlay
           layers={deckGLLayers}
           pickingRadius={10}
@@ -411,6 +509,21 @@ export const MapView = forwardRef<MapRef, MapViewProps>(({
             []
           )}
           />
+
+        {tooltipInfo && (
+          <div
+            className="deck-tooltip"
+            style={{
+              position: 'absolute',
+              left: tooltipInfo.x,
+              top: tooltipInfo.y,
+              transform: 'translate(-50%, -100%)',
+              marginTop: '-10px',
+            }}
+          >
+            {tooltipInfo.content}
+          </div>
+        )}
       </Map>
     </div>
   );
