@@ -32,7 +32,6 @@ const margin = { top: 20, right: 20, bottom: 30, left: 50 };
 // Static chart content - memoized separately to avoid re-renders
 const StaticChart = memo(({
   data,
-  width,
   height,
   xScale,
   yScale,

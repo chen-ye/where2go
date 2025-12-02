@@ -1,4 +1,4 @@
-import { Filter, Globe, Plus, Minus, Tag as TagIcon } from "lucide-react";
+import { Filter, Plus, Minus } from "lucide-react";
 import "./FilterPanel.css";
 import { GenericPopover } from "./ui/GenericPopover";
 import { Tag } from "./ui/Tag";

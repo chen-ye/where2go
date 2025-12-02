@@ -15,7 +15,6 @@ import {
 import { SearchResultsView } from "./components/SearchResultsView.tsx";
 import { RouteDetailsView } from "./components/RouteDetailsView.tsx";
 import { Toaster } from "./components/ui/Toaster";
-import { toast } from "./components/ui/use-toast";
 import {
   useUpdateRouteTags,
   useUpdateRouteCompletion,
