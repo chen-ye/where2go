@@ -4,7 +4,9 @@
   "description": "",
   "main": "content.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "vite build",
+    "watch": "vite build --watch",
+    "test": "echo \"No tests for extension\" && exit 0",
     "check": "tsc --noEmit"
   },
   "keywords": [],
@@ -12,7 +14,7 @@
   "license": "ISC",
   "type": "module",
   "devDependencies": {
-    "@types/chrome": "^0.1.31",
+    "@types/chrome": "^0.1.32",
     "typescript": "^5.9.3"
   }
 }

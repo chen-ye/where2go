@@ -1,0 +1,32 @@
+[
+  {
+    "id": 772,
+    "title": "Test Route",
+    "distance": 50000,
+    "total_ascent": 500,
+    "total_descent": 450,
+    "is_completed": false,
+    "tags": ["test", "gravel"],
+    "source_url": "https://example.com/route/1"
+  },
+  {
+    "id": 1,
+    "title": "Chilly Hilly",
+    "distance": 30000,
+    "total_ascent": 300,
+    "total_descent": 300,
+    "is_completed": true,
+    "tags": ["road", "collection"],
+    "source_url": "https://ridewithgps.com/routes/123"
+  },
+  {
+    "id": 2,
+    "title": "Dirty Kanza",
+    "distance": 100000,
+    "total_ascent": 1000,
+    "total_descent": 1000,
+    "is_completed": false,
+    "tags": ["gravel", "imported", "collection"],
+    "source_url": "https://strava.com/routes/456"
+  }
+]

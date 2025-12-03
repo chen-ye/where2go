@@ -2,9 +2,10 @@
   "name": "where2go-userscript",
   "version": "1.0.0",
   "description": "",
-  "main": "where2go-clipper.user.js",
+  "main": "dist/where2go.user.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "echo \"No tests for userscript\" && exit 0",
+    "build": "vite build",
     "check": "tsc --noEmit"
   },
   "keywords": [],

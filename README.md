@@ -178,25 +178,76 @@ The project consists of three main components:
 - **Framework**: Koa (HTTP server)
 - **Database**: PostgreSQL with PostGIS extension
 - **ORM**: Drizzle ORM
-- **Features**:
-  - RESTful API for route management
-  - GPX parsing and GeoJSON conversion
-  - Elevation statistics calculation
-  - PostGIS spatial queries for route geometry
+- **Testing**: Vitest + Supertest
+
+**Features**:
+
+- **Route Management**: Full CRUD operations for routes
+- **GPX Processing**: Parse GPX files and convert to GeoJSON LineStrings
+- **Elevation Analysis**: Calculate total ascent/descent and per-segment grades
+- **Valhalla Integration**: Fetch road surface data for routes
+- **Spatial Operations**: PostGIS geometry queries (intersections, bounding
+  boxes)
+- **MVT Tiles**: Generate MapBox Vector Tiles with feature-state support
+- **Multi-Criteria Filtering**: Search by regex, sources, tags, and distance
+  range
+- **Performance**: Tile caching (1-hour), bbox pre-computation, spatial indexing
+
+**API Endpoints**:
+
+- `GET /api/routes` - List all routes (filtered)
+- `GET /api/routes/:id` - Get route details with GeoJSON
+- `POST /api/routes` - Create route from GPX
+- `PUT /api/routes/:id` - Update route
+- `DELETE /api/routes/:id` - Delete route
+- `GET /api/routes/tiles/:z/:x/:y` - MVT tiles
+- `GET /api/sources` - List unique sources
+- `GET /api/tags` - List unique tags
+- `POST /api/routes/recompute-all` - Recompute all route stats
 
 ### Frontend (`/frontend`)
 
 - **Framework**: React 19 with TypeScript
 - **Build Tool**: Vite
 - **Styling**: Open Props (CSS custom properties)
-- **Map**: MapLibre GL with Deck.gl
-- **Charts**: Visx for elevation profiles
+- **Map**: MapLibre GL with Deck.gl for 3D layers
+- **Charts**: Visx for elevation and surface analysis
 - **UI Components**: Radix UI primitives
-- **Features**:
-  - Interactive map with route layer visualization
-  - Elevation profile charts with tooltips
-  - Route filtering and tagging
-  - Responsive design
+- **Testing**: Vitest + React Testing Library
+
+**Features**:
+
+- **Interactive Map**:
+  - Vector tile route visualization with dynamic styling
+  - Click/hover interactions with tooltips
+  - 3D elevation rendering for selected routes
+  - Feature-state based styling (no re-renders on selection)
+- **Route Visualization**:
+  - Color-coded by completion status
+  - Grade-based coloring option
+  - Adjustable opacity per route type
+  - Auto-zoom to selected route bounds
+- **Data Analysis**:
+  - Interactive elevation profile charts
+  - Road surface type analysis
+  - Real-time stats (distance, elevation, surface breakdown)
+- **Route Management**:
+  - Tag creation and management
+  - Completion status tracking
+  - Route deletion with confirmation
+  - Batch recomputation
+- **Filtering**:
+  - Full-text search (regex)
+  - Filter by source domains
+  - Filter by tags (multiple selection)
+  - Distance range slider
+- **Layer Control**:
+  - Multiple basemap options
+  - Strava heatmap overlays
+  - Custom layer opacity controls
+- **State Persistence**:
+  - All filters/view state in URL
+  - Shareable links with complete state
 
 ### Browser Extension (`/extension`)
 
@@ -232,6 +283,35 @@ cd backend
 yarn install
 yarn dev
 ```
+
+#### Testing
+
+**Backend Tests**:
+
+```bash
+yarn workspace where2go-backend test        # Run tests once
+yarn workspace where2go-backend test --watch # Watch mode
+```
+
+**Frontend Tests**:
+
+```bash
+yarn workspace where2go-frontend test       # Run tests once
+yarn workspace where2go-frontend test --watch # Watch mode
+```
+
+**Update Test Data**:
+
+```bash
+yarn update-testdata  # Fetch latest data from API
+```
+
+Test data is organized by endpoint in `testdata/`:
+
+- `routes-list.json` - All routes
+- `routes/{id}.json` - Individual route details
+- `sources.json` - Unique sources
+- `tags.json` - Unique tags
 
 #### Code Quality
 

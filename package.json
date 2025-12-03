@@ -5,17 +5,23 @@
   "type": "module",
   "packageManager": "yarn@4.10.3",
   "scripts": {
-    "lint": "biome lint .",
-    "format": "biome format --write .",
+    "test": "yarn workspaces foreach -A run test",
+    "test:coverage": "yarn workspaces foreach -A run test --coverage",
+    "test:e2e": "playwright test",
+    "lint": "yarn workspaces foreach -A run lint",
     "format:check": "biome format .",
     "check": "biome check --write .",
     "generate:icons": "./scripts/generate-icons.sh",
-    "generate:style-json-schema": "node ./scripts/generate-style-json-schema.ts"
+    "generate:style-json-schema": "node ./scripts/generate-style-json-schema.ts",
+    "update-testdata": "tsx scripts/update-testdata.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
-    "@types/chrome": "^0.1.31",
+    "@playwright/test": "^1.57.0",
+    "@types/chrome": "^0.1.32",
     "@types/tampermonkey": "^5.0.5",
+    "@vitest/coverage-v8": "^4.0.15",
+    "dotenv": "^17.2.3",
     "ts-json-schema-generator": "^2.4.0",
     "typescript": "^5.9.3"
   },

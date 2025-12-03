@@ -244,33 +244,28 @@ export const MapView = forwardRef<MapRef, MapViewProps>(({
     const layers: DeckLayer[] = [];
 
     // Selected route layer (PathLayer)
-    if (
-      selectedRouteId &&
-      routeData &&
-      routeData.length > 1
-    ) {
-      layers.push(
-        new PathLayer<RouteDataPoint[]>({
-          id: "selected-route",
-          data: selectedRouteData,
-          getPath: (d) => { return d.flatMap((p) => [p.lon, p.lat, p.elevation + elvOffset])},
-          getColor: (d) => {
-            return displayGradeOnMap ? ([...d, d.at(-1)] as RouteDataPoint[]).map((p) => hexToRgb(getGradeColor(p.grade))) : [...getOpenPropsRgb("--orange-6"), Math.floor(routeOpacity.selected * 2.55)];
-          },
-          getWidth: 40,
-          widthUnits: "meters",
-          capRounded: true,
-          jointRounded: true,
-          pickable: false,
-          widthMinPixels: 2,
-          updateTriggers: {
-            getPath: [elvOffset],
-            getColor: [displayGradeOnMap, routeOpacity],
-          },
-          _pathType: 'open',
-        })
-      );
-    }
+    const hasSelectedRoute = selectedRouteId && routeData && routeData.length > 1;
+    layers.push(
+      new PathLayer<RouteDataPoint[]>({
+        id: "selected-route",
+        data: hasSelectedRoute ? selectedRouteData : [],
+        getPath: (d) => { return d.flatMap((p) => [p.lon, p.lat, p.elevation + elvOffset])},
+        getColor: (d) => {
+          return displayGradeOnMap ? ([...d, d.at(-1)] as RouteDataPoint[]).map((p) => hexToRgb(getGradeColor(p.grade))) : [...getOpenPropsRgb("--orange-6"), Math.floor(routeOpacity.selected * 2.55)];
+        },
+        getWidth: 40,
+        widthUnits: "meters",
+        capRounded: true,
+        jointRounded: true,
+        pickable: false,
+        widthMinPixels: 2,
+        updateTriggers: {
+          getPath: [elvOffset],
+          getColor: [displayGradeOnMap, routeOpacity],
+        },
+        _pathType: 'open',
+      })
+    );
 
     // Main routes layer (MVT)
     if (USE_DECK_MVT) {
@@ -336,6 +331,22 @@ export const MapView = forwardRef<MapRef, MapViewProps>(({
         })
       );
     }
+
+    layers.push(
+      new ScatterplotLayer({
+        id: "selected-route-point",
+        data: hoveredLocation ? [hoveredLocation] : [],
+        getPosition: (d) => [d.lon, d.lat],
+        getFillColor: getOpenPropsRgb("--gray-0"),
+        getLineColor: getOpenPropsRgb("--gray-9"),
+        stroked: true,
+        getLineWidth: 2,
+        lineWidthUnits: "pixels",
+        getRadius: 10,
+        radiusUnits: "pixels",
+        pickable: false,
+      })
+    );
 
     layers.push(
       new ScatterplotLayer({

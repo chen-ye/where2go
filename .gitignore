@@ -26,3 +26,8 @@ dist-ssr
 *.sw?
 
 .yarn/install-state.gz
+
+playwright-report
+backend/coverage
+frontend/coverage
+test-results
