@@ -29,9 +29,16 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version-file: .node-version
+          cache: ''
 
       - name: Enable Corepack
         run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: 'yarn'
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -70,9 +77,16 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version-file: .node-version
+          cache: ''
 
       - name: Enable Corepack
         run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: 'yarn'
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path

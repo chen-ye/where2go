@@ -15,13 +15,18 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version-file: .node-version
-          cache: 'yarn'
+          cache: ''
       - name: Enable Corepack
         run: corepack enable
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: 'yarn'
       - name: Install dependencies
         run: yarn install --immutable
       - name: Lint
-        run: yarn lint
+        run: yarn lssint
       - name: Check Formatting
         run: yarn format:check
 
@@ -30,9 +35,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version-file: .node-version
+          cache: ''
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
           cache: 'yarn'
       - name: Install dependencies
         run: yarn install --immutable
@@ -44,9 +56,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version-file: .node-version
+          cache: ''
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
           cache: 'yarn'
       - name: Install dependencies
         run: yarn install --immutable
@@ -78,9 +97,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version-file: .node-version
+          cache: ''
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
           cache: 'yarn'
       - name: Install dependencies
         run: yarn install --immutable
@@ -94,9 +120,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version-file: .node-version
+          cache: ''
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
           cache: 'yarn'
       - name: Install dependencies
         run: yarn install --immutable
