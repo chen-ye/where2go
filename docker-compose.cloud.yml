@@ -1,0 +1,30 @@
+
+services:
+  app:
+    image: node:24-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+    ports:
+      - "8070:8070"
+    environment:
+      PGHOST: ${PGHOST:-db}
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+      PGDATABASE: ${PGDATABASE}
+      PGPORT: ${PGPORT:-5432}
+      PGSSLMODE: prefer
+    command: sh -c "corepack enable && yarn install && yarn workspace where2go-backend dev"
+
+  frontend-dev:
+    image: node:24-alpine
+    working_dir: /where2go/frontend
+    volumes:
+      - ./:/where2go
+    ports:
+      - "5174:5174"
+    environment:
+      VITE_API_URL: http://app:8070
+    command: sh -c "corepack enable && yarn install && yarn dev"
+    depends_on:
+      - app

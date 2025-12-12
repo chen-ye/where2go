@@ -62,7 +62,7 @@
                 return true; // Keep channel open for async response
             },
             fetch_route_gpx: () => {
-                processGpxUrl(request.gpxUrl, request.pageUrl)
+                processGpxUrl(request.gpxUrl, request.pageUrl, request.tags)
                     .then(data => sendResponse({ success: true, data }))
                     .catch(e => sendResponse({ success: false, error: e.message }));
                 return true; // Keep channel open for async response
@@ -79,6 +79,7 @@
      * @property {string} id
      * @property {URL} gpxUrl
      * @property {URL} pageUrl
+     * @property {string[]} [tags]
      */
 
     /**
@@ -97,6 +98,41 @@
         const autoPagination = settings.autoPagination;
 
         const uniqueRoutes = new Map();
+
+        // Check for RideWithGPS Club Routes JSON override
+        if (provider.key === 'ridewithgps') {
+            const clubMatch = window.location.href.match(/\/clubs\/(\d+).*\/routes/);
+            if (clubMatch) {
+                const clubId = clubMatch[1];
+                console.log(`Detected RWGPS Club Page. ID: ${clubId}. Fetching JSON...`);
+                try {
+                    const jsonUrl = `https://ridewithgps.com/clubs/${clubId}/table_routes.json`;
+                    const res = await fetch(jsonUrl);
+                    const data = await res.json();
+
+                    return data.map(item => {
+                        // Construct Page URL with privacy code if present
+                        const pageUrl = new URL(`https://ridewithgps.com/routes/${item.id}`);
+                        if (item.privacy_code) {
+                            pageUrl.searchParams.set('privacy_code', item.privacy_code);
+                        }
+
+                        // Generate GPX URL using provider logic
+                        const gpxUrl = provider.getGpxUrl(item.id, pageUrl);
+
+                        return {
+                            id: item.id.toString(),
+                            gpxUrl: gpxUrl,
+                            pageUrl: pageUrl,
+                            tags: item.tag_names || []
+                        };
+                    });
+                } catch (e) {
+                    console.error("Failed to fetch club routes JSON", e);
+                    // Fallback to normal scan if JSON fails
+                }
+            }
+        }
 
         // Helper to add routes from a document/context
         const addRoutesFromContext = (doc, baseUrl) => {
@@ -240,7 +276,7 @@
      * @param {URL|string} sourceUrl
      * @returns {Promise<ProcessedGpx>}
      */
-    async function processGpxUrl(gpxUrl, sourceUrl) {
+    async function processGpxUrl(gpxUrl, sourceUrl, tags = []) {
         console.log("Fetching GPX from:", gpxUrl);
 
         const res = await fetchWithBackoff(gpxUrl);
@@ -262,7 +298,8 @@
             source_url: sourceUrl,
             title: title,
             gpx_content: gpxContent,
-            tags: ["imported", "collection"]
+
+            tags: [...new Set(["imported", "collection", ...tags])]
         };
     }
 })();

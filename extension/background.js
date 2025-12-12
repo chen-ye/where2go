@@ -68,7 +68,8 @@ async function startBatch(tabId) {
                 const gpxData = await sendMessageToTab(tabId, {
                     action: "fetch_route_gpx",
                     gpxUrl: route.gpxUrl,
-                    pageUrl: route.pageUrl
+                    pageUrl: route.pageUrl,
+                    tags: route.tags
                 });
 
                 if (!gpxData.success) throw new Error(gpxData.error);
@@ -136,7 +137,19 @@ async function saveRouteToBackend(config, data) {
         body: JSON.stringify(data)
     });
 
-    if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+    if (!res.ok) {
+        const text = await res.text();
+        console.error("Backend Error:", text);
+        try {
+           const json = JSON.parse(text);
+           if (json.error) {
+             throw new Error(`Save failed: ${res.status} - ${json.error}`);
+           }
+        } catch (e) {
+          // ignore
+        }
+       throw new Error(`Save failed: ${res.status} - ${text}`);
+    }
 }
 
 // Helpers

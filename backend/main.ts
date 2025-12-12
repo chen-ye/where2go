@@ -3,19 +3,16 @@ import Router from '@koa/router';
 import cors from '@koa/cors';
 import bodyParser from 'koa-bodyparser';
 import { db, initDb } from './db.js';
-import { JSDOM } from 'jsdom';
-import toGeoJSON from '@mapbox/togeojson';
-import type { LineString, MultiLineString } from 'geojson';
+import {
+  gpxToGeoJSON,
+  calculateElevationStats,
+  processRouteGPX,
+  getComputedRouteValues,
+  getRouteFilters,
+} from './route-helpers.js';
+
 import { routes } from './schema.js';
 import { eq, sql, and, type SQL } from 'drizzle-orm';
-import { getRouteAttributes, type ValhallaSegment } from './valhalla.ts';
-import {
-  API_PARAM_SEARCH_REGEX,
-  API_PARAM_SOURCES,
-  API_PARAM_TAGS,
-  API_PARAM_MIN_DISTANCE,
-  API_PARAM_MAX_DISTANCE,
-} from 'where2go-shared/api-constants.ts';
 
 const app = new Koa();
 const router = new Router();
@@ -29,136 +26,14 @@ app.use(
   })
 );
 
-// Helper to parse GPX to GeoJSON LineString
-function gpxToGeoJSON(gpxContent: string): LineString | null {
-  try {
-    const dom = new JSDOM(gpxContent, { contentType: 'text/xml' });
-    const doc = dom.window.document;
 
-    if (!doc) {
-      console.error('Failed to parse XML');
-      return null;
-    }
 
-    // Convert GPX to GeoJSON using @mapbox/togeojson
-    const geoJSON = toGeoJSON.gpx(doc);
-
-    // Extract the first LineString from the GeoJSON
-    // toGeoJSON returns a FeatureCollection
-    if (geoJSON.type === 'FeatureCollection' && geoJSON.features.length > 0) {
-      for (const feature of geoJSON.features) {
-        if (feature.geometry.type === 'LineString') {
-          return feature.geometry as LineString;
-        }
-        // Handle MultiLineString by taking the first line
-        if (feature.geometry.type === 'MultiLineString') {
-          const coords = (feature.geometry as MultiLineString).coordinates[0];
-          return {
-            type: 'LineString',
-            coordinates: coords,
-          };
-        }
-      }
-    }
-
-    console.error('No LineString found in GPX');
-    return null;
-  } catch (e) {
-    console.error('Error parsing GPX', e);
-    return null;
-  }
-}
-
-// Helper to calculate elevation gain/loss from coordinates
-function calculateElevationStats(
-  coordinates: number[][],
-): { totalAscent: number; totalDescent: number } {
-  let totalAscent = 0;
-  let totalDescent = 0;
-
-  for (let i = 1; i < coordinates.length; i++) {
-    const prevEle = coordinates[i - 1][2]; // elevation is 3rd coordinate
-    const currEle = coordinates[i][2];
-
-    if (prevEle !== undefined && currEle !== undefined) {
-      const diff = currEle - prevEle;
-      if (diff > 0) {
-        totalAscent += diff;
-      } else if (diff < 0) {
-        totalDescent += Math.abs(diff);
-      }
-    }
-  }
-
-  return {
-    totalAscent: totalAscent,
-    totalDescent: totalDescent,
-  };
-}
-
-// Helper to process GPX content and return computed values
-async function processRouteGPX(
-  gpxContent: string,
-): Promise<{
-  geojson: LineString;
-  totalAscent: number;
-  totalDescent: number;
-  valhallaSegments: ValhallaSegment[] | null;
-} | null> {
-  const geojson = gpxToGeoJSON(gpxContent);
-  if (!geojson) {
-    return null;
-  }
-
-  const elevationStats = calculateElevationStats(geojson.coordinates);
-  const valhallaSegments = await getRouteAttributes(geojson.coordinates);
-
-  return {
-    geojson,
-    totalAscent: elevationStats.totalAscent,
-    totalDescent: elevationStats.totalDescent,
-    valhallaSegments,
-  };
-}
-
-// Helper to build SQL filters from search params
-function getRouteFilters(searchParams: URLSearchParams): SQL[] {
-  const filters: SQL[] = [];
-  const searchRegex = searchParams.get(API_PARAM_SEARCH_REGEX);
-  if (searchRegex) {
-    filters.push(sql`${routes.title} ~* ${searchRegex}`);
-  }
-
-  const sourcesParam = searchParams.get(API_PARAM_SOURCES);
-  if (sourcesParam) {
-    const sources = sourcesParam.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
-    if (sources.length > 0) {
-      const domainsPattern = sources.map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-      filters.push(sql`${routes.sourceUrl} ~* ${`^https?://(www\\.)?(${domainsPattern})`}`);
-    }
-  }
-
-  const tagsParam = searchParams.get(API_PARAM_TAGS);
-  if (tagsParam) {
-    const tags = tagsParam.split(',').map((t) => t.trim()).filter((t) => t.length > 0);
-    if (tags.length > 0) {
-      filters.push(sql`${routes.tags} @> ${tags}`);
-    }
-  }
-
-  const minDistanceParam = searchParams.get(API_PARAM_MIN_DISTANCE);
-  const maxDistanceParam = searchParams.get(API_PARAM_MAX_DISTANCE);
-  if (minDistanceParam || maxDistanceParam) {
-    const minDistance = minDistanceParam ? parseFloat(minDistanceParam) : 0;
-    const maxDistance = maxDistanceParam ? parseFloat(maxDistanceParam) : Number.MAX_SAFE_INTEGER;
-    filters.push(
-      sql`ST_Length(${routes.geom}::geography) >= ${minDistance} AND ST_Length(${routes.geom}::geography) <= ${maxDistance}`
-    );
-  }
-
-  return filters;
-}
-
+/**
+ * GET /api/routes/tiles/:z/:x/:y
+ * Serves Mapbox Vector Tiles (MVT) for routes.
+ * Query params are used to filter routes included in the tile.
+ * Caches tiles for 1 hour.
+ */
 // MVT Tile Endpoint
 router.get('/api/routes/tiles/:z/:x/:y', async (ctx) => {
   const { z, x, y } = ctx.params;
@@ -202,6 +77,11 @@ router.get('/api/routes/tiles/:z/:x/:y', async (ctx) => {
   ctx.body = result[0].mvt;
 });
 
+/**
+ * GET /api/routes
+ * Retrieves a list of routes with filtering and sorting.
+ * Excludes heavy geometry/segment fields for list performance.
+ */
 // Optimized List Endpoint
 router.get('/api/routes', async (ctx) => {
   const filters = getRouteFilters(new URLSearchParams(ctx.querystring));
@@ -231,6 +111,10 @@ router.get('/api/routes', async (ctx) => {
   ctx.body = result;
 });
 
+/**
+ * GET /api/sources
+ * Returns a list of unique source domains from existing routes.
+ */
 router.get('/api/sources', async (ctx) => {
   // Extract unique domains from source_url
   // Using regex to capture the domain part: https?://(www\.)?([^/]+)
@@ -248,6 +132,10 @@ router.get('/api/sources', async (ctx) => {
   ctx.body = sources;
 });
 
+/**
+ * GET /api/tags
+ * Returns a list of unique tags from existing routes.
+ */
 router.get('/api/tags', async (ctx) => {
   const result = await db.execute(
     sql`SELECT DISTINCT unnest(${routes.tags}) as tag FROM ${routes} ORDER BY tag`
@@ -257,6 +145,14 @@ router.get('/api/tags', async (ctx) => {
   ctx.body = tags;
 });
 
+/**
+ * POST /api/routes
+ * Ingests a new route or updates an existing one (Smart Ingestion).
+ * - Checks source_url for duplications.
+ * - Detects GPX changes to optionally skip expensive reprocessing.
+ * - Merges tags.
+ * - Skips synchronous Valhalla processing (deferring to background job if needed).
+ */
 router.post('/api/routes', async (ctx) => {
   const { source_url, gpx_content, title, tags } = ctx.request.body as any;
 
@@ -266,48 +162,77 @@ router.post('/api/routes', async (ctx) => {
     return;
   }
 
-  const processed = await processRouteGPX(gpx_content);
+  // Skip Valhalla processing on ingest to avoid rate limits
+  const processed = await processRouteGPX(gpx_content, true);
   if (!processed) {
     ctx.status = 400;
     ctx.body = { error: 'Invalid GPX content' };
     return;
   }
 
-  const geojsonStr = JSON.stringify(processed.geojson);
-
   try {
-    await db
-      .insert(routes)
-      .values({
-        sourceUrl: source_url,
-        title: title || 'Untitled Route',
-        gpxContent: gpx_content,
-        tags: tags || [],
-        geom: sql`ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)`,
-        grades: sql`calculate_route_grades(ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326))`,
-        totalAscent: processed.totalAscent,
-        totalDescent: processed.totalDescent,
-        valhallaSegments: processed.valhallaSegments,
-        distanceMeters: sql`ST_Length(ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)::geography)`,
+    // Check if route exists
+    const existingRoute = await db
+      .select({
+        id: routes.id,
+        gpxContent: routes.gpxContent,
+        tags: routes.tags,
       })
-      .onConflictDoUpdate({
-        target: routes.sourceUrl,
-        set: {
-          title: sql`EXCLUDED.title`,
-          gpxContent: sql`EXCLUDED.gpx_content`,
-          tags: sql`EXCLUDED.tags`,
-          geom: sql`EXCLUDED.geom`,
-          grades: sql`calculate_route_grades(EXCLUDED.geom)`,
-          totalAscent: sql`EXCLUDED.total_ascent`,
-          totalDescent: sql`EXCLUDED.total_descent`,
-          valhallaSegments: sql`EXCLUDED.valhalla_segments`,
-          distanceMeters: sql`ST_Length(EXCLUDED.geom::geography)`,
-          createdAt: sql`CURRENT_TIMESTAMP`,
-        },
-      });
+      .from(routes)
+      .where(eq(routes.sourceUrl, source_url))
+      .limit(1);
+
+    const newTags = tags || [];
+    let mergedTags = newTags;
+
+    if (existingRoute.length > 0) {
+      const existing = existingRoute[0];
+      // Merge tags
+      const uniqueTags = new Set([...(existing.tags || []), ...newTags]);
+      mergedTags = Array.from(uniqueTags);
+
+      const gpxChanged = existing.gpxContent !== gpx_content;
+
+      if (gpxChanged) {
+        // GPX changed: Full update (recompute geometry, reset Valhalla)
+        const computedValues = getComputedRouteValues(processed);
+        await db
+          .update(routes)
+          .set({
+            title: title || 'Untitled Route', // Update title if provided
+            gpxContent: gpx_content,
+            tags: mergedTags,
+            ...computedValues
+          })
+          .where(eq(routes.id, existing.id));
+      } else {
+         // GPX same: partial update (tags only, maybe title)
+         await db
+           .update(routes)
+           .set({
+             title: title || 'Untitled Route',
+             tags: mergedTags,
+             // Do NOT update geometry or reset Valhalla segments
+           })
+           .where(eq(routes.id, existing.id));
+      }
+      ctx.body = { success: true, updated: true, gpxChanged };
+    } else {
+      // New route: Insert
+      const computedValues = getComputedRouteValues(processed);
+      const values: any = {
+          sourceUrl: source_url,
+          title: title || 'Untitled Route',
+          gpxContent: gpx_content,
+          tags: mergedTags,
+          ...computedValues
+      };
+
+      await db.insert(routes).values(values);
+      ctx.body = { success: true, created: true };
+    }
 
     ctx.status = 200;
-    ctx.body = { success: true };
   } catch (e) {
     console.error(e);
     ctx.status = 500;
@@ -315,6 +240,12 @@ router.post('/api/routes', async (ctx) => {
   }
 });
 
+
+
+/**
+ * DELETE /api/routes/:id
+ * Deletes a route by ID.
+ */
 router.delete('/api/routes/:id', async (ctx) => {
   const id = ctx.params.id;
   await db.delete(routes).where(eq(routes.id, parseInt(id)));
@@ -322,6 +253,10 @@ router.delete('/api/routes/:id', async (ctx) => {
   ctx.body = { success: true };
 });
 
+/**
+ * GET /api/routes/:id/download
+ * Downloads the GPX content for a specific route as a file attachment.
+ */
 router.get('/api/routes/:id/download', async (ctx) => {
   const id = ctx.params.id;
   const result = await db
@@ -346,6 +281,10 @@ router.get('/api/routes/:id/download', async (ctx) => {
   ctx.body = route.gpx_content;
 });
 
+/**
+ * GET /api/routes/:id
+ * Retrieves full details for a single route, including heavy geometry/segment fields.
+ */
 router.get('/api/routes/:id', async (ctx) => {
   const id = ctx.params.id;
   const result = await db
@@ -376,6 +315,11 @@ router.get('/api/routes/:id', async (ctx) => {
   ctx.body = result[0];
 });
 
+/**
+ * PUT /api/routes/:id
+ * Updates metadata (tags, completion status) for a route.
+ * Does NOT update GPX content or geometry.
+ */
 router.put('/api/routes/:id', async (ctx) => {
   const id = ctx.params.id;
   const { tags, is_completed } = ctx.request.body as any;
@@ -417,6 +361,11 @@ router.put('/api/routes/:id', async (ctx) => {
   ctx.body = result[0];
 });
 
+/**
+ * POST /api/routes/:id/recompute
+ * Manually forces a full recompute of route statistics and geometry provided by Valhalla.
+ * This is a synchronous operation and may be slow.
+ */
 // Recompute stats for a single route
 router.post('/api/routes/:id/recompute', async (ctx) => {
   const id = ctx.params.id;
@@ -442,7 +391,8 @@ router.post('/api/routes/:id/recompute', async (ctx) => {
       return;
     }
 
-    const processed = await processRouteGPX(gpx_content);
+    // Force Valhalla processing on manual recompute
+    const processed = await processRouteGPX(gpx_content, false);
 
     if (!processed) {
       ctx.status = 400;
@@ -450,21 +400,16 @@ router.post('/api/routes/:id/recompute', async (ctx) => {
       return;
     }
 
-    const geojsonStr = JSON.stringify(processed.geojson);
-
-    // Update the route with recomputed values
-    // Using sql directly to call the function on the geometry we are setting
-    const geomSql = sql`ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)`;
+    const computedValues = getComputedRouteValues(processed);
 
     await db
       .update(routes)
       .set({
-        geom: geomSql,
-        grades: sql`calculate_route_grades(${geomSql})`,
-        totalAscent: processed.totalAscent,
-        totalDescent: processed.totalDescent,
-        valhallaSegments: processed.valhallaSegments,
-        distanceMeters: sql`ST_Length(${geomSql}::geography)`,
+        geom: computedValues.geom,
+        grades: computedValues.grades,
+        totalAscent: computedValues.totalAscent,
+        totalDescent: computedValues.totalDescent,
+        valhallaSegments: computedValues.valhallaSegments,
       })
       .where(eq(routes.id, parseInt(id)));
 
@@ -477,6 +422,11 @@ router.post('/api/routes/:id/recompute', async (ctx) => {
   }
 });
 
+/**
+ * POST /api/routes/recompute
+ * Bulk recomputes statistics for all routes.
+ * Skips Valhalla processing to avoid API rate limits, updating only local geometry/elevation stats.
+ */
 // Recompute stats for all routes
 router.post('/api/routes/recompute', async (ctx) => {
   try {
@@ -495,7 +445,8 @@ router.post('/api/routes/recompute', async (ctx) => {
           continue;
         }
 
-        const processed = await processRouteGPX(row.gpx_content);
+        // Skip Valhalla for bulk recompute to avoid rate limits
+        const processed = await processRouteGPX(row.gpx_content, true);
 
         if (!processed) {
           console.error(`Failed to process GPX for route ${row.id}`);
@@ -503,18 +454,15 @@ router.post('/api/routes/recompute', async (ctx) => {
           continue;
         }
 
-        const geojsonStr = JSON.stringify(processed.geojson);
-        const geomSql = sql`ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)`;
+        const computedValues = getComputedRouteValues(processed);
 
         await db
           .update(routes)
           .set({
-            geom: geomSql,
-            grades: sql`calculate_route_grades(${geomSql})`,
-            totalAscent: processed.totalAscent,
-            totalDescent: processed.totalDescent,
-            valhallaSegments: processed.valhallaSegments,
-            distanceMeters: sql`ST_Length(${geomSql}::geography)`,
+             geom: computedValues.geom,
+             grades: computedValues.grades,
+             totalAscent: computedValues.totalAscent,
+             totalDescent: computedValues.totalDescent,
           })
           .where(eq(routes.id, row.id));
 
@@ -568,3 +516,76 @@ while (!connected) {
 
 console.log('Server running on http://localhost:8070');
 app.listen(8070, '0.0.0.0');
+
+const DAILY_LIMIT = 10;
+const CHECK_INTERVAL = 60 * 60 * 1000; // Check every hour
+
+/**
+ * Background job to process routes that are missing Valhalla segments.
+ * Runs once at startup and then periodically (configured by DAILY_LIMIT and interval).
+ * Queries the database for routes where `valhallaSegments` is NULL, processes them one by one,
+ * and updates them with new statistics and segment data.
+ * Limited to `DAILY_LIMIT` routes per run to respect API usage policies.
+ */
+async function processBackgroundQueue() {
+  console.log('Running background Valhalla processing...');
+
+  try {
+    // Find routes with missing Valhalla segments
+    const routesToProcess = await db
+      .select({ id: routes.id, gpxContent: routes.gpxContent })
+      .from(routes)
+      .where(sql`${routes.valhallaSegments} IS NULL`)
+      .limit(DAILY_LIMIT);
+
+    if (routesToProcess.length === 0) {
+      console.log('No routes pending Valhalla processing.');
+      return;
+    }
+
+    console.log(`Found ${routesToProcess.length} routes to process.`);
+
+    for (const route of routesToProcess) {
+      if (!route.gpxContent) continue;
+
+      try {
+        console.log(`Processing route ${route.id} for Valhalla...`);
+        // Force valhalla processing
+        const processed = await processRouteGPX(route.gpxContent, false);
+
+        if (processed && processed.valhallaSegments) {
+           const computedValues = getComputedRouteValues(processed);
+
+           await db
+             .update(routes)
+             .set({
+               geom: computedValues.geom,
+               grades: computedValues.grades,
+               totalAscent: computedValues.totalAscent,
+               totalDescent: computedValues.totalDescent,
+               valhallaSegments: computedValues.valhallaSegments,
+             })
+             .where(eq(routes.id, route.id));
+
+           console.log(`Successfully processed route ${route.id}`);
+           // Wait a bit between calls to be nice (e.g. 5 seconds)
+           await new Promise(r => setTimeout(r, 5000));
+        } else {
+            console.warn(`Valhalla returned null for route ${route.id}`);
+        }
+      } catch (err) {
+        console.error(`Error processing route ${route.id}:`, err);
+      }
+    }
+  } catch (e) {
+    console.error('Error in background job:', e);
+  }
+}
+
+// Start immediately after a short delay, then loop 24h
+// Note: In development with restarts, this might run often.
+// If this becomes an issue, we'd need to store "last_valhalla_run" in DB.
+setTimeout(() => {
+    processBackgroundQueue();
+    setInterval(processBackgroundQueue, 24 * 60 * 60 * 1000);
+}, 10000); // 10s delay start

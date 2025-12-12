@@ -88,9 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Progress Bar
             const pct = state.total > 0 ? Math.round((state.current / state.total) * 100) : 0;
             progressFill.style.setProperty('--progress', `${pct}%`);
-            counter.textContent = `${state.current}/${state.total}`;
+            counter.textContent = `${state.success} Ok, ${state.errors} Err, ${state.total} Total`;
 
-            statusText.textContent = "Processing...";
+            statusText.textContent = "Importing:";
             logText.textContent = state.statusMessage;
 
             // Log waiting/error states
@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Show results of last run
                 progressFill.style.setProperty('--progress', '100%');
                 statusText.textContent = state.isCancelled ? "Cancelled" : "Finished";
-                counter.textContent = `${state.success} OK, ${state.errors} ERR`;
+                counter.textContent = `${state.success} Ok, ${state.errors} Err, ${state.total} Total`;
                 logText.textContent = "Ready";
 
                 progressFill.dataset.state = state.errors > 0 ? "error" : "success";
