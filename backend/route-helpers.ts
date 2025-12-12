@@ -1,7 +1,7 @@
 import { JSDOM } from 'jsdom';
 import toGeoJSON from '@mapbox/togeojson';
 import type { LineString, MultiLineString } from 'geojson';
-import { routes } from './schema.js';
+import { routes } from './schema.ts';
 import { sql, type SQL } from 'drizzle-orm';
 import { getRouteAttributes, type ValhallaSegment } from './valhalla.ts';
 import {

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
 import Koa from 'koa';
 import Router from '@koa/router';
+import { processRouteGPX } from '../route-helpers.ts';
 import cors from '@koa/cors';
 import bodyParser from 'koa-bodyparser';
 import fs from 'fs';

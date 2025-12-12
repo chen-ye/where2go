@@ -4,8 +4,8 @@
   "main": "main.ts",
   "type": "module",
   "scripts": {
-    "start": "tsx main.ts",
-    "dev": "tsx watch main.ts",
+    "start": "node main.ts",
+    "dev": "node --watch main.ts",
     "test": "vitest"
   },
   "dependencies": {
@@ -28,7 +28,6 @@
     "@types/node": "^24.10.1",
     "@types/supertest": "^6.0.3",
     "supertest": "^7.1.4",
-    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "4.0.15"
   }

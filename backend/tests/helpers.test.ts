@@ -4,7 +4,7 @@ import {
   calculateElevationStats,
   processRouteGPX,
   getRouteFilters
-} from '../route-helpers.js';
+} from '../route-helpers.ts';
 import {
     API_PARAM_SEARCH_REGEX,
     API_PARAM_TAGS
