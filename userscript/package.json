@@ -4,9 +4,7 @@
   "description": "",
   "main": "dist/where2go.user.js",
   "scripts": {
-    "test": "echo \"No tests for userscript\" && exit 0",
-    "build": "vite build",
-    "check": "tsc --noEmit"
+    "test": "echo \"No tests for userscript\" && exit 0"
   },
   "keywords": [],
   "author": "",

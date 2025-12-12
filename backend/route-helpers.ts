@@ -1,16 +1,16 @@
-import { JSDOM } from 'jsdom';
 import toGeoJSON from '@mapbox/togeojson';
+import { type SQL, sql } from 'drizzle-orm';
 import type { LineString, MultiLineString } from 'geojson';
-import { routes } from './schema.ts';
-import { sql, type SQL } from 'drizzle-orm';
-import { getRouteAttributes, type ValhallaSegment } from './valhalla.ts';
+import { JSDOM } from 'jsdom';
 import {
+  API_PARAM_MAX_DISTANCE,
+  API_PARAM_MIN_DISTANCE,
   API_PARAM_SEARCH_REGEX,
   API_PARAM_SOURCES,
   API_PARAM_TAGS,
-  API_PARAM_MIN_DISTANCE,
-  API_PARAM_MAX_DISTANCE,
 } from 'where2go-shared/api-constants.ts';
+import { routes } from './schema.ts';
+import { getRouteAttributes, type ValhallaSegment } from './valhalla.ts';
 
 /**
  * Parses GPX XML content string into a GeoJSON LineString.
@@ -66,9 +66,10 @@ export function gpxToGeoJSON(gpxContent: string): LineString | null {
  * @param coordinates - Array of [lon, lat, ele] coordinate arrays.
  * @returns Object containing totalAscent and totalDescent in meters.
  */
-export function calculateElevationStats(
-  coordinates: number[][],
-): { totalAscent: number; totalDescent: number } {
+export function calculateElevationStats(coordinates: number[][]): {
+  totalAscent: number;
+  totalDescent: number;
+} {
   let totalAscent = 0;
   let totalDescent = 0;
 
@@ -135,7 +136,9 @@ export async function processRouteGPX(
  * @param processed - The object returned by processRouteGPX.
  * @returns Object with keys corresponding to database columns (geom, grades, totalAscent, etc.).
  */
-export function getComputedRouteValues(processed: NonNullable<Awaited<ReturnType<typeof processRouteGPX>>>) {
+export function getComputedRouteValues(
+  processed: NonNullable<Awaited<ReturnType<typeof processRouteGPX>>>,
+) {
   const geojsonStr = JSON.stringify(processed.geojson);
   const geomSql = sql`ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326)`;
 
@@ -165,7 +168,10 @@ export function getRouteFilters(searchParams: URLSearchParams): SQL[] {
 
   const sourcesParam = searchParams.get(API_PARAM_SOURCES);
   if (sourcesParam) {
-    const sources = sourcesParam.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+    const sources = sourcesParam
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
     if (sources.length > 0) {
       const domainsPattern = sources.map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
       filters.push(sql`${routes.sourceUrl} ~* ${`^https?://(www\\.)?(${domainsPattern})`}`);
@@ -174,7 +180,10 @@ export function getRouteFilters(searchParams: URLSearchParams): SQL[] {
 
   const tagsParam = searchParams.get(API_PARAM_TAGS);
   if (tagsParam) {
-    const tags = tagsParam.split(',').map((t) => t.trim()).filter((t) => t.length > 0);
+    const tags = tagsParam
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
     if (tags.length > 0) {
       filters.push(sql`${routes.tags} @> ${tags}`);
     }
@@ -186,7 +195,7 @@ export function getRouteFilters(searchParams: URLSearchParams): SQL[] {
     const minDistance = minDistanceParam ? parseFloat(minDistanceParam) : 0;
     const maxDistance = maxDistanceParam ? parseFloat(maxDistanceParam) : Number.MAX_SAFE_INTEGER;
     filters.push(
-      sql`ST_Length(${routes.geom}::geography) >= ${minDistance} AND ST_Length(${routes.geom}::geography) <= ${maxDistance}`
+      sql`ST_Length(${routes.geom}::geography) >= ${minDistance} AND ST_Length(${routes.geom}::geography) <= ${maxDistance}`,
     );
   }
 

@@ -5,8 +5,10 @@
   "type": "module",
   "packageManager": "yarn@4.10.3",
   "scripts": {
-    "test": "yarn workspaces foreach -A run test",
-    "test:coverage": "yarn workspaces foreach -A run test --coverage",
+    "dev": "yarn workspaces foreach -A --parallel --interlaced --verbose run dev",
+    "build": "yarn workspaces foreach -A run build",
+    "test": "yarn workspaces foreach -A --parallel --interlaced --verbose run test",
+    "test:coverage": "yarn workspaces foreach -A --parallel --interlaced --verbose run test --coverage",
     "test:e2e": "playwright test",
     "lint": "yarn workspaces foreach -A run lint",
     "format:check": "biome format .",

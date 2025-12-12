@@ -1,0 +1,19 @@
+{
+  "root": false,
+  "extends": "//",
+  "files": {
+    "ignoreUnknown": false,
+    "includes": ["*"]
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "correctness": {
+        "useExhaustiveDependencies": "warn"
+      },
+      "style": {
+        "noNonNullAssertion": "warn"
+      }
+    }
+  }
+}

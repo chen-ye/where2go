@@ -7,10 +7,6 @@
   "scripts": {
     "dev": "vite --port 5174 --host 0.0.0.0",
     "build": "tsc -b && vite build",
-    "lint": "biome lint .",
-    "format": "biome format --write .",
-    "format:check": "biome format .",
-    "check": "biome check --write .",
     "preview": "vite preview",
     "test": "vitest"
   },

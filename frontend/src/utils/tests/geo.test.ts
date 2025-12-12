@@ -6,7 +6,6 @@ import {
   calculateGrade,
   getGradeColor,
   METERS_TO_FEET,
-  MILES_TO_FEET
 } from '../geo';
 
 describe('geo utils', () => {

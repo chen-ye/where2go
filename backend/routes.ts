@@ -1,6 +1,6 @@
 import Router from '@koa/router';
-import * as routeController from './controllers/route-controller.ts';
 import * as metadataController from './controllers/metadata-controller.ts';
+import * as routeController from './controllers/route-controller.ts';
 
 const router = new Router();
 

@@ -28,7 +28,7 @@ services:
       PGPORT: ${PGPORT:-5432}
       PGSSLMODE: prefer
       VITE_API_URL: http://localhost:8070
-    command: sh -c "corepack enable && yarn install && yarn workspaces foreach --all --parallel --interlaced --verbose --include where2go-backend --include where2go-frontend run dev"
+    command: sh -c "corepack enable && yarn install && yarn run build && yarn run dev"
     depends_on:
       - db
 

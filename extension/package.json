@@ -4,10 +4,7 @@
   "description": "",
   "main": "content.js",
   "scripts": {
-    "build": "vite build",
-    "watch": "vite build --watch",
-    "test": "echo \"No tests for extension\" && exit 0",
-    "check": "tsc --noEmit"
+    "test": "echo \"No tests for extension\" && exit 0"
   },
   "keywords": [],
   "author": "",

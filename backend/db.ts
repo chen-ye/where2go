@@ -1,20 +1,21 @@
-import postgres, { type Options} from 'postgres';
+import process from 'node:process';
 import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres, { type Options } from 'postgres';
 import * as schema from './schema.ts';
-import process from 'process';
 
 const connectionString = 'postgres://username:password@host:1234/database';
 
 const pgClient = postgres(connectionString, {
   host: process.env.PGHOST || 'localhost',
-  port: parseInt(process.env.PGPORT || '5432'),
+  port: parseInt(process.env.PGPORT || '5432', 10),
   username: process.env.PGUSER || 'where2go',
   password: process.env.PGPASSWORD || 'password',
   database: process.env.PGDATABASE || 'where2go',
-  ssl: process.env.PGSSLMODE as Options<{}>['ssl'] || 'prefer',
+  ssl: (process.env.PGSSLMODE as Options<{}>['ssl']) || 'prefer',
 });
-console.log(`Connection settings: postgres://${pgClient.options.user}@${pgClient.options.host}:${pgClient.options.port}/${pgClient.options.database}`);
-
+console.log(
+  `Connection settings: postgres://${pgClient.options.user}@${pgClient.options.host}:${pgClient.options.port}/${pgClient.options.database}`,
+);
 
 // Proxy to log query execution time
 const queryClient = new Proxy(pgClient, {
@@ -25,14 +26,18 @@ const queryClient = new Proxy(pgClient, {
       return (query: string, params?: unknown[], options?: unknown) => {
         const start = performance.now();
         // eslint-disable-next-line @typescript-eslint/ban-types
-        const result = (originalValue as typeof pgClient.unsafe).apply(target, [query, params, options]);
+        const result = (originalValue as typeof pgClient.unsafe).apply(target, [
+          query,
+          params,
+          options,
+        ]);
 
         // Monkey-patch .then to log execution time while preserving the object structure
         // (so methods like .values() still work)
         const originalThen = result.then;
         result.then = function <TResult1 = any, TResult2 = never>(
           onFulfilled?: ((value: any) => TResult1 | PromiseLike<TResult1>) | null,
-          onRejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
+          onRejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
         ): Promise<TResult1 | TResult2> {
           return originalThen.call(
             this,
@@ -48,10 +53,13 @@ const queryClient = new Proxy(pgClient, {
             (err: any) => {
               const duration = performance.now() - start;
               const timestamp = new Date().toISOString();
-              console.error(`[${timestamp}] [SQL ERROR] ${query} -- [${duration.toFixed(2)}ms]`, err);
+              console.error(
+                `[${timestamp}] [SQL ERROR] ${query} -- [${duration.toFixed(2)}ms]`,
+                err,
+              );
               if (onRejected) return onRejected(err);
               throw err;
-            }
+            },
           ) as Promise<TResult1 | TResult2>;
         };
 
@@ -60,7 +68,7 @@ const queryClient = new Proxy(pgClient, {
     }
 
     return originalValue;
-  }
+  },
 });
 
 export const db = drizzle(queryClient, { schema });

@@ -1,5 +1,5 @@
-import type { ValhallaSegment } from 'where2go-shared/types/valhalla.ts';
 import distance from '@turf/distance';
+import type { ValhallaSegment } from 'where2go-shared/types/valhalla.ts';
 
 export type { ValhallaSegment };
 
@@ -49,8 +49,7 @@ export async function getRouteAttributes(
 
     if (
       currentChunk.length > 1 &&
-      (currentChunk.length >= MAX_POINTS ||
-        currentChunkDist + dist > MAX_DISTANCE_KM)
+      (currentChunk.length >= MAX_POINTS || currentChunkDist + dist > MAX_DISTANCE_KM)
     ) {
       chunks.push(currentChunk);
       currentChunk = [prev, curr];
@@ -67,9 +66,7 @@ export async function getRouteAttributes(
   const allSegments: ValhallaSegment[] = [];
   let indexOffset = 0;
 
-  console.log(
-    `Processing route with ${coordinates.length} points in ${chunks.length} chunks.`,
-  );
+  console.log(`Processing route with ${coordinates.length} points in ${chunks.length} chunks.`);
 
   for (const chunk of chunks) {
     const segments = await fetchAttributes(chunk);
@@ -94,12 +91,9 @@ export async function getRouteAttributes(
   return allSegments;
 }
 
-async function fetchAttributes(
-  coordinates: number[][],
-): Promise<ValhallaSegment[] | null> {
+async function fetchAttributes(coordinates: number[][]): Promise<ValhallaSegment[] | null> {
   const endpoint =
-    process.env.VALHALLA_ENDPOINT ||
-    'https://valhalla1.openstreetmap.de/trace_attributes';
+    process.env.VALHALLA_ENDPOINT || 'https://valhalla1.openstreetmap.de/trace_attributes';
 
   const body = {
     shape: coordinates.map((c) => ({ lat: c[1], lon: c[0] })),
@@ -139,9 +133,7 @@ async function fetchAttributes(
     });
 
     if (!response.ok) {
-      console.error(
-        `Valhalla API error: ${response.status} ${response.statusText}`,
-      );
+      console.error(`Valhalla API error: ${response.status} ${response.statusText}`);
       const text = await response.text();
       console.error(`Response body: ${text}`);
       return null;
