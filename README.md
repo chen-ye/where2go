@@ -35,8 +35,18 @@ docker compose up
 Navigate to `http://localhost:5174` to view the app.
 
 > [!NOTE]
-> Modify the `.env` file and docker compose to connect to an existing Postgresql
-> instance with PostGIS extension.
+> To use an existing db, use
+> [`docker-compose.cloud.yml`](./docker-compose.cloud.yml), which removes the
+> included db service:
+>
+> ```bash
+> docker compose -f docker-compose.cloud.yml up
+> ```
+>
+> You must modify the `.env` file to connect to your db, and the db must have
+> the PostGIS extension installed.
+>
+> At the time of writing, Neon and Aiven seem to work reasonably well.
 
 You'll also want to install the Chrome extension:
 
@@ -52,7 +62,7 @@ You'll also want to install the Chrome extension:
 7. Click the extension icon, and hit import. Routes will be imported and added
    to your where2go instance.
 
-## Userscript Alternative
+## (Experimental) Userscript Alternative
 
 Alternatively, you can use the userscript with a manager like Tampermonkey or
 ScriptCat:
