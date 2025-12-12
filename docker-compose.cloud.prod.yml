@@ -1,0 +1,9 @@
+# docker compose -f docker-compose.cloud.prod.yml up
+services:
+  app:
+    extends:
+      file: docker-compose.base.yml
+      service: app-base
+    environment:
+      NODE_ENV: production
+    command: sh -c "corepack enable && yarn install && yarn run build && yarn run start"

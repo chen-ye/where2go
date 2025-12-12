@@ -3,7 +3,9 @@ services:
     extends:
       file: docker-compose.base.yml
       service: app-base
-    command: sh -c "corepack enable && yarn install && yarn run build && yarn run dev"
+    environment:
+      NODE_ENV: production
+    command: sh -c "corepack enable && yarn install && yarn run build && yarn run start"
     depends_on:
       - db
 
