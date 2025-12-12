@@ -1,7 +1,0 @@
-{
-  "$schema": "../../../../schema/basemapconfig.schema.json",
-  "id": "outdoor-v4-dark",
-  "name": "Outdoor",
-  "url": "https://api.maptiler.com/maps/outdoor-v4-dark/style.json?key=di0gshXc0zUqmVTNctjb",
-  "thumbnail": "https://api.maptiler.com/maps/outdoor-v4-dark/{z}/{x}/{y}.png?key=di0gshXc0zUqmVTNctjb"
-}

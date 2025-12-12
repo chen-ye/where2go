@@ -27,6 +27,6 @@ dist-ssr
 
 # Non-public map layers
 config/layers/basemaps/dataviz-v4-dark.json
-config/layers/basemaps/outdoors-v4-dark.json
+config/layers/basemaps/outdoor-v4-dark.json
 config/layers/overlay/strava-heatmap-global.json
 config/layers/overlay/strava-heatmap-personal.json
