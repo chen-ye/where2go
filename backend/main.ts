@@ -21,7 +21,13 @@ const app = new Koa();
 const router = new Router();
 
 app.use(cors({ origin: '*' }));
-app.use(bodyParser());
+app.use(
+  bodyParser({
+    jsonLimit: '50mb',
+    formLimit: '50mb',
+    textLimit: '50mb',
+  })
+);
 
 // Helper to parse GPX to GeoJSON LineString
 function gpxToGeoJSON(gpxContent: string): LineString | null {
