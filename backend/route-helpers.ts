@@ -96,12 +96,12 @@ export function calculateElevationStats(
  * Processes GPX content to extract GeoJSON, calculate elevation stats, and optionally fetch Valhalla route attributes.
  *
  * @param gpxContent - The raw GPX XML string.
- * @param skipValhalla - If true, skips fetching data from the Valhalla API (useful for avoiding rate limits during ingest).
+ * @param useValhalla - If true, fetches data from the Valhalla API (default: true).
  * @returns Object containing computed route data (geojson, ascent/descent, valhallaSegments), or null if processing fails.
  */
 export async function processRouteGPX(
   gpxContent: string,
-  skipValhalla = false,
+  useValhalla = true,
 ): Promise<{
   geojson: LineString;
   totalAscent: number;
@@ -116,7 +116,7 @@ export async function processRouteGPX(
   const elevationStats = calculateElevationStats(geojson.coordinates);
 
   let valhallaSegments: ValhallaSegment[] | null = null;
-  if (!skipValhalla) {
+  if (useValhalla) {
     valhallaSegments = await getRouteAttributes(geojson.coordinates);
   }
 

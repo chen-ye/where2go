@@ -17,7 +17,6 @@ export async function processBackgroundQueue() {
   console.log('Running background Valhalla processing...');
 
   try {
-    // Find routes with missing Valhalla segments
     const routesToProcess = await db
       .select({ id: routes.id, gpxContent: routes.gpxContent })
       .from(routes)
@@ -36,8 +35,7 @@ export async function processBackgroundQueue() {
 
       try {
         console.log(`Processing route ${route.id} for Valhalla...`);
-        // Force valhalla processing
-        const processed = await processRouteGPX(route.gpxContent, false);
+        const processed = await processRouteGPX(route.gpxContent, true);
 
         if (processed && processed.valhallaSegments) {
            const computedValues = getComputedRouteValues(processed);
@@ -68,8 +66,12 @@ export async function processBackgroundQueue() {
   }
 }
 
+/**
+ * Initializes the background job scheduler.
+ * Sets up a recurring interval to check for tasks in the background queue.
+ * Includes a startup delay to allow the application server to fully initialize first.
+ */
 export function startBackgroundJob() {
-    // Start immediately after a short delay, then loop 24h
     // Note: In development with restarts, this might run often.
     // If this becomes an issue, we'd need to store "last_valhalla_run" in DB.
     setTimeout(() => {

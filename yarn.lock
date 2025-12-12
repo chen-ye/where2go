@@ -2616,10 +2616,43 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@turf/distance@npm:^7.3.1":
+  version: 7.3.1
+  resolution: "@turf/distance@npm:7.3.1"
+  dependencies:
+    "@turf/helpers": "npm:7.3.1"
+    "@turf/invariant": "npm:7.3.1"
+    "@types/geojson": "npm:^7946.0.10"
+    tslib: "npm:^2.8.1"
+  checksum: 10c0/a085e2b92b40c4ab8dbb8d5a7711033870841d155a79a72891182f6580aa8d32d07d0fa5da59ead2eddcabdef48b92985e4627a0e557cc429a9c1e7a10f12844
+  languageName: node
+  linkType: hard
+
+"@turf/helpers@npm:7.3.1, @turf/helpers@npm:^7.3.1":
+  version: 7.3.1
+  resolution: "@turf/helpers@npm:7.3.1"
+  dependencies:
+    "@types/geojson": "npm:^7946.0.10"
+    tslib: "npm:^2.8.1"
+  checksum: 10c0/95344c07413f249291f98d15a2141242ba87e984fb03b833a2a55c3e0106374102e1dd0ba6cbf7b3c8d7ee9f5f575cce2c3146cc8984117285907212b644b124
+  languageName: node
+  linkType: hard
+
 "@turf/helpers@npm:^5.1.5":
   version: 5.1.5
   resolution: "@turf/helpers@npm:5.1.5"
   checksum: 10c0/f5ed19cddef37fb5098e2509e8472df3afe099dcd6db62b7e541cf37c02c6ea1b13f69c29ff493ded7a1374c1a9b185a87fefee368211934364977dffd48b2e9
+  languageName: node
+  linkType: hard
+
+"@turf/invariant@npm:7.3.1":
+  version: 7.3.1
+  resolution: "@turf/invariant@npm:7.3.1"
+  dependencies:
+    "@turf/helpers": "npm:7.3.1"
+    "@types/geojson": "npm:^7946.0.10"
+    tslib: "npm:^2.8.1"
+  checksum: 10c0/48f0b0865ba35ee753d3e9c97a5f40a5c04337bb3285366e24e162e4e5143e74e36949b9c9bc063287e8628f421d47ada06f27a91dbb93e1d2e59b990cd4e19e
   languageName: node
   linkType: hard
 
@@ -2953,7 +2986,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/geojson@npm:*, @types/geojson@npm:^7946.0.16, @types/geojson@npm:^7946.0.7, @types/geojson@npm:^7946.0.8":
+"@types/geojson@npm:*, @types/geojson@npm:^7946.0.10, @types/geojson@npm:^7946.0.16, @types/geojson@npm:^7946.0.7, @types/geojson@npm:^7946.0.8":
   version: 7946.0.16
   resolution: "@types/geojson@npm:7946.0.16"
   checksum: 10c0/1ff24a288bd5860b766b073ead337d31d73bdc715e5b50a2cee5cb0af57a1ed02cc04ef295f5fa68dc40fe3e4f104dd31282b2b818a5ba3231bc1001ba084e3c
@@ -7536,6 +7569,8 @@ __metadata:
     "@koa/cors": "npm:^5.0.0"
     "@koa/router": "npm:^14.0.0"
     "@mapbox/togeojson": "npm:^0.16.2"
+    "@turf/distance": "npm:^7.3.1"
+    "@turf/helpers": "npm:^7.3.1"
     "@types/jsdom": "npm:^27.0.0"
     "@types/koa": "npm:^3.0.1"
     "@types/koa-bodyparser": "npm:^4.3.13"

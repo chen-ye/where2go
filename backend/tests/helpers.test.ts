@@ -88,7 +88,7 @@ describe('Route Helpers', () => {
       <trkpt lat="1" lon="1"><ele>10</ele></trkpt>
   </trkseg></trk>
 </gpx>`;
-      const processed = await processRouteGPX(gpx, true);
+      const processed = await processRouteGPX(gpx, false);
       expect(processed).not.toBeNull();
       expect(processed?.geojson).toBeDefined();
       expect(processed?.totalAscent).toBe(10);

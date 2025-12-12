@@ -5,7 +5,6 @@ import process from 'process';
 
 const connectionString = 'postgres://username:password@host:1234/database';
 
-// Create postgres connection
 const pgClient = postgres(connectionString, {
   host: process.env.PGHOST || 'localhost',
   port: parseInt(process.env.PGPORT || '5432'),
@@ -64,19 +63,24 @@ const queryClient = new Proxy(pgClient, {
   }
 });
 
-// Create drizzle instance
 export const db = drizzle(queryClient, { schema });
 
+/**
+ * Initializes the database schema and extensions.
+ * - Enables PostGIS extension.
+ * - Creates the `routes` table if it doesn't exist.
+ * - Adds necessary columns (geom, generated cache columns) idempotently.
+ * - Creates configures custom PL/pgSQL functions (e.g., `calculate_route_grades`).
+ * - Sets up GIN and GIST indexes for performance.
+ */
 export async function initDb() {
-  // Check if PostGIS extension exists, if not add it
   try {
     await queryClient`CREATE EXTENSION IF NOT EXISTS postgis;`;
   } catch (e) {
     console.error('Error creating postgis extension:', e);
   }
 
-  // Create table if not exists - using  raw SQL since Drizzle migrations
-  // are more complex for simple cases
+  // Create table if not exists
   await queryClient`
     CREATE TABLE IF NOT EXISTS routes (
       id SERIAL PRIMARY KEY,

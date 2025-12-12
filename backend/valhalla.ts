@@ -1,6 +1,7 @@
 import type { ValhallaSegment } from 'where2go-shared/types/valhalla.ts';
-export type { ValhallaSegment };
+import distance from '@turf/distance';
 
+export type { ValhallaSegment };
 
 interface ValhallaEdge {
   begin_shape_index: number;
@@ -20,10 +21,84 @@ interface ValhallaResponse {
   edges?: ValhallaEdge[];
 }
 
+const MAX_POINTS = 15000;
+const MAX_DISTANCE_KM = 150;
+
+/**
+ * Fetches and processes route attributes from the Valhalla API.
+ * Handles large routes by splitting them into chunks to respect API limits (max points/distance).
+ * Stitches the results back together into a single continuous array of segments.
+ *
+ * @param coordinates - Array of [lon, lat] coordinates representing the route path.
+ * @returns Promise resolving to an array of ValhallaSegment objects, or null if processing fails.
+ */
 export async function getRouteAttributes(
   coordinates: number[][],
 ): Promise<ValhallaSegment[] | null> {
-  const endpoint = process.env.VALHALLA_ENDPOINT ||
+  if (coordinates.length < 2) return null;
+
+  const chunks: number[][][] = [];
+  let currentChunk: number[][] = [coordinates[0]];
+  let currentChunkDist = 0;
+
+  for (let i = 1; i < coordinates.length; i++) {
+    const prev = coordinates[i - 1];
+    const curr = coordinates[i];
+
+    const dist = distance(prev, curr, { units: 'kilometers' });
+
+    if (
+      currentChunk.length > 1 &&
+      (currentChunk.length >= MAX_POINTS ||
+        currentChunkDist + dist > MAX_DISTANCE_KM)
+    ) {
+      chunks.push(currentChunk);
+      currentChunk = [prev, curr];
+      currentChunkDist = dist;
+    } else {
+      currentChunk.push(curr);
+      currentChunkDist += dist;
+    }
+  }
+  if (currentChunk.length > 1) {
+    chunks.push(currentChunk);
+  }
+
+  const allSegments: ValhallaSegment[] = [];
+  let indexOffset = 0;
+
+  console.log(
+    `Processing route with ${coordinates.length} points in ${chunks.length} chunks.`,
+  );
+
+  for (const chunk of chunks) {
+    const segments = await fetchAttributes(chunk);
+    if (!segments) {
+      console.error('Failed to fetch attributes for a chunk, aborting.');
+      return null;
+    }
+
+    const adjustedSegments = segments.map((s) => ({
+      ...s,
+      start: s.start + indexOffset,
+      end: s.end + indexOffset,
+    }));
+
+    allSegments.push(...adjustedSegments);
+
+    // Offset is increased by (chunk length - 1) because the last point of chunk N
+    // is the same as the first point of chunk N+1
+    indexOffset += chunk.length - 1;
+  }
+
+  return allSegments;
+}
+
+async function fetchAttributes(
+  coordinates: number[][],
+): Promise<ValhallaSegment[] | null> {
+  const endpoint =
+    process.env.VALHALLA_ENDPOINT ||
     'https://valhalla1.openstreetmap.de/trace_attributes';
 
   const body = {

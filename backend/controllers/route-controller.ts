@@ -107,7 +107,7 @@ export async function createRoute(ctx: Context) {
   }
 
   // Skip Valhalla processing on ingest to avoid rate limits
-  const processed = await processRouteGPX(gpx_content, true);
+  const processed = await processRouteGPX(gpx_content, false);
   if (!processed) {
     ctx.status = 400;
     ctx.body = { error: 'Invalid GPX content' };
@@ -333,7 +333,7 @@ export async function recomputeRoute(ctx: Context) {
     }
 
     // Force Valhalla processing on manual recompute
-    const processed = await processRouteGPX(gpx_content, false);
+    const processed = await processRouteGPX(gpx_content, true);
 
     if (!processed) {
       ctx.status = 400;
@@ -386,7 +386,7 @@ export async function recomputeAllRoutes(ctx: Context) {
         }
 
         // Skip Valhalla for bulk recompute to avoid rate limits
-        const processed = await processRouteGPX(row.gpx_content, true);
+        const processed = await processRouteGPX(row.gpx_content, false);
 
         if (!processed) {
           console.error(`Failed to process GPX for route ${row.id}`);

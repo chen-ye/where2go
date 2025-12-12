@@ -12,6 +12,8 @@
     "@koa/cors": "^5.0.0",
     "@koa/router": "^14.0.0",
     "@mapbox/togeojson": "^0.16.2",
+    "@turf/distance": "^7.3.1",
+    "@turf/helpers": "^7.3.1",
     "drizzle-orm": "^0.44.7",
     "jsdom": "^27.2.0",
     "koa": "^3.1.1",
