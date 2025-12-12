@@ -1,4 +1,4 @@
-import postgres from 'postgres';
+import postgres, { type Options} from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import * as schema from './schema.ts';
 import process from 'process';
@@ -7,12 +7,15 @@ const connectionString = 'postgres://username:password@host:1234/database';
 
 // Create postgres connection
 const pgClient = postgres(connectionString, {
-  host: process.env.POSTGRES_HOST || 'localhost',
-  port: parseInt(process.env.POSTGRES_PORT || '5432'),
-  username: process.env.POSTGRES_USER || 'where2go',
-  password: process.env.POSTGRES_PASSWORD || 'password',
-  database: process.env.POSTGRES_DB || 'where2go',
+  host: process.env.PGHOST || 'localhost',
+  port: parseInt(process.env.PGPORT || '5432'),
+  username: process.env.PGUSER || 'where2go',
+  password: process.env.PGPASSWORD || 'password',
+  database: process.env.PGDATABASE || 'where2go',
+  ssl: process.env.PGSSLMODE as Options<{}>['ssl'] || 'prefer',
 });
+console.log(`Connection settings: postgres://${pgClient.options.user}@${pgClient.options.host}:${pgClient.options.port}/${pgClient.options.database}`);
+
 
 // Proxy to log query execution time
 const queryClient = new Proxy(pgClient, {
