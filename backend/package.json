@@ -6,11 +6,12 @@
   "scripts": {
     "start": "node main.ts",
     "dev": "node --watch main.ts",
+    "check-types": "tsc --noEmit",
     "test": "vitest"
   },
   "dependencies": {
     "@koa/cors": "^5.0.0",
-    "@koa/router": "^14.0.0",
+    "@koa/router": "^15.1.1",
     "@tmcw/togeojson": "^7.1.2",
     "@turf/distance": "^7.3.1",
     "@turf/helpers": "^7.3.1",
@@ -26,7 +27,6 @@
     "@types/koa": "^3.0.1",
     "@types/koa-bodyparser": "^4.3.13",
     "@types/koa__cors": "^5.0.1",
-    "@types/koa__router": "^12.0.5",
     "@types/node": "^24.10.4",
     "@types/supertest": "^6.0.3",
     "supertest": "^7.1.4",

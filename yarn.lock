@@ -872,15 +872,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@koa/router@npm:^14.0.0":
-  version: 14.0.0
-  resolution: "@koa/router@npm:14.0.0"
+"@koa/router@npm:^15.1.1":
+  version: 15.1.1
+  resolution: "@koa/router@npm:15.1.1"
   dependencies:
-    debug: "npm:^4.4.1"
-    http-errors: "npm:^2.0.0"
+    debug: "npm:^4.4.3"
+    http-errors: "npm:^2.0.1"
     koa-compose: "npm:^4.1.0"
-    path-to-regexp: "npm:^8.2.0"
-  checksum: 10c0/b3d542bca5839e2125521f7a7c913393fc2cab85d6c7ef247832caf2fce61bccf711b809ebafffa181207039d148d3e24f4ea92041e76a3f0a586ea6ca85649c
+    path-to-regexp: "npm:^8.3.0"
+  peerDependencies:
+    koa: ^2.0.0 || ^3.0.0
+  peerDependenciesMeta:
+    koa:
+      optional: false
+  checksum: 10c0/96f51a8d5021fdb3fdad76d81ae6b769b64a80af3160f083ce13b48f2169a4819a9c409be51953efc4efdf3de46a1ad06a72b1155df66340fadef679ede667dd
   languageName: node
   linkType: hard
 
@@ -3088,15 +3093,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/koa__router@npm:^12.0.5":
-  version: 12.0.5
-  resolution: "@types/koa__router@npm:12.0.5"
-  dependencies:
-    "@types/koa": "npm:*"
-  checksum: 10c0/7f994a809a5ab308a62b876a259cec49bcdd261d17c0a48d9eeda324bd655e25474ac534c7949dd5aefd4f391fa9ceb52c047e49bf7aa1bfa610d6a60e31ac32
-  languageName: node
-  linkType: hard
-
 "@types/lodash@npm:^4.14.172":
   version: 4.17.21
   resolution: "@types/lodash@npm:4.17.21"
@@ -4267,7 +4263,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"debug@npm:4, debug@npm:^4.1.0, debug@npm:^4.1.1, debug@npm:^4.3.1, debug@npm:^4.3.4, debug@npm:^4.3.7, debug@npm:^4.4.1":
+"debug@npm:4, debug@npm:^4.1.0, debug@npm:^4.1.1, debug@npm:^4.3.1, debug@npm:^4.3.4, debug@npm:^4.3.7, debug@npm:^4.4.3":
   version: 4.4.3
   resolution: "debug@npm:4.4.3"
   dependencies:
@@ -5141,7 +5137,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"http-errors@npm:^2.0.0, http-errors@npm:~2.0.1":
+"http-errors@npm:^2.0.0, http-errors@npm:^2.0.1, http-errors@npm:~2.0.1":
   version: 2.0.1
   resolution: "http-errors@npm:2.0.1"
   dependencies:
@@ -6123,7 +6119,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"path-to-regexp@npm:^8.2.0":
+"path-to-regexp@npm:^8.3.0":
   version: 8.3.0
   resolution: "path-to-regexp@npm:8.3.0"
   checksum: 10c0/ee1544a73a3f294a97a4c663b0ce71bbf1621d732d80c9c9ed201b3e911a86cb628ebad691b9d40f40a3742fe22011e5a059d8eed2cf63ec2cb94f6fb4efe67c
@@ -7492,7 +7488,7 @@ __metadata:
   resolution: "where2go-backend@workspace:backend"
   dependencies:
     "@koa/cors": "npm:^5.0.0"
-    "@koa/router": "npm:^14.0.0"
+    "@koa/router": "npm:^15.1.1"
     "@tmcw/togeojson": "npm:^7.1.2"
     "@turf/distance": "npm:^7.3.1"
     "@turf/helpers": "npm:^7.3.1"
@@ -7500,7 +7496,6 @@ __metadata:
     "@types/koa": "npm:^3.0.1"
     "@types/koa-bodyparser": "npm:^4.3.13"
     "@types/koa__cors": "npm:^5.0.1"
-    "@types/koa__router": "npm:^12.0.5"
     "@types/node": "npm:^24.10.4"
     "@types/supertest": "npm:^6.0.3"
     drizzle-orm: "npm:^0.45.1"
