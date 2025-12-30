@@ -73,18 +73,10 @@ describe('Valhalla Chunking', () => {
         // So split at point 1.
 
         // 1 deg lat is approx 111km.
+        // Create 3 points: A, B, C. A->B = 100km. B->C = 100km.
+        // Total 200km. Should split at B because max distance is 150km.
+        // 1 deg lat is approx 111km.
         const coords = [
-            [0, 0],
-            [0, 1.4], // ~155km ? No wait. 1.4 deg lat = 1.4 * 111 = 155km.
-            // Wait, lat is index 1 in coords [lon, lat].
-            // [0, 0] -> [0, 1.4] is > 150km.
-        ];
-
-        // If single segment > 150km, it won't split single segment (per logic).
-        // Let's use 3 points: A, B, C. A->B = 100km. B->C = 100km.
-        // Total 200km. Should split at B.
-
-        const coords2 = [
             [0, 0],
             [0, 0.9], // ~100km
             [0, 1.8]  // ~100km from B
@@ -104,7 +96,7 @@ describe('Valhalla Chunking', () => {
                 })
             });
 
-        const result = await getRouteAttributes(coords2);
+        const result = await getRouteAttributes(coords);
 
         expect(fetchMock).toHaveBeenCalledTimes(2);
         expect(result).toHaveLength(2);

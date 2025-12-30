@@ -25,7 +25,6 @@ const queryClient = new Proxy(pgClient, {
     if (prop === 'unsafe') {
       return (query: string, params?: unknown[], options?: unknown) => {
         const start = performance.now();
-        // eslint-disable-next-line @typescript-eslint/ban-types
         const result = (originalValue as typeof pgClient.unsafe).apply(target, [
           query,
           params,
@@ -33,7 +32,6 @@ const queryClient = new Proxy(pgClient, {
         ]);
 
         // Monkey-patch .then to log execution time while preserving the object structure
-        // (so methods like .values() still work)
         const originalThen = result.then;
         // biome-ignore lint/suspicious/noThenProperty: Monkey-patching to intercept query execution
         // biome-ignore lint/suspicious/noExplicitAny: Generic Promise type interception requires any
