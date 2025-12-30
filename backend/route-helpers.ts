@@ -1,4 +1,4 @@
-import toGeoJSON from '@mapbox/togeojson';
+import { gpx } from '@tmcw/togeojson';
 import { type SQL, sql } from 'drizzle-orm';
 import type { LineString, MultiLineString } from 'geojson';
 import { JSDOM } from 'jsdom';
@@ -30,8 +30,8 @@ export function gpxToGeoJSON(gpxContent: string): LineString | null {
       return null;
     }
 
-    // Convert GPX to GeoJSON using @mapbox/togeojson
-    const geoJSON = toGeoJSON.gpx(doc);
+    // Convert GPX to GeoJSON using @tmcw/togeojson
+    const geoJSON = gpx(doc);
 
     // Extract the first LineString from the GeoJSON
     // toGeoJSON returns a FeatureCollection

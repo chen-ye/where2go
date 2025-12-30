@@ -19,11 +19,11 @@
     "update-testdata": "tsx scripts/update-testdata.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.8",
+    "@biomejs/biome": "^2.3.10",
     "@playwright/test": "^1.57.0",
     "@types/chrome": "^0.1.32",
     "@types/tampermonkey": "^5.0.5",
-    "@vitest/coverage-v8": "^4.0.15",
+    "@vitest/coverage-v8": "^4.0.16",
     "dotenv": "^17.2.3",
     "ts-json-schema-generator": "^2.4.0",
     "typescript": "^5.9.3"
