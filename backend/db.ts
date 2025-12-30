@@ -11,7 +11,7 @@ const pgClient = postgres(connectionString, {
   username: process.env.PGUSER || 'where2go',
   password: process.env.PGPASSWORD || 'password',
   database: process.env.PGDATABASE || 'where2go',
-  ssl: (process.env.PGSSLMODE as Options<{}>['ssl']) || 'prefer',
+  ssl: (process.env.PGSSLMODE as Options<Record<string, never>>['ssl']) || 'prefer',
 });
 console.log(
   `Connection settings: postgres://${pgClient.options.user}@${pgClient.options.host}:${pgClient.options.port}/${pgClient.options.database}`,
@@ -35,13 +35,18 @@ const queryClient = new Proxy(pgClient, {
         // Monkey-patch .then to log execution time while preserving the object structure
         // (so methods like .values() still work)
         const originalThen = result.then;
+        // biome-ignore lint/suspicious/noThenProperty: Monkey-patching to intercept query execution
+        // biome-ignore lint/suspicious/noExplicitAny: Generic Promise type interception requires any
         result.then = function <TResult1 = any, TResult2 = never>(
+          // biome-ignore lint/suspicious/noExplicitAny: Generic Promise type interception requires any
           onFulfilled?: ((value: any) => TResult1 | PromiseLike<TResult1>) | null,
+          // biome-ignore lint/suspicious/noExplicitAny: Generic Promise type interception requires any
           onRejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
         ): Promise<TResult1 | TResult2> {
           return originalThen.call(
             this,
 
+            // biome-ignore lint/suspicious/noExplicitAny: Generic Promise type interception requires any
             (data: any) => {
               const duration = performance.now() - start;
               const timestamp = new Date().toISOString();
@@ -50,6 +55,7 @@ const queryClient = new Proxy(pgClient, {
               return data;
             },
 
+            // biome-ignore lint/suspicious/noExplicitAny: Generic Promise type interception requires any
             (err: any) => {
               const duration = performance.now() - start;
               const timestamp = new Date().toISOString();
