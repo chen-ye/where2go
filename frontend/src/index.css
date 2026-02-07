@@ -6,6 +6,7 @@
 @import "open-props/durations";
 
 :root {
+  --duration-map-padding: 150ms;
   /* Dark Scheme */
 
   --brand-dark: var(--orange-6);

@@ -25,6 +25,7 @@ import type { MapRef } from "react-map-gl/maplibre";
 import { MVTLayer } from "@deck.gl/geo-layers";
 import type { StyleSpecification, LayerSpecification, SourceSpecification } from "maplibre-gl";
 import { MapLibreRouteResults } from "./MapLibreRouteResults";
+import { getMapPaddingDuration } from "../utils/animations";
 
 const USE_DECK_MVT = false;
 
@@ -154,6 +155,29 @@ export const MapView = forwardRef<MapRef, MapViewProps>(({
   filterParams,
 }, ref) => {
   // Use the forwarded ref directly for the Map component
+
+  // Handle padding changes smoothly
+  useEffect(() => {
+    if (!ref || typeof ref === 'function' || !ref.current) return;
+
+    // Check if padding is actually different to avoid unnecessary moves
+    const map = ref.current;
+    const currentPadding = map.getPadding();
+
+    if (
+      padding && (
+      currentPadding.top !== padding.top ||
+      currentPadding.bottom !== padding.bottom ||
+      currentPadding.left !== padding.left ||
+      currentPadding.right !== padding.right
+      )
+    ) {
+      map.easeTo({
+        padding,
+        duration: getMapPaddingDuration(map.getMap().getContainer()),
+      });
+    }
+  }, [padding, ref]);
 
   // Fly to selected route's bounding box only when selected from search
   useEffect(() => {
@@ -403,7 +427,7 @@ export const MapView = forwardRef<MapRef, MapViewProps>(({
       <Map
         ref={ref}
         {...viewState}
-        padding={padding}
+        // padding={padding} // Handled via easeTo in useEffect
         onMove={(evt) => onMove(evt.viewState)}
         mapStyle={resolvedMapStyle || { version: 8, sources: {}, layers: [] }}
         terrain={{
