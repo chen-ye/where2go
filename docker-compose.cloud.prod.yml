@@ -1,9 +1,16 @@
 # docker compose -f docker-compose.cloud.prod.yml up
 services:
   app:
-    extends:
-      file: docker-compose.base.yml
-      service: app-base
+    image: ghcr.io/chen-ye/where2go:latest
+    ports:
+      - "8070:8070"
+      - "5174:5174"
     environment:
+      PGHOST: ${PGHOST}
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+      PGDATABASE: ${PGDATABASE}
+      PGPORT: ${PGPORT:-5432}
+      PGSSLMODE: prefer
+      VITE_API_URL: http://localhost:8070
       NODE_ENV: production
-    command: sh -c "corepack enable && yarn install && yarn run build && yarn run start"
