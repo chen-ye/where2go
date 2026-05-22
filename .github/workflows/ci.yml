@@ -11,11 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version-file: .node-version
-          cache: ''
       - name: Enable Corepack
         run: corepack enable
       - name: Setup Node.js
@@ -34,11 +29,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version-file: .node-version
-          cache: ''
       - name: Enable Corepack
         run: corepack enable
       - name: Setup Node.js
@@ -55,11 +45,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version-file: .node-version
-          cache: ''
       - name: Enable Corepack
         run: corepack enable
       - name: Setup Node.js
@@ -96,11 +81,6 @@ jobs:
       POSTGRES_PORT: 5432
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version-file: .node-version
-          cache: ''
       - name: Enable Corepack
         run: corepack enable
       - name: Setup Node.js
@@ -119,11 +99,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version-file: .node-version
-          cache: ''
       - name: Enable Corepack
         run: corepack enable
       - name: Setup Node.js

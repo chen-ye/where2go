@@ -8,7 +8,6 @@ RUN corepack enable
 
 # Copy root configuration and dependency definitions
 COPY package.json yarn.lock .yarnrc.yml ./
-COPY .yarn ./.yarn
 
 # Copy package.json files for all workspace modules to enable layer caching
 COPY backend/package.json ./backend/
