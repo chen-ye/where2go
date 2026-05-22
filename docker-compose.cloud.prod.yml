@@ -14,6 +14,7 @@ services:
       PGSSLMODE: prefer
       VITE_API_URL: http://localhost:8070
       NODE_ENV: production
+      VALHALLA_ENDPOINT: ${VALHALLA_ENDPOINT:-}
     volumes:
       - ./config:/app/frontend/config
     command: >
