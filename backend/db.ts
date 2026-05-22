@@ -27,8 +27,8 @@ const queryClient = new Proxy(pgClient, {
         const start = performance.now();
         const result = (originalValue as typeof pgClient.unsafe).apply(target, [
           query,
-          params,
-          options,
+          params as any,
+          options as any,
         ]);
 
         // Monkey-patch .then to log execution time while preserving the object structure
@@ -88,6 +88,7 @@ export const db = drizzle(queryClient, { schema });
 export async function initDb() {
   try {
     await queryClient`CREATE EXTENSION IF NOT EXISTS postgis;`;
+    await queryClient`CREATE EXTENSION IF NOT EXISTS pg_trgm;`;
   } catch (e) {
     console.error('Error creating postgis extension:', e);
   }
@@ -225,10 +226,12 @@ export async function initDb() {
 
   // Create indexes for query optimization
   try {
-    // Index for title text search (case-insensitive regex)
+    // Index for title text search (case-insensitive regex) using pg_trgm
+    // Dropping the old btree index if it exists, replacing with GIN trigram index
+    await queryClient`DROP INDEX IF EXISTS idx_routes_title_text_pattern;`;
     await queryClient`
-      CREATE INDEX IF NOT EXISTS idx_routes_title_text_pattern
-      ON routes USING btree (lower(title) text_pattern_ops);
+      CREATE INDEX IF NOT EXISTS idx_routes_title_gin_trgm
+      ON routes USING gin (title gin_trgm_ops);
     `;
 
     // Index for source_url pattern matching (domain filtering)
@@ -253,6 +256,12 @@ export async function initDb() {
     await queryClient`
       CREATE INDEX IF NOT EXISTS idx_routes_geom_gist
       ON routes USING gist (geom);
+    `;
+
+    // Index for distance_meters
+    await queryClient`
+      CREATE INDEX IF NOT EXISTS idx_routes_distance_meters
+      ON routes (distance_meters);
     `;
 
     console.log('Database indexes created successfully');

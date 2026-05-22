@@ -195,7 +195,7 @@ export function getRouteFilters(searchParams: URLSearchParams): SQL[] {
     const minDistance = minDistanceParam ? parseFloat(minDistanceParam) : 0;
     const maxDistance = maxDistanceParam ? parseFloat(maxDistanceParam) : Number.MAX_SAFE_INTEGER;
     filters.push(
-      sql`ST_Length(${routes.geom}::geography) >= ${minDistance} AND ST_Length(${routes.geom}::geography) <= ${maxDistance}`,
+      sql`${routes.distanceMeters} >= ${minDistance} AND ${routes.distanceMeters} <= ${maxDistance}`,
     );
   }
 
