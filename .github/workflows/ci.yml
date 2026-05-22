@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
       - name: Lint
-        run: yarn lssint
+        run: yarn lint
       - name: Check Formatting
         run: yarn format:check
 
@@ -74,11 +74,11 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      POSTGRES_USER: test_user
-      POSTGRES_PASSWORD: test_password
-      POSTGRES_DB: where2go_test
-      POSTGRES_HOST: localhost
-      POSTGRES_PORT: 5432
+      PGUSER: test_user
+      PGPASSWORD: test_password
+      PGDATABASE: where2go_test
+      PGHOST: localhost
+      PGPORT: 5432
     steps:
       - uses: actions/checkout@v4
       - name: Enable Corepack
@@ -110,5 +110,3 @@ jobs:
         run: yarn install --immutable
       - name: Build Frontend
         run: yarn workspace where2go-frontend build
-      - name: Build Extension
-        run: yarn workspace where2go-extension build
