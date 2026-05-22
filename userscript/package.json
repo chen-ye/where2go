@@ -4,6 +4,7 @@
   "description": "",
   "main": "dist/where2go.user.js",
   "scripts": {
+    "check": "tsc",
     "test": "echo \"No tests for userscript\" && exit 0"
   },
   "keywords": [],

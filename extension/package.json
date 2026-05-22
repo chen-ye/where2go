@@ -4,6 +4,7 @@
   "description": "",
   "main": "content.js",
   "scripts": {
+    "check": "tsc",
     "test": "echo \"No tests for extension\" && exit 0"
   },
   "keywords": [],
