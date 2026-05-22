@@ -14,3 +14,15 @@ services:
       PGSSLMODE: prefer
       VITE_API_URL: http://localhost:8070
       NODE_ENV: production
+    volumes:
+      - ./config:/app/frontend/config
+    command: >
+      sh -c "
+      if [ ! -d /app/frontend/config/layers ]; then
+        echo 'Config directory empty or missing layers. Populating with defaults...' &&
+        mkdir -p /app/frontend/config &&
+        cp -R /app/frontend/config.default/* /app/frontend/config/
+      fi &&
+      yarn run build &&
+      yarn run start
+      "

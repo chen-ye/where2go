@@ -22,6 +22,9 @@ RUN yarn install --immutable
 # Copy the rest of the application source code
 COPY . .
 
+# Create a backup copy of the default config directory
+RUN cp -R frontend/config frontend/config.default
+
 # Build the frontend and other workspaces
 RUN yarn run build
 
