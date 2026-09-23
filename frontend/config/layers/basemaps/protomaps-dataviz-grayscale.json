@@ -1,0 +1,6 @@
+{
+  "$schema": "../../../../schema/basemapconfig.schema.json",
+  "id": "protomaps-dataviz-grayscale",
+  "name": "Protomaps Dataviz Grayscale",
+  "url": "https://api.protomaps.com/styles/v5/grayscale/en.json?key=6f6306dcba238cd5"
+}

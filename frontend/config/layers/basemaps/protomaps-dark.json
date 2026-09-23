@@ -1,0 +1,6 @@
+{
+  "$schema": "../../../../schema/basemapconfig.schema.json",
+  "id": "protomaps-dark",
+  "name": "Protomaps Dark",
+  "url": "https://api.protomaps.com/styles/v5/dark/en.json?key=6f6306dcba238cd5"
+}

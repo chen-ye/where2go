@@ -1,0 +1,6 @@
+{
+  "$schema": "../../../../schema/basemapconfig.schema.json",
+  "id": "protomaps-dataviz-black",
+  "name": "Protomaps Dataviz Black",
+  "url": "https://api.protomaps.com/styles/v5/black/en.json?key=6f6306dcba238cd5"
+}
