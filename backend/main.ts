@@ -3,6 +3,7 @@ import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import { initDb } from './db.ts';
 import { startBackgroundJob } from './jobs/background-processor.ts';
+import { startDbPinger } from './jobs/db-pinger.ts';
 import router from './routes.ts';
 
 const app = new Koa();
@@ -50,6 +51,11 @@ async function startServer() {
 
   // Start background job
   startBackgroundJob();
+
+  // Start DB keep-alive pinger if enabled in environment
+  if (process.env.ENABLE_DB_PINGER === 'true') {
+    startDbPinger();
+  }
 
   console.log('Server running on http://localhost:8070');
   app.listen(8070, '0.0.0.0');

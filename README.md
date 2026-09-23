@@ -47,6 +47,12 @@ Navigate to `http://localhost:5174` to view the app.
 > the PostGIS extension installed.
 >
 > At the time of writing, Neon and Aiven seem to work reasonably well.
+>
+> If using a cloud database that idles or hibernates when inactive (such as Aiven or Neon),
+> a dedicated `db-pinger` keep-alive subservice is provided:
+> - **With Docker Compose:** `docker compose -f docker-compose.cloud.yml up` automatically runs the `db-pinger` service alongside the app.
+> - **Standalone process:** Run `yarn ping-db` (or `node backend/jobs/db-pinger.ts`). Supports `--once` for single checks and `--interval=<minutes>` (defaults to every 1 hour).
+> - **In-process backend worker:** Set `ENABLE_DB_PINGER=true` in your `.env`.
 
 You'll also want to install the Chrome extension:
 

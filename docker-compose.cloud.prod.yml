@@ -27,3 +27,18 @@ services:
       yarn run build &&
       yarn run start
       "
+
+  db-pinger:
+    image: ghcr.io/chen-ye/where2go:latest
+    environment:
+      PGHOST: ${PGHOST}
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+      PGDATABASE: ${PGDATABASE}
+      PGPORT: ${PGPORT:-5432}
+      PGSSLMODE: ${PGSSLMODE:-prefer}
+      DATABASE_URL: ${DATABASE_URL:-}
+      NODE_ENV: production
+      DB_PING_INTERVAL_MINUTES: ${DB_PING_INTERVAL_MINUTES:-60}
+    command: node backend/jobs/db-pinger.ts
+    restart: unless-stopped

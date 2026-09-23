@@ -5,3 +5,20 @@ services:
       file: docker-compose.base.yml
       service: app-base
     command: sh -c "corepack enable && yarn install && yarn run build && yarn run dev"
+
+  db-pinger:
+    image: node:24-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+    environment:
+      PGHOST: ${PGHOST}
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+      PGDATABASE: ${PGDATABASE}
+      PGPORT: ${PGPORT:-5432}
+      PGSSLMODE: ${PGSSLMODE:-prefer}
+      DATABASE_URL: ${DATABASE_URL:-}
+      DB_PING_INTERVAL_MINUTES: ${DB_PING_INTERVAL_MINUTES:-60}
+    command: sh -c "corepack enable && yarn install && node backend/jobs/db-pinger.ts"
+    restart: unless-stopped
