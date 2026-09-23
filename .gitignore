@@ -31,3 +31,4 @@ playwright-report
 backend/coverage
 frontend/coverage
 test-results
+.antigravitycli
